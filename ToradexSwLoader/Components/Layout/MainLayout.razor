@@ -1,13 +1,28 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+
+    @if (IsHomePage())
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
+    else
+    {
+        <div></div>
+    }
+
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row px-4 d-flex justify-content-between">
+            <span>Nome Colaborador</span>
+            <span>14:57</span>
+            @if(IsHomePage())
+            {
+                <a href="" target="">LogOut</a>
+            }
         </div>
 
         <article class="content px-4">
@@ -16,8 +31,16 @@
     </main>
 </div>
 
-<div id="blazor-error-ui">
+<div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool IsHomePage()
+    {
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return string.IsNullOrEmpty(relativePath) || relativePath == "/";
+    }
+}
