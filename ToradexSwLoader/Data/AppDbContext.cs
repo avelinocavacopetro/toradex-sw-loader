@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ToradexSwLoader.Models;
 
 namespace ToradexSwLoader.Data
 {
@@ -7,5 +8,7 @@ namespace ToradexSwLoader.Data
         public AppDbContext(DbContextOptions options) : base(options)
         {
         }
+
+        public DbSet<Device> Devices { get; set; }
     }
 }

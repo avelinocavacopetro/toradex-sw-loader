@@ -1,0 +1,319 @@
+﻿@page "/devices"
+
+@rendermode InteractiveServer
+@inject AppDbContext DbContext
+@inject TorizonService TorizonService
+@inject DeviceService DeviceService
+@using ToradexSwLoader.Data
+@using ToradexSwLoader.Models
+@using ToradexSwLoader.Services
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Dispositivos</PageTitle>
+
+<a href="/" class="text-black">
+    <i class="bi bi-arrow-left fs-1"></i>
+</a>
+
+<div class="mt-4">
+    <span style="font-size: 20px; font-weight: bold;">Filtrar por:</span>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-2">
+    <div class="d-flex gap-4">
+
+        <div class="d-flex flex-column">
+            <label for="nameOrder" style="font-size: 18px; font-weight: bold;">Nome</label>
+            <select id="nameOrder" class="form-select" @onchange='e => OnOrderChanged(e, "DeviceName")'>
+                <option value="relevance">Relevância</option>
+                <option value="ascendent">Ascendente</option>
+                <option value="descendent">Descendente</option>
+            </select>
+        </div>
+
+        <div class="d-flex flex-column">
+            <label for="hibernationOrder" style="font-size: 18px; font-weight: bold;">Hibernação</label>
+            <select id="hibernationOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Hibernation")'>
+                <option value="everything">Tudo</option>
+                <option value="yes">Sim</option>
+                <option value="no">Não</option>
+            </select>
+        </div>
+
+        <div class="d-flex flex-column">
+            <label for="hourOrder" style="font-size: 18px; font-weight: bold;">Hora</label>
+            <select id="hourOrder" class="form-select" @onchange='e => OnOrderChanged(e, "CreatedAt")'>
+                <option value="relevance">Relevância</option>
+                <option value="ascendent">Ascendente</option>
+                <option value="descendent">Descendente</option>
+            </select>
+        </div>
+
+        <div class="d-flex flex-column">
+            <label for="statusOrder" style="font-size: 18px; font-weight: bold;">Estado</label>
+            <select id="statusOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Status")'>
+                <option value="all">Tudo</option>
+                <option value="uptodate">UpToDate</option>
+                <option value="error">Error</option>
+                <option value="notseen">NotSeen</option>
+                <option value="updatepending">UpdatePending</option>
+                <option value="updatescheduled">UpdateSchedule</option>
+                <option value="outdated">Outdated</option>
+            </select>
+        </div>
+
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center gap-3">
+        <span>@actualPage - @totalPages de @totalPages</span>
+        <div class="d-flex gap-2">
+            <button class="btn custom-outline-button btn-lg"
+                    @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                &lt;
+            </button>
+
+            <button class="btn custom-outline-button btn-lg"
+                    @onclick="NextPage" disabled="@(!CanGoNext)">
+                &gt;
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (devices == null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <table class="table custom-table mt-5">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th style="text-align: center;">Hibernação</th>
+                <th style="text-align: center;">Notas</th>
+                <th>Data de Criação</th>
+                <th style="text-align: center;">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var device in paginetdDevices)
+            {
+                <tr>
+                    <td>@device.DeviceId</td>
+                    <td>@device.DeviceName</td>
+                    <td style="text-align: center;">@(device.Hibernated ? "Sim" : "Não")</td>
+                    <td style="text-align: center;">@(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)</td>
+                    <td>@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td style="text-align: center;">
+                        <span class="status-box @(GetStatusClass(device.DeviceStatus))">
+                            @device.DeviceStatus
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<style>
+    .custom-table {
+        border-collapse: separate;
+        border-spacing: 0 10px;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .custom-table td {
+        padding: 8px;
+    }
+
+    td, th {
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: ellipsis;
+    }
+
+    .custom-outline-button {
+        background-color: white;
+        color: #6c757d;
+        border: 1px solid #6c757d;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .custom-outline-button:hover {
+        background-color: darkgrey;
+        color: white;
+    }
+
+    .custom-outline-button:active {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
+
+    .status-box {
+        display: inline-block;
+        width: 120px;
+        text-align: center;
+        padding: 6px 10px;
+        border: 2px solid;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        white-space: nowrap;
+    }
+
+    .status-uptodate {
+        border-color: #63AA5B;
+    }
+
+    .status-error {
+        border-color: #D90000;
+    }
+
+    .status-notseen {
+        border-color: #B0B0B0;
+    }
+
+    .status-outdated {
+        border-color: #FFA500;
+    }
+
+    .status-default {
+        border-color: #000000;
+    }
+
+</style>
+
+@code {
+    private List<Device> originalDevices = new List<Device>();
+    private List<Device> devices = new List<Device>();
+    private List<Device> paginetdDevices = new List<Device>();
+
+    private int actualPage = 1;
+    private int devicesPerPage = 5;
+    private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
+
+    private string selectedOrder = "relevance";
+
+    /*
+     * Buscar os dispositivos disponiveis na API ao inicializar
+     */
+    protected override async Task OnInitializedAsync()
+    {
+        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=100&offset=0";
+
+        bool imported = await DeviceService.ImportDevicesFromApiAsync(devicesUrl);
+
+        if (imported)
+        {
+            originalDevices = await DbContext.Devices.ToListAsync();
+            devices = new List<Device>(originalDevices);
+        }
+        else
+        {
+            originalDevices = new List<Device>();
+        }
+
+        UpdatePage();
+    }
+
+    private void UpdatePage()
+    {
+        paginetdDevices = devices.Skip((actualPage - 1) * devicesPerPage)
+                                 .Take(devicesPerPage)
+                                 .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (actualPage < totalPages)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (actualPage > 1)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
+
+    private string GetStatusClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "uptodate" => "status-uptodate",
+            "error" => "status-error",
+            "notseen" => "status-notseen",
+            "outdated" => "status-outdated",
+            _ => "status-default"
+        };
+    }
+
+    private void OnOrderChanged(ChangeEventArgs e, string orderByField)
+    {
+        var selectedOrder = e.Value?.ToString() ?? "relevance";
+        var selectedHibernationOrder = e.Value?.ToString() ?? "everything";
+        var selectedStatusOrder = e.Value?.ToString() ?? "uptodate";
+
+        switch (orderByField)
+        {
+            case "CreatedAt":
+                devices = selectedOrder switch
+                {
+                    "ascendent" => originalDevices.OrderBy(d => d.CreatedAt).ToList(),
+                    "descendent" => originalDevices.OrderByDescending(d => d.CreatedAt).ToList(),
+                    "relevance" => originalDevices.ToList(),
+                    _ => devices
+                };
+                break;
+
+            case "DeviceName":
+                devices = selectedOrder switch
+                {
+                    "ascendent" => originalDevices.OrderBy(d => d.DeviceName).ToList(),
+                    "descendent" => originalDevices.OrderByDescending(d => d.DeviceName).ToList(),
+                    "relevance" => originalDevices.ToList(),
+                    _ => devices
+                };
+                break;
+
+            case "Hibernation":
+                devices = selectedHibernationOrder switch
+                {
+                    "yes" => originalDevices.Where(d => d.Hibernated).ToList(),
+                    "no" => originalDevices.Where(d => !d.Hibernated).ToList(),
+                    "everything" => originalDevices.ToList(),
+                    _ => devices
+                };
+                break;
+
+            case "Status":
+                devices = selectedHibernationOrder switch
+                {
+                    "uptodate" => originalDevices.Where(d => d.DeviceStatus == "UpToDate").ToList(),
+                    "error" => originalDevices.Where(d => d.DeviceStatus == "Error").ToList(),
+                    "notseen" => originalDevices.Where(d => d.DeviceStatus == "NotSeen").ToList(),
+                    "updatepending" => originalDevices.Where(d => d.DeviceStatus == "UpdatePending").ToList(),
+                    "updateschedule" => originalDevices.Where(d => d.DeviceStatus == "UpdateSchedule").ToList(),
+                    "outdated" => originalDevices.Where(d => d.DeviceStatus == "Outdated").ToList(),
+                    "all" => originalDevices.ToList(),
+                    _ => devices
+                };
+                break;
+        }
+
+        actualPage = 1;
+        UpdatePage();
+    }
+}

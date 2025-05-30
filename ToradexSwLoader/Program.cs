@@ -1,6 +1,7 @@
 using ToradexSwLoader.Components;
 using ToradexSwLoader.Data;
 using Microsoft.EntityFrameworkCore;
+using ToradexSwLoader.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options => 
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)
 ));
+
+// Configurar serviços a serem utilizados
+builder.Services.AddHttpClient<TorizonService>();
+builder.Services.AddScoped<DeviceService>();
 
 var app = builder.Build();
 
