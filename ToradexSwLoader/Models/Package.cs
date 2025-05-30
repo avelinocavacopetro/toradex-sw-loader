@@ -22,5 +22,15 @@ namespace ToradexSwLoader.Models
         [MaxLength(50)]
         [JsonPropertyName("version")]
         public string PackageVersion { get; set; }
+
+        [NotMapped]
+        public List<string> HardwareIds { get; set; } = new List<string>();
+
+        public List<PackageHardware> PackageHardwares { get; set; } = new List<PackageHardware>();
+
+        [NotMapped]
+        public List<string> HardwareNames => PackageHardwares?
+            .Select(ph => ph.Hardware.HardwareName)
+            .ToList() ?? new List<string>();
     }
 }

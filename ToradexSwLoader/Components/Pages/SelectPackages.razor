@@ -54,7 +54,7 @@ else
         <thead>
             <tr>
                 <th>Nome</th>
-                @* <th style="text-align: center;">Hardware</th> *@
+                <th style="text-align: center;">Hardware</th>
                 <th style="text-align: center;">Versão</th>
             </tr>
         </thead>
@@ -63,13 +63,13 @@ else
             {
                 <tr class="@GetRowClass(package)" @onclick="() => SelectRow(package)">
                     <td>@package.PackageName</td>
-                    @* <td style="text-align: center;">
-                        @foreach (var h in @package.HardwareIds)
+                    <td style="text-align: center;">
+                        @foreach (var h in @package.PackageHardwares)
                         {
-                            @h
+                            @h.Hardware.HardwareName
                             ;
                         }
-                    </td> *@
+                    </td>
                     <td style="text-align: center;">@package.PackageVersion</td>
                 </tr>
             }
@@ -136,7 +136,10 @@ else
 
         if (imported)
         {
-            totalPackages = await DbContext.Packages.ToListAsync();
+            totalPackages = await DbContext.Packages
+                                            .Include(p => p.PackageHardwares)
+                                            .ThenInclude(ph => ph.Hardware)
+                                            .ToListAsync();
         }
         else
         {

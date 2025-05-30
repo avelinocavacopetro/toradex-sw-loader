@@ -1,4 +1,5 @@
-﻿using ToradexSwLoader.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using ToradexSwLoader.Data;
 using ToradexSwLoader.Models;
 
 namespace ToradexSwLoader.Services
@@ -24,21 +25,58 @@ namespace ToradexSwLoader.Services
 
             foreach (var package in packages)
             {
-                var packageDb = await _appDbContext.Packages.FindAsync(package.PackageId);
+                var packageDb = await _appDbContext.Packages
+                    .Include(p => p.PackageHardwares)
+                    .ThenInclude(ph => ph.Hardware)
+                    .FirstOrDefaultAsync(p => p.PackageId == package.PackageId);
+
                 if (packageDb == null)
                 {
-                    _appDbContext.Packages.Add(package);
+                    packageDb = new Package
+                    {
+                        PackageId = package.PackageId,
+                        PackageName = package.PackageName,
+                        PackageVersion = package.PackageVersion,
+                        PackageHardwares = new List<PackageHardware>()
+                    };
+
+                    _appDbContext.Packages.Add(packageDb);
                 }
                 else
                 {
                     packageDb.PackageName = package.PackageName;
                     packageDb.PackageVersion = package.PackageVersion;
 
-                    _appDbContext.Packages.Update(packageDb);
+                    _appDbContext.PackageHardwares.RemoveRange(packageDb.PackageHardwares);
+                    packageDb.PackageHardwares.Clear();
                 }
+
+                foreach (var hwId in package.HardwareIds)
+                {
+                    var hardware = await _appDbContext.Hardwares
+                        .FirstOrDefaultAsync(h => h.HardwareName == hwId);
+
+                    if (hardware == null)
+                    {
+                        hardware = new Hardware
+                        {
+                            HardwareName = hwId
+                        };
+                        _appDbContext.Hardwares.Add(hardware);
+                        await _appDbContext.SaveChangesAsync();
+                    }
+
+                    var packageHardware = new PackageHardware
+                    {
+                        Package = packageDb,
+                        Hardware = hardware
+                    };
+
+                    packageDb.PackageHardwares.Add(packageHardware);
+                }
+                await _appDbContext.SaveChangesAsync();
             }
 
-            await _appDbContext.SaveChangesAsync();
             return true;
         }
     }
