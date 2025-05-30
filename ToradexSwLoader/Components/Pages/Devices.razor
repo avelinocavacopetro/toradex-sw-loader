@@ -11,6 +11,8 @@
 
 <PageTitle>Dispositivos</PageTitle>
 
+
+
 <a href="/" class="text-black">
     <i class="bi bi-arrow-left fs-1"></i>
 </a>
@@ -41,7 +43,7 @@
         </div>
 
         <div class="d-flex flex-column">
-            <label for="hourOrder" style="font-size: 18px; font-weight: bold;">Hora</label>
+            <label for="hourOrder" style="font-size: 18px; font-weight: bold;">Data de Criação</label>
             <select id="hourOrder" class="form-select" @onchange='e => OnOrderChanged(e, "CreatedAt")'>
                 <option value="relevance">Relevância</option>
                 <option value="ascendent">Ascendente</option>
@@ -117,76 +119,6 @@ else
     </table>
 }
 
-<style>
-    .custom-table {
-        border-collapse: separate;
-        border-spacing: 0 10px;
-        table-layout: fixed;
-        width: 100%;
-    }
-
-    .custom-table td {
-        padding: 8px;
-    }
-
-    td, th {
-        white-space: nowrap;
-        overflow: visible;
-        text-overflow: ellipsis;
-    }
-
-    .custom-outline-button {
-        background-color: white;
-        color: #6c757d;
-        border: 1px solid #6c757d;
-        transition: background-color 0.2s, color 0.2s;
-    }
-
-    .custom-outline-button:hover {
-        background-color: darkgrey;
-        color: white;
-    }
-
-    .custom-outline-button:active {
-        background-color: #6c757d;
-        color: white;
-        border-color: #6c757d;
-    }
-
-    .status-box {
-        display: inline-block;
-        width: 120px;
-        text-align: center;
-        padding: 6px 10px;
-        border: 2px solid;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: bold;
-        white-space: nowrap;
-    }
-
-    .status-uptodate {
-        border-color: #63AA5B;
-    }
-
-    .status-error {
-        border-color: #D90000;
-    }
-
-    .status-notseen {
-        border-color: #B0B0B0;
-    }
-
-    .status-outdated {
-        border-color: #FFA500;
-    }
-
-    .status-default {
-        border-color: #000000;
-    }
-
-</style>
-
 @code {
     private List<Device> originalDevices = new List<Device>();
     private List<Device> devices = new List<Device>();
@@ -198,9 +130,6 @@ else
 
     private string selectedOrder = "relevance";
 
-    /*
-     * Buscar os dispositivos disponiveis na API ao inicializar
-     */
     protected override async Task OnInitializedAsync()
     {
         var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=100&offset=0";
@@ -256,6 +185,7 @@ else
             "error" => "status-error",
             "notseen" => "status-notseen",
             "outdated" => "status-outdated",
+            "updatepending" => "status-updatepending",
             _ => "status-default"
         };
     }

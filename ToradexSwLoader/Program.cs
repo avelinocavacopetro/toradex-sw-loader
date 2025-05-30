@@ -1,6 +1,7 @@
+using CurrieTechnologies.Razor.SweetAlert2;
+using Microsoft.EntityFrameworkCore;
 using ToradexSwLoader.Components;
 using ToradexSwLoader.Data;
-using Microsoft.EntityFrameworkCore;
 using ToradexSwLoader.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Configurar serviços a serem utilizados
 builder.Services.AddHttpClient<TorizonService>();
 builder.Services.AddScoped<DeviceService>();
+builder.Services.AddScoped<PackageService>();
+builder.Services.AddSweetAlert2();
 
 var app = builder.Build();
 
