@@ -23,7 +23,7 @@
         } else{
              <div class="top-row px-4 d-flex justify-content-between">
                 <span>Nome Colaborador</span>
-                <span>14:57</span>
+                <span>@currentTime</span>
                 @if (IsCurrentPage("/home"))
                 {
                     <a href="" class="logout" target="">Terminar Sessão</a>
@@ -47,10 +47,41 @@
         text-decoration: none !important;
         color: black;
     }
+
+    span, .logout, .nav-link{
+        font-size: 20px;
+    }
 </style>
 
 
 @code {
+    private string currentTime;
+    private System.Timers.Timer timer;
+
+    protected override void OnInitialized()
+    {
+        currentTime = DateTime.Now.ToString("HH:mm");
+
+        timer = new System.Timers.Timer(1000);
+        timer.Elapsed += UpdateTime;
+        timer.AutoReset = true;
+        timer.Enabled = true;
+    }
+
+    private void UpdateTime(object sender, System.Timers.ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            currentTime = DateTime.Now.ToString("HH:mm");
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+
     private bool IsCurrentPage(string page)
     {
         var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
