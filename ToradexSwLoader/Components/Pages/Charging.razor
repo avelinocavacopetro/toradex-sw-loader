@@ -1,0 +1,51 @@
+﻿@page "/charging/{selectedDeviceName}/{selectedPackageName}"
+
+<a href="" onclick="history.back()" class="text-black">
+	<i class="bi bi-arrow-left fs-1"></i>
+</a>
+
+<h3 style="text-align: center;">Estado do Carregamento</h3>
+<h5 style="text-align: center;">Dispositivo: @selectedDeviceName </h5>
+<h5 style="text-align: center;">Software: @selectedPackageName </h5>
+<br />
+<br />
+<br />
+
+<div class="w-25 mx-auto pt-5" id="app">
+	<h2 class="pb-3" style="text-align: center;">A carregar...</h2>
+
+	<div class="progress mt-2" style="height: 2em;">
+		<div id="progressbar" class="progress-bar progress-bar-striped progress-bar-animated"
+			 style="width: 50%; background-color: #0B5120;"></div>
+	</div>
+
+	<div>
+		<span id="progressLabel" class="text-muted">A instalar software</span>
+	</div>
+
+	<div class="text-center pt-5">
+		<a href="/selectFleet" class="btn btn-custom btn-lg" style="width:10vw">OK</a>
+	</div>
+</div>
+
+
+
+<style>
+	.btn-custom {
+		background-color: #0B5120;
+		color: white;
+	}
+
+		.btn-custom:hover {
+			background-color: #073816;
+			color: white;
+		}
+</style>
+
+@code {
+	[Parameter]
+	public string selectedDeviceName { get; set; }
+
+	[Parameter]
+	public string selectedPackageName { get; set; }
+}
