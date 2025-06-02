@@ -109,6 +109,7 @@ else
         if (selectedPackage != null)
         {
             // UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}");
+            UriHelper.NavigateTo("/selectFleet");
         }
         else
         {
@@ -119,8 +120,6 @@ else
                 confirmButtonColor = "#0B5120"
             });
         }
-        // UriHelper.NavigateTo($"counter/{selectedDeviceId}");
-
     }
 
     private string GetRowClass(Package package)

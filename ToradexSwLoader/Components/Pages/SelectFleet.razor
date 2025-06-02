@@ -1,0 +1,67 @@
+﻿@page "/selectFleet"
+
+@using ToradexSwLoader.Data
+@using ToradexSwLoader.Models
+@using ToradexSwLoader.Services
+@using Microsoft.EntityFrameworkCore
+@rendermode InteractiveServer
+@inject AppDbContext DbContext
+@inject TorizonService TorizonService
+@inject FleetService FleetService
+
+<PageTitle>Selecionar Frota</PageTitle>
+
+<a href="" onclick="history.back()" class="text-black">
+    <i class="bi bi-arrow-left fs-1"></i>
+</a>
+
+<h3 style="text-align: center;">Selecionar Frota</h3>
+<br />
+<br />
+
+<div class="grid-container">
+    @foreach (var fleet in fleets)
+    {
+        <div class="grid-item">@fleet.FleetName</div>
+    }
+</div>
+
+<style>
+    /* Container for the grid */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr); /* 3 equal columns */
+        gap: 25px; /* Space between grid items */
+        padding: 10px;
+    }
+
+    /* Individual grid items */
+    .grid-item {
+        background-color: #4CAF50;
+        color: white;
+        text-align: center;
+        padding: 30px 15px;
+        font-size: 22px;
+        border-radius: 5px;
+    }
+</style>
+
+@code {
+    private List<Fleet> fleets = new List<Fleet>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var fleetUrl = "https://app.torizon.io/api/v2beta/fleets";
+
+        var imported = await FleetService.ImportFleetsFromApiAsync(fleetUrl);
+
+        if (imported)
+        {
+            fleets = await DbContext.Fleets.ToListAsync();
+        }
+        else
+        {
+            fleets = new List<Fleet>();
+        }
+    }
+}
