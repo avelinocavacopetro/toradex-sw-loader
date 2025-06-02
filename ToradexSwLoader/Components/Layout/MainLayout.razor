@@ -3,7 +3,7 @@
 
 <div class="page">
 
-    @if (IsHomePage())
+    @if (IsCurrentPage("/home"))
     {
         <div class="sidebar">
             <NavMenu />
@@ -15,18 +15,24 @@
     }
 
     <main>
-        <div class="top-row px-4 d-flex justify-content-between">
-            <span>Nome Colaborador</span>
-            <span>14:57</span>
-            @if(IsHomePage())
-            {
-                <a href="" target="">LogOut</a>
-            }
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+        @if (IsCurrentPage("/"))
+        {
+            <article class="content px-4">  
+                @Body
+            </article>
+        } else{
+             <div class="top-row px-4 d-flex justify-content-between">
+                <span>Nome Colaborador</span>
+                <span>14:57</span>
+                @if (IsCurrentPage("/home"))
+                {
+                    <a href="" class="logout" target="">Terminar Sessão</a>
+                }
+             </div>
+            <article class="content px-4">
+                @Body
+            </article>
+        }
     </main>
 </div>
 
@@ -36,10 +42,20 @@
     <span class="dismiss">🗙</span>
 </div>
 
+<style>
+    .logout, .logout:hover {
+        text-decoration: none !important;
+        color: black;
+    }
+</style>
+
+
 @code {
-    private bool IsHomePage()
+    private bool IsCurrentPage(string page)
     {
         var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
-        return string.IsNullOrEmpty(relativePath) || relativePath == "/";
+        relativePath = "/" + relativePath.TrimStart('/');
+
+        return string.IsNullOrEmpty(relativePath) && page == "/" || relativePath == page;
     }
 }

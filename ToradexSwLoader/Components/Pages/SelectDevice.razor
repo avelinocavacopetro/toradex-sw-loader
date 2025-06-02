@@ -16,7 +16,7 @@
 
 <PageTitle>Selecionar Equipamento</PageTitle>
 
-<a href="/" class="text-black">
+<a href="" onclick="history.back()" class="text-black">
     <i class="bi bi-arrow-left fs-1"></i>
 </a>
 
@@ -107,7 +107,6 @@ else
     {
         selectedDevice = device;
         selectedDeviceName = device.DeviceName;
-        Console.WriteLine($"Saved Item: ID = {device.DeviceId}, Name = {device.DeviceName}");
     }
 
     private async Task OnClick()
