@@ -14,23 +14,38 @@
 
 <PageTitle>Selecionar Frota</PageTitle>
 
-<a href="#"
-   onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-   class="text-black"
-   style="cursor: @(isLoading ? "default" : "pointer");">
-    <i class="bi bi-arrow-left fs-1"></i>
-</a>
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
 
-<h3 class="text-center pb-5">Selecionar Frota</h3>
-<br />
-<br />
+    <h3 class="text-center pb-5">Selecionar Frota</h3>
+    <br />
+    <br />
 
-<div class="grid-container">
-    @foreach (var fleet in fleets)
-    {
-        <div class="grid-item" @onclick="() => SelectFleetName(fleet)">@fleet.FleetName</div>
-    }
-</div>
+    <div class="grid-container">
+        @foreach (var fleet in fleets)
+        {
+            <div class="grid-item" @onclick="() => SelectFleetName(fleet)">@fleet.FleetName</div>
+        }
+    </div>
+}
+
 
 <style>
     .grid-container {
@@ -41,13 +56,22 @@
     }
 
     .grid-item {
-        background-color: #4CAF50;
+        background-color: #0c6527;
         color: white;
         text-align: center;
         padding: 30px 15px;
         font-size: 22px;
         border-radius: 5px;
     }
+
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        min-height: 80vh;
+    }
+
 </style>
 
 @code {

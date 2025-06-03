@@ -17,38 +17,47 @@
 
 <PageTitle>Selecionar Equipamento</PageTitle>
 
-<a href="" onclick="history.back()" class="text-black">
-    <i class="bi bi-arrow-left fs-1"></i>
-</a>
 
-<h3 class="text-center pb-5">Selecionar Equipamento</h3>
-<br />
-<br />
-<br />
 
-<div class="d-flex justify-content-end pe-5">
-    <div class="d-flex justify-content-between align-items-center gap-3">
-        <span>@actualPage - @totalPages de @totalPages</span>
-        <div class="d-flex gap-2">
-            <button class="btn custom-outline-button btn-lg"
-                    @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                &lt;
-            </button>
-
-            <button class="btn custom-outline-button btn-lg"
-                    @onclick="NextPage" disabled="@(!CanGoNext)">
-                &gt;
-            </button>
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
         </div>
     </div>
-</div>
-
-@if (totalDevices == null)
-{
-    <p><em>A carregar...</em></p>
 }
 else
 {
+    <a href="" onclick="history.back()" class="text-black">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
+
+    <h3 class="text-center pb-5">Selecionar Equipamento</h3>
+    <br />
+    <br />
+    <br />
+
+    <div class="d-flex justify-content-end pe-5">
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>@actualPage - @totalPages de @totalPages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextPage" disabled="@(!CanGoNext)">
+                    &gt;
+                </button>
+            </div>
+        </div>
+    </div>
+
     <table class="table custom-table1 custom-td mt-5">
         <thead>
             <tr>
@@ -72,16 +81,25 @@ else
             }
         </tbody>
     </table>
-}
 
-<div class="text-center fixed-bottom pb-5">
-    <button class="btn btn-color btn-lg" @onclick="OnClick">Seguinte</button>
-</div>
+    <div class="text-center fixed-bottom pb-5">
+        <button class="btn btn-color btn-lg" @onclick="OnClick">Seguinte</button>
+    </div>
+}
 
 <style>
     table tbody{
         vertical-align: initial !important;
     }
+
+    .center {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+		min-height: 80vh;
+	}
+
 </style>
 
 <script>
@@ -95,6 +113,7 @@ else
     private List<Device> devices = new List<Device>();
     private List<Device> paginetdDevices = new List<Device>();
     private Device? selectedDevice;
+    private bool isLoading = true;
 
     private int actualPage = 1;
     private int devicesPerPage = 5;
@@ -107,6 +126,8 @@ else
         using var context = DbContextFactory.CreateDbContext();
 
         totalDevices = await context.Devices.Where(d => d.DeviceStatus.Equals(state)).ToListAsync();
+
+        isLoading = false;
 
         UpdatePage();
     }
