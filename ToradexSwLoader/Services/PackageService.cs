@@ -6,12 +6,12 @@ namespace ToradexSwLoader.Services
 {
     public class PackageService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
         private readonly TorizonService _torizonService;
 
-        public PackageService(AppDbContext appDbContext, TorizonService torizonService)
+        public PackageService(IDbContextFactory<AppDbContext> dbContextFactory, TorizonService torizonService)
         {
-            _appDbContext = appDbContext;
+            _dbContextFactory = dbContextFactory;
             _torizonService = torizonService;
         }
 
@@ -23,9 +23,11 @@ namespace ToradexSwLoader.Services
             var packages = await _torizonService.GetItemsAsync<Package>(apiUrl);
             if (packages == null) return false;
 
+            using var context = _dbContextFactory.CreateDbContext();
+
             foreach (var package in packages)
             {
-                var packageDb = await _appDbContext.Packages
+                var packageDb = await context.Packages
                     .Include(p => p.PackageHardwares)
                     .ThenInclude(ph => ph.Hardware)
                     .FirstOrDefaultAsync(p => p.PackageId == package.PackageId);
@@ -40,20 +42,20 @@ namespace ToradexSwLoader.Services
                         PackageHardwares = new List<PackageHardware>()
                     };
 
-                    _appDbContext.Packages.Add(packageDb);
+                    context.Packages.Add(packageDb);
                 }
                 else
                 {
                     packageDb.PackageName = package.PackageName;
                     packageDb.PackageVersion = package.PackageVersion;
 
-                    _appDbContext.PackageHardwares.RemoveRange(packageDb.PackageHardwares);
+                    context.PackageHardwares.RemoveRange(packageDb.PackageHardwares);
                     packageDb.PackageHardwares.Clear();
                 }
 
                 foreach (var hwId in package.HardwareIds)
                 {
-                    var hardware = await _appDbContext.Hardwares
+                    var hardware = await context.Hardwares
                         .FirstOrDefaultAsync(h => h.HardwareName == hwId);
 
                     if (hardware == null)
@@ -62,8 +64,8 @@ namespace ToradexSwLoader.Services
                         {
                             HardwareName = hwId
                         };
-                        _appDbContext.Hardwares.Add(hardware);
-                        await _appDbContext.SaveChangesAsync();
+                        context.Hardwares.Add(hardware);
+                        await context.SaveChangesAsync();
                     }
 
                     var packageHardware = new PackageHardware
@@ -74,7 +76,7 @@ namespace ToradexSwLoader.Services
 
                     packageDb.PackageHardwares.Add(packageHardware);
                 }
-                await _appDbContext.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
 
             return true;

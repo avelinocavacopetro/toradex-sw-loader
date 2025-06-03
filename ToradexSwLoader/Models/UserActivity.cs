@@ -7,7 +7,13 @@ namespace ToradexSwLoader.Models
     public class UserActivity
     {
         [Key]
-        public int UserId { get; set; }
+        public int UserActId { get; set; }
+
+        [Required]
+        public int UserLoginId { get; set; }
+
+        [ForeignKey(nameof(UserLoginId))]
+        public LoginLog LoginLog { get; set; }
 
         [Required]
         [MaxLength(500)]

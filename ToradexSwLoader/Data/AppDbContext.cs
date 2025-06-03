@@ -15,6 +15,7 @@ namespace ToradexSwLoader.Data
         public DbSet<PackageHardware> PackageHardwares { get; set; }
         public DbSet<Fleet> Fleets { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; } 
+        public DbSet<LoginLog> LoginLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

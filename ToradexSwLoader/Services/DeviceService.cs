@@ -6,12 +6,12 @@ namespace ToradexSwLoader.Services
 {
     public class DeviceService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
         private readonly TorizonService _torizonService;
 
-        public DeviceService(AppDbContext appDbContext, TorizonService torizonService)
+        public DeviceService(IDbContextFactory<AppDbContext> dbContextFactory, TorizonService torizonService)
         {
-            _appDbContext = appDbContext;
+            _dbContextFactory = dbContextFactory;
             _torizonService = torizonService;
         }
 
@@ -23,12 +23,14 @@ namespace ToradexSwLoader.Services
             var devices = await _torizonService.GetItemsAsync<Device>(apiUrl);
             if (devices == null) return false;
 
+            using var context = _dbContextFactory.CreateDbContext();
+
             foreach (var device in devices)
             {
-                var deviceDb = await _appDbContext.Devices.FindAsync(device.DeviceUuid);
+                var deviceDb = await context.Devices.FindAsync(device.DeviceUuid);
                 if (deviceDb == null)
                 {
-                    _appDbContext.Devices.Add(device);
+                    context.Devices.Add(device);
                 }
                 else
                 {
@@ -42,11 +44,11 @@ namespace ToradexSwLoader.Services
                     deviceDb.Notes = device.Notes;
                     deviceDb.Hibernated = device.Hibernated;
 
-                    _appDbContext.Devices.Update(deviceDb);
+                    context.Devices.Update(deviceDb);
                 }
             }
 
-            await _appDbContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
     }

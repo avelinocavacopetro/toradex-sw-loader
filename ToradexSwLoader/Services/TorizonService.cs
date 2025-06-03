@@ -59,9 +59,6 @@ namespace ToradexSwLoader.Services
                     PropertyNameCaseInsensitive = true
                 };
 
-                Console.WriteLine("RETORNADO PELO JSON");
-                Console.WriteLine(json);
-
                 return JsonSerializer.Deserialize<List<T>>(valuesElement.GetRawText(), options);
             }
 
