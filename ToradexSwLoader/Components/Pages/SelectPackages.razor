@@ -5,9 +5,10 @@
 @using ToradexSwLoader.Services
 @using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject PackageService PackageService
 @inject TorizonService TorizonService
+@inject LoginService LoginService
 @inject NavigationManager UriHelper
 @inject IJSRuntime JS
 @inject SweetAlertService Swal
@@ -16,9 +17,13 @@
 
 <PageTitle>Selecionar Software</PageTitle>
 
-<a href="" onclick="history.back()" class="text-black">
+<a href="#"
+   onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+   class="text-black"
+   style="cursor: @(isLoading ? "default" : "pointer");">
     <i class="bi bi-arrow-left fs-1"></i>
 </a>
+
 
 <h3 style="text-align: center;">Selecionar Software</h3>
 <h5 style="text-align: center;">Dispositivo: @selectedDeviceName</h5>
@@ -94,6 +99,40 @@ else
     private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
     private string state = "docker-compose";
     private string selectedPackageName;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        totalPackages = await context.Packages
+                                     .Include(p => p.PackageHardwares)
+                                     .ThenInclude(ph => ph.Hardware)
+                                     .ToListAsync();
+
+        UpdatePage();
+
+        var importTask = Task.Run(async () =>
+        {
+            var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
+            bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
+            return imported;
+        });
+
+        bool importResult = await importTask;
+
+        if (importResult)
+        {
+            using var newContext = DbContextFactory.CreateDbContext();
+            totalPackages = await newContext.Packages
+                                            .Include(p => p.PackageHardwares)
+                                            .ThenInclude(ph => ph.Hardware)
+                                            .ToListAsync();
+            UpdatePage();
+        }
+
+        isLoading = false;
+    }
+
 
     private void SelectRow(Package package)
     {
@@ -103,16 +142,19 @@ else
 
     private async Task OnClick()
     {
+        using var context = DbContextFactory.CreateDbContext();
+
         if (selectedPackage != null)
         {
             var userAct = new UserActivity
             {
-                ActMessage = $"Colaborador selecionou o software -> Id: {selectedPackage.PackageId} | Nome: {selectedPackage.PackageName}",
+                UserLoginId = LoginService.CurrentLoginId,
+                ActMessage = $"Colaborador selecionou o software: Nome: {selectedPackage.PackageName} | Versão: {selectedPackage.PackageVersion}",
                 ActTimeStamp = DateTime.Now
             };
 
-            DbContext.UserActivities.Add(userAct);
-            await DbContext.SaveChangesAsync();
+            context.UserActivities.Add(userAct);
+            await context.SaveChangesAsync();
 
             UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}");
         }
@@ -130,27 +172,6 @@ else
     private string GetRowClass(Package package)
     {
         return selectedPackage == package ? "table-primary" : string.Empty;
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
-
-        bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
-
-        if (imported)
-        {
-            totalPackages = await DbContext.Packages
-                                            .Include(p => p.PackageHardwares)
-                                            .ThenInclude(ph => ph.Hardware)
-                                            .ToListAsync();
-        }
-        else
-        {
-            totalPackages = new List<Package>();
-        }
-
-        UpdatePage();
     }
 
     private void UpdatePage()

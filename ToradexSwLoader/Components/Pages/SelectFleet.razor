@@ -5,13 +5,16 @@
 @using ToradexSwLoader.Services
 @using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject FleetService FleetService
 
 <PageTitle>Selecionar Frota</PageTitle>
 
-<a href="" onclick="history.back()" class="text-black">
+<a href="#"
+   onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+   class="text-black"
+   style="cursor: @(isLoading ? "default" : "pointer");">
     <i class="bi bi-arrow-left fs-1"></i>
 </a>
 
@@ -48,20 +51,32 @@
 
 @code {
     private List<Fleet> fleets = new List<Fleet>();
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        var fleetUrl = "https://app.torizon.io/api/v2beta/fleets";
+        using var context = DbContextFactory.CreateDbContext();
+        fleets = await context.Fleets.ToListAsync();
 
-        var imported = await FleetService.ImportFleetsFromApiAsync(fleetUrl);
+        StateHasChanged();
 
-        if (imported)
+        var importTask = Task.Run(async () =>
         {
-            fleets = await DbContext.Fleets.ToListAsync();
-        }
-        else
+            var fleetUrl = "https://app.torizon.io/api/v2beta/fleets";
+            bool imported = await FleetService.ImportFleetsFromApiAsync(fleetUrl);
+            return imported;
+        });
+
+        bool importResult = await importTask;
+
+        if (importResult)
         {
-            fleets = new List<Fleet>();
+            using var newContext = DbContextFactory.CreateDbContext();
+            fleets = await newContext.Fleets.ToListAsync();
+            StateHasChanged();
         }
+
+        isLoading = false;
     }
 }
+

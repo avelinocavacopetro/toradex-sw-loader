@@ -1,16 +1,17 @@
-﻿using ToradexSwLoader.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using ToradexSwLoader.Data;
 using ToradexSwLoader.Models;
 
 namespace ToradexSwLoader.Services
 {
     public class FleetService
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
         private readonly TorizonService _torizonService;
 
-        public FleetService(AppDbContext appDbContext, TorizonService torizonService)
+        public FleetService(IDbContextFactory<AppDbContext> dbContextFactory, TorizonService torizonService)
         {
-            _appDbContext = appDbContext;
+            _dbContextFactory = dbContextFactory;
             _torizonService = torizonService;
         }
 
@@ -22,6 +23,8 @@ namespace ToradexSwLoader.Services
             var fleets = await _torizonService.GetItemsAsync<Fleet>(apiUrl);
             if (fleets == null) return false;
 
+            using var context = _dbContextFactory.CreateDbContext();
+
             foreach (var fleet in fleets)
             {
                 if (string.IsNullOrWhiteSpace(fleet.FleetName))
@@ -29,10 +32,10 @@ namespace ToradexSwLoader.Services
                     throw new Exception($"Fleet com Id {fleet.Id} tem FleetName nulo ou vazio!");
                 }
 
-                var fleetDb = await _appDbContext.Fleets.FindAsync(fleet.Id);
+                var fleetDb = await context.Fleets.FindAsync(fleet.Id);
                 if (fleetDb == null)
                 {
-                    _appDbContext.Fleets.Add(fleet);
+                    context.Fleets.Add(fleet);
                 }
                 else
                 {
@@ -42,11 +45,11 @@ namespace ToradexSwLoader.Services
                     fleetDb.FleetType = fleet.FleetType;
                     fleetDb.Expression = fleet.Expression;
 
-                    _appDbContext.Fleets.Update(fleetDb);
+                    context.Fleets.Update(fleetDb);
                 }
             }
 
-            await _appDbContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
     }
