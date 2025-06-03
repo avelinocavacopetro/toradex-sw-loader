@@ -17,43 +17,51 @@
 
 <PageTitle>Selecionar Software</PageTitle>
 
-<a href="#"
-   onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-   class="text-black"
-   style="cursor: @(isLoading ? "default" : "pointer");">
-    <i class="bi bi-arrow-left fs-1"></i>
-</a>
-
-
-<h3 style="text-align: center;">Selecionar Software</h3>
-<h5 style="text-align: center;">Dispositivo: @selectedDeviceName</h5>
-<br />
-<br />
-<br />
-
-<div class="d-flex justify-content-end pe-5">
-    <div class="d-flex justify-content-between align-items-center gap-3">
-        <span>@actualPage - @totalPages de @totalPages</span>
-        <div class="d-flex gap-2">
-            <button class="btn custom-outline-button btn-lg"
-                    @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                &lt;
-            </button>
-
-            <button class="btn custom-outline-button btn-lg"
-                    @onclick="NextPage" disabled="@(!CanGoNext)">
-                &gt;
-            </button>
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
         </div>
     </div>
-</div>
 
-@if (totalPackages == null)
-{
-    <p><em>A carregar...</em></p>
 }
 else
 {
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
+
+
+    <h3 style="text-align: center;">Selecionar Software</h3>
+    <h5 style="text-align: center;">Dispositivo: @selectedDeviceName</h5>
+    <br />
+    <br />
+    <br />
+
+    <div class="d-flex justify-content-end pe-5">
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>@actualPage - @totalPages de @totalPages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextPage" disabled="@(!CanGoNext)">
+                    &gt;
+                </button>
+            </div>
+        </div>
+    </div>
+
     <table class="table custom-table1 package-table mt-5">
         <thead>
             <tr>
@@ -79,11 +87,21 @@ else
             }
         </tbody>
     </table>
+
+    <div class="text-center fixed-bottom pb-5">
+        <button class="btn btn-color btn-lg" @onclick="OnClick">Instalar</button>
+    </div>
 }
 
-<div class="text-center fixed-bottom pb-5">
-    <button class="btn btn-color btn-lg" @onclick="OnClick">Instalar</button>
-</div>
+<style>
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        min-height: 80vh;
+    }
+</style>
 
 @code {
     [Parameter]
