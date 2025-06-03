@@ -132,21 +132,37 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=100&offset=0";
+        // var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=100&offset=0";
 
-        bool imported = await DeviceService.ImportDevicesFromApiAsync(devicesUrl);
+        // bool imported = await DeviceService.ImportDevicesFromApiAsync(devicesUrl);
 
-        if (imported)
-        {
-            originalDevices = await DbContext.Devices.ToListAsync();
-            devices = new List<Device>(originalDevices);
-        }
-        else
-        {
-            originalDevices = new List<Device>();
-        }
+        // if (imported)
+        // {
+        //     originalDevices = await DbContext.Devices.ToListAsync();
+        //     devices = new List<Device>(originalDevices);
+        // }
+        // else
+        // {
+        //     originalDevices = new List<Device>();
+        // }
 
+        // UpdatePage();
+
+        originalDevices = await DbContext.Devices.ToListAsync();
+        devices = new List<Device>(originalDevices);
         UpdatePage();
+
+        _ = Task.Run(async () =>
+        {
+            var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=100&offset=0";
+            bool imported = await DeviceService.ImportDevicesFromApiAsync(devicesUrl);
+            if (imported)
+            {
+                originalDevices = await DbContext.Devices.ToListAsync();
+                devices = new List<Device>(originalDevices);
+                await InvokeAsync(UpdatePage);
+            }
+        });
     }
 
     private void UpdatePage()

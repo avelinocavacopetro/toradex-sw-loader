@@ -127,23 +127,43 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
+        // var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
 
-        bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
+        // bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
 
-        if (imported)
-        {
-            totalPackages = await DbContext.Packages
-                                            .Include(p => p.PackageHardwares)
-                                            .ThenInclude(ph => ph.Hardware)
-                                            .ToListAsync();
-        }
-        else
-        {
-            totalPackages = new List<Package>();
-        }
+        // if (imported)
+        // {
+        //     totalPackages = await DbContext.Packages
+        //                                     .Include(p => p.PackageHardwares)
+        //                                     .ThenInclude(ph => ph.Hardware)
+        //                                     .ToListAsync();
+        // }
+        // else
+        // {
+        //     totalPackages = new List<Package>();
+        // }
 
+        // UpdatePage();
+
+        totalPackages = await DbContext.Packages
+                                             .Include(p => p.PackageHardwares)
+                                             .ThenInclude(ph => ph.Hardware)
+                                             .ToListAsync();
         UpdatePage();
+
+        _ = Task.Run(async () =>
+        {
+            var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
+            bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
+            if (imported)
+            {
+                totalPackages = await DbContext.Packages
+                                             .Include(p => p.PackageHardwares)
+                                             .ThenInclude(ph => ph.Hardware)
+                                             .ToListAsync();
+                await InvokeAsync(UpdatePage);
+            }
+        });
     }
 
     private void UpdatePage()
