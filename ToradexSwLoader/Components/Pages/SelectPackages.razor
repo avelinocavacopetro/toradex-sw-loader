@@ -16,7 +16,6 @@
 
 <PageTitle>Selecionar Software</PageTitle>
 
-
 <a href="" onclick="history.back()" class="text-black">
     <i class="bi bi-arrow-left fs-1"></i>
 </a>
@@ -90,7 +89,6 @@ else
     private List<Package> paginatedPackages = new List<Package>();
     private Package? selectedPackage;
 
-
     private int actualPage = 1;
     private int packagesPerPage = 5;
     private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
@@ -107,6 +105,15 @@ else
     {
         if (selectedPackage != null)
         {
+            var userAct = new UserActivity
+            {
+                ActMessage = $"Colaborador selecionou o software -> Id: {selectedPackage.PackageId} | Nome: {selectedPackage.PackageName}",
+                ActTimeStamp = DateTime.Now
+            };
+
+            DbContext.UserActivities.Add(userAct);
+            await DbContext.SaveChangesAsync();
+
             UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}");
         }
         else
