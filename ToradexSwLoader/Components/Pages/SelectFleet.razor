@@ -51,30 +51,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // var fleetUrl = "https://app.torizon.io/api/v2beta/fleets";
+        var fleetUrl = "https://app.torizon.io/api/v2beta/fleets";
 
-        // var imported = await FleetService.ImportFleetsFromApiAsync(fleetUrl);
+        var imported = await FleetService.ImportFleetsFromApiAsync(fleetUrl);
 
-        // if (imported)
-        // {
-        //     fleets = await DbContext.Fleets.ToListAsync();
-        // }
-        // else
-        // {
-        //     fleets = new List<Fleet>();
-        // }
-
-        fleets = await DbContext.Fleets.ToListAsync();
-
-        _ = Task.Run(async () =>
+        if (imported)
         {
-            var fleetUrl = "https://app.torizon.io/api/v2beta/fleets";
-            var imported = await FleetService.ImportFleetsFromApiAsync(fleetUrl);
-            if (imported)
-            {
-                fleets = await DbContext.Fleets.ToListAsync();
-                await InvokeAsync(StateHasChanged);
-            }
-        });
+            fleets = await DbContext.Fleets.ToListAsync();
+        }
+        else
+        {
+            fleets = new List<Fleet>();
+        }
     }
 }
