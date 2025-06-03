@@ -1,4 +1,4 @@
-﻿@page "/selectFleet"
+@page "/selectFleet/{selectedDeviceName}/{selectedPackageName}"
 
 @using ToradexSwLoader.Data
 @using ToradexSwLoader.Models
@@ -8,6 +8,9 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject FleetService FleetService
+@inject NavigationManager UriHelper
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
 
 <PageTitle>Selecionar Frota</PageTitle>
 
@@ -18,27 +21,25 @@
     <i class="bi bi-arrow-left fs-1"></i>
 </a>
 
-<h3 style="text-align: center;">Selecionar Frota</h3>
+<h3 class="text-center pb-5">Selecionar Frota</h3>
 <br />
 <br />
 
 <div class="grid-container">
     @foreach (var fleet in fleets)
     {
-        <div class="grid-item">@fleet.FleetName</div>
+        <div class="grid-item" @onclick="() => SelectFleetName(fleet)">@fleet.FleetName</div>
     }
 </div>
 
 <style>
-    /* Container for the grid */
     .grid-container {
         display: grid;
-        grid-template-columns: repeat(4, 1fr); /* 3 equal columns */
-        gap: 25px; /* Space between grid items */
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px;
         padding: 10px;
     }
 
-    /* Individual grid items */
     .grid-item {
         background-color: #4CAF50;
         color: white;
@@ -50,7 +51,14 @@
 </style>
 
 @code {
+    [Parameter]
+    public string selectedDeviceName { get; set; }
+
+    [Parameter]
+    public string selectedPackageName { get; set; }
     private List<Fleet> fleets = new List<Fleet>();
+    private Fleet? selectedFleet;
+    private string selectedFleetName;
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -77,6 +85,39 @@
         }
 
         isLoading = false;
+    }
+
+    private void SelectFleetName(Fleet fleet)
+    {
+        selectedFleet = fleet;
+        selectedFleetName = fleet.FleetName;
+        UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
+    }
+
+    private async Task OnClick()
+    {
+        if (selectedFleet != null)
+        {
+            // var userAct = new UserActivity
+            // {
+            //     ActMessage = $"Colaborador selecionou o software -> Id: {selectedFleet.PackageId} | Nome: {selectedFleet.PackageName}",
+            //     ActTimeStamp = DateTime.Now
+            // };
+
+            // DbContext.UserActivities.Add(userAct);
+            // await DbContext.SaveChangesAsync();
+
+            UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                title = "Selecione uma frota!",
+                icon = "warning",
+                confirmButtonColor = "#0B5120"
+            });
+        }
     }
 }
 
