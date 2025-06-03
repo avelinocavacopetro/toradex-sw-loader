@@ -5,9 +5,10 @@
 @using ToradexSwLoader.Services
 @using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
+@inject LoginService LoginService
 @inject NavigationManager UriHelper
 @inject IJSRuntime JS
 @inject SweetAlertService Swal
@@ -101,6 +102,15 @@ else
     private string state = "Error";
     private string selectedDeviceName;
 
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        totalDevices = await context.Devices.Where(d => d.DeviceStatus.Equals(state)).ToListAsync();
+
+        UpdatePage();
+    }
+
     private void SelectRow(Device device)
     {
         selectedDevice = device;
@@ -111,14 +121,17 @@ else
     {
         if (selectedDevice != null)
         {
+            using var context = DbContextFactory.CreateDbContext();
+
             var userAct = new UserActivity
                 {
+                    UserLoginId = LoginService.CurrentLoginId,
                     ActMessage = $"Colaborador selecionou o dispositivo: Nome = {selectedDevice.DeviceName}",
                     ActTimeStamp = DateTime.Now
                 };
 
-            DbContext.UserActivities.Add(userAct);
-            await DbContext.SaveChangesAsync();
+            context.UserActivities.Add(userAct);
+            await context.SaveChangesAsync();
 
             UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDeviceName)}");
         }
@@ -136,14 +149,6 @@ else
     private string GetRowClass(Device device)
     {
         return selectedDevice == device ? "table-primary" : string.Empty;
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-
-        totalDevices = await DbContext.Devices.Where(d => d.DeviceStatus.Equals(state)).ToListAsync();
-
-        UpdatePage();
     }
 
     private void UpdatePage()

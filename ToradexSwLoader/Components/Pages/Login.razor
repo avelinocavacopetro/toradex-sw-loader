@@ -1,8 +1,12 @@
 ﻿@page "/"
 
 @using System.ComponentModel.DataAnnotations
-@inject NavigationManager UriHelper
 @using ToradexSwLoader.Data
+@using ToradexSwLoader.Models
+@using ToradexSwLoader.Services
+@inject NavigationManager UriHelper
+@inject AppDbContext DbContext
+@inject LoginService LoginService
 
 <PageTitle>Log in</PageTitle>
 
@@ -34,7 +38,7 @@
             </div>
             <br />
             <div>
-                <a href="/home" class="w-100 btn btn-custom btn-lg btn-primary">Log in</a>
+                <a href="/home" class="w-100 btn btn-custom btn-lg btn-primary" @onclick="RegisterLogin">Log in</a>
             </div>
         </section>
     </div>
@@ -53,3 +57,19 @@
         color: white;
     }
 </style>
+
+@code {
+    private async Task RegisterLogin()
+    {
+        var loginLog = new LoginLog
+        {
+            Email = "teste.teste@petrotec.com",
+            LoginTimeStamp = DateTime.Now
+        };
+
+        DbContext.LoginLogs.Add(loginLog);
+        await DbContext.SaveChangesAsync();
+
+        LoginService.SetLogin(loginLog.LoginId, loginLog.Email);
+    }
+}

@@ -11,7 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options => 
+builder.Services.AddDbContextFactory<AppDbContext>(options => 
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)
 ));
 
@@ -20,6 +20,7 @@ builder.Services.AddHttpClient<TorizonService>();
 builder.Services.AddScoped<DeviceService>();
 builder.Services.AddScoped<PackageService>();
 builder.Services.AddScoped<FleetService>();
+builder.Services.AddScoped<LoginService>();
 builder.Services.AddSweetAlert2();
 
 var app = builder.Build();
