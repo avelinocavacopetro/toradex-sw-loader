@@ -1,0 +1,93 @@
+﻿@page "/customization/{selectedDeviceName}/{selectedPackageName}/{selectedFleet}"
+
+<PageTitle>Customizar Placa</PageTitle>
+
+<h3 class="text-center py-4">Placa Final</h3>
+
+<h5 style="text-align: center;">Dispositivo: @selectedDeviceName </h5>
+<h5 style="text-align: center;">Software: @selectedPackageName </h5>
+<h5 style="text-align: center;">Frota: @selectedFleet </h5>
+
+<div class="center">
+    @if (!isEditing)
+    {
+        <h4 class="text-center px-5">
+            @finalBoard
+            <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
+        </h4>
+    }
+    else
+    {
+        <div class="edit-form">
+            <input type="text" @bind="finalBoard" class="form-control w-50 mx-auto" />
+            <button class="btn btn-color mt-2" @onclick="SaveName">Salvar</button>
+            <button class="btn btn-danger mt-2 ms-2" @onclick="CancelEdit">Cancelar</button>
+        </div>
+    }
+</div>
+
+<div class="text-center fixed-bottom pb-5">
+    <a href="/home">
+        <button class="btn btn-color btn-lg">OK</button>
+    </a>
+</div>
+
+<style>
+    .edit-form{
+        width: 90vw;
+    }
+
+    .bi-pencil-square {
+        font-size: 30px;
+    }
+
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        min-height: 50vh;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string selectedDeviceName { get; set; }
+
+    [Parameter]
+    public string selectedPackageName { get; set; }
+
+    [Parameter]
+    public string selectedFleet { get; set; }
+
+    private string finalBoard;
+
+    private bool isEditing = false;
+
+    private string originalFinalBoard;
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrEmpty(finalBoard))
+        {
+            finalBoard = $"{selectedDeviceName}_{selectedPackageName}_{selectedFleet}";
+        }
+    }
+
+    private void ChangeName()
+    {
+        originalFinalBoard = finalBoard;
+        isEditing = true;
+    }
+
+    private void SaveName()
+    {
+        isEditing = false;
+    }
+
+    private void CancelEdit()
+    {
+        finalBoard = originalFinalBoard;
+        isEditing = false;
+    }
+}

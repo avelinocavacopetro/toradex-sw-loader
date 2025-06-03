@@ -20,7 +20,7 @@
     <i class="bi bi-arrow-left fs-1"></i>
 </a>
 
-<h3 style="text-align: center;">Selecionar Equipamento</h3>
+<h3 class="text-center pb-5">Selecionar Equipamento</h3>
 <br />
 <br />
 <br />
@@ -111,14 +111,14 @@ else
     {
         if (selectedDevice != null)
         {
-            var userAct = new UserActivity
-                {
-                    ActMessage = $"Colaborador selecionou o dispositivo: Nome = {selectedDevice.DeviceName}",
-                    ActTimeStamp = DateTime.Now
-                };
+            // var userAct = new UserActivity
+            //     {
+            //         ActMessage = $"Colaborador selecionou o dispositivo: Nome = {selectedDevice.DeviceName}",
+            //         ActTimeStamp = DateTime.Now
+            //     };
 
-            DbContext.UserActivities.Add(userAct);
-            await DbContext.SaveChangesAsync();
+            // DbContext.UserActivities.Add(userAct);
+            // await DbContext.SaveChangesAsync();
 
             UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDeviceName)}");
         }

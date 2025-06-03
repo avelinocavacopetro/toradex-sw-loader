@@ -60,7 +60,7 @@
 
     protected override void OnInitialized()
     {
-        currentTime = DateTime.Now.ToString("HH:mm");
+        currentTime = DateTime.Now.ToString("HH:mm:ss");
 
         timer = new System.Timers.Timer(1000);
         timer.Elapsed += UpdateTime;
@@ -72,7 +72,7 @@
     {
         InvokeAsync(() =>
         {
-            currentTime = DateTime.Now.ToString("HH:mm");
+            currentTime = DateTime.Now.ToString("HH:mm:ss");
             StateHasChanged();
         });
     }
