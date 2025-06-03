@@ -101,7 +101,6 @@ else
     {
         selectedPackage = package;
         selectedPackageName = package.PackageName;
-        Console.WriteLine($"Saved Item: ID = {package.PackageId}, Name = {package.PackageName}");
     }
 
     private async Task OnClick()
@@ -155,8 +154,6 @@ else
                                  .ToList();
         packages = totalPackages
                                .ToList();
-
-        Console.WriteLine(packages);
     }
 
     private void NextPage()
