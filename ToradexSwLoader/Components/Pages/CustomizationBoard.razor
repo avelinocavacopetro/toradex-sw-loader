@@ -19,6 +19,12 @@
             @finalBoard
             <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
         </h4>
+
+        <div class="text-center fixed-bottom pb-5">
+            <a href="/home">
+                <button class="btn btn-color btn-lg">OK</button>
+            </a>
+        </div>
     }
     else
     {
@@ -28,12 +34,6 @@
             <button class="btn btn-danger mt-2 ms-2" @onclick="CancelEdit">Cancelar</button>
         </div>
     }
-</div>
-
-<div class="text-center fixed-bottom pb-5">
-    <a href="/home">
-        <button class="btn btn-color btn-lg">OK</button>
-    </a>
 </div>
 
 <style>

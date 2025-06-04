@@ -1,5 +1,10 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.EntityFrameworkCore
+@using ToradexSwLoader.Data
+@using ToradexSwLoader.Services
+@inherits LayoutComponentBase
 @inject NavigationManager Navigation
+@inject LoginService LoginService
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 
 <div class="page">
 
@@ -22,7 +27,7 @@
             </article>
         } else{
              <div class="top-row px-4 d-flex justify-content-between">
-                <span>Nome Colaborador</span>
+                <span>@username</span>
                 <span>@currentTime</span>
                 @if (IsCurrentPage("/home"))
                 {
@@ -45,11 +50,15 @@
 <style>
     .logout, .logout:hover {
         text-decoration: none !important;
-        color: black;
+        color: white;
     }
 
     span, .logout, .nav-link{
         font-size: 20px;
+    }
+
+    .top-row {
+        color:white;
     }
 </style>
 
@@ -58,7 +67,9 @@
     private string currentTime;
     private System.Timers.Timer timer;
 
-    protected override void OnInitialized()
+    private string username;
+
+    protected override async Task OnInitializedAsync()
     {
         currentTime = DateTime.Now.ToString("HH:mm:ss");
 
@@ -66,6 +77,43 @@
         timer.Elapsed += UpdateTime;
         timer.AutoReset = true;
         timer.Enabled = true;
+
+        username = GetUserNameFromEmail(LoginService.Email);
+        LoginService.OnLoginChanged += OnLoginChanged;
+    }
+
+    private string GetUserNameFromEmail(string email)
+    {
+        if (string.IsNullOrEmpty(email))
+            return string.Empty;
+
+        var atIndex = email.IndexOf('@');
+        if (atIndex > 0)
+        {
+            var usernamePart = email.Substring(0, atIndex);
+            
+            var parts = usernamePart.Split('.');
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(parts[i]))
+                {
+                    parts[i] = char.ToUpper(parts[i][0]) + parts[i].Substring(1).ToLower();
+                }
+            }
+
+            return string.Join(" ", parts);
+        }
+
+        return email;
+    }
+
+
+
+    private void OnLoginChanged()
+    {
+        username = GetUserNameFromEmail(LoginService.Email);
+        InvokeAsync(StateHasChanged);
     }
 
     private void UpdateTime(object sender, System.Timers.ElapsedEventArgs e)
@@ -80,6 +128,7 @@
     public void Dispose()
     {
         timer?.Dispose();
+        LoginService.OnLoginChanged -= OnLoginChanged;
     }
 
     private bool IsCurrentPage(string page)
