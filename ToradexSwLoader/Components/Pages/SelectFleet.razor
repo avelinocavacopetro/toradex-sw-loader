@@ -11,6 +11,7 @@
 @inject NavigationManager UriHelper
 @inject IJSRuntime JS
 @inject SweetAlertService Swal
+@inject LoginService LoginService
 
 <PageTitle>Selecionar Frota</PageTitle>
 
@@ -87,36 +88,29 @@
         isLoading = false;
     }
 
-    private void SelectFleetName(Fleet fleet)
+    private async void SelectFleetName(Fleet fleet)
     {
         selectedFleet = fleet;
         selectedFleetName = fleet.FleetName;
-        UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
+        await OnClick();
     }
 
     private async Task OnClick()
     {
         if (selectedFleet != null)
         {
-            // var userAct = new UserActivity
-            // {
-            //     ActMessage = $"Colaborador selecionou o software -> Id: {selectedFleet.PackageId} | Nome: {selectedFleet.PackageName}",
-            //     ActTimeStamp = DateTime.Now
-            // };
+            using var context = DbContextFactory.CreateDbContext();
+            var userAct = new UserActivity
+            {
+                UserLoginId = LoginService.CurrentLoginId,
+                ActMessage = $"Colaborador selecionou a frota -> Nome: {selectedFleet.FleetName}",
+                ActTimeStamp = DateTime.Now
+            };
 
-            // DbContext.UserActivities.Add(userAct);
-            // await DbContext.SaveChangesAsync();
+            context.UserActivities.Add(userAct);
+            await context.SaveChangesAsync();
 
             UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
-        }
-        else
-        {
-            await JS.InvokeVoidAsync("Swal.fire", new
-            {
-                title = "Selecione uma frota!",
-                icon = "warning",
-                confirmButtonColor = "#0B5120"
-            });
         }
     }
 }

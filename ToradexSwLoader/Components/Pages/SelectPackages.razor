@@ -79,11 +79,14 @@ else
             }
         </tbody>
     </table>
+
+
+    <div class="text-center fixed-bottom pb-5">
+        <button class="btn btn-color btn-lg" @onclick="OnClick">Seguinte</button>
+    </div>
+
 }
 
-<div class="text-center fixed-bottom pb-5">
-    <button class="btn btn-color btn-lg" @onclick="OnClick">Instalar</button>
-</div>
 
 @code {
     [Parameter]
@@ -156,7 +159,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}");
+            UriHelper.NavigateTo($"/selectFleet/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}");
         }
         else
         {

@@ -1,4 +1,4 @@
-﻿@page "/charging/{selectedDeviceName}/{selectedPackageName}"
+﻿@page "/charging/{selectedDeviceName}/{selectedPackageName}/{selectedFleetName}"
 
 @inject NavigationManager UriHelper
 
@@ -63,8 +63,11 @@
 	[Parameter]
 	public string selectedPackageName { get; set; }
 
+	[Parameter]
+	public string selectedFleetName { get; set; }
+
 	private async Task OnClick()
 	{
-		UriHelper.NavigateTo($"/selectFleet/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}");
+		UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
 	}
 }
