@@ -19,7 +19,6 @@
     <img class="" style="height: 25vh;" src="images/PetrotecGroup_01.jpg" />
 </div>
 
-
 <br />
 <br />
 <br />
@@ -29,7 +28,7 @@
     <div class="col-md-4">
         <section>
             <div class="form-floating mb-3">
-                <input type="email" class="form-control custom-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <input type="email" class="form-control custom-input" @bind="inputEmail" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                 <label for="email" class="form-label">Email</label>
             </div>
             <div class="form-floating mb-3">
@@ -43,7 +42,6 @@
         </section>
     </div>
 </div>
-
 
 <style>
 
@@ -59,11 +57,13 @@
 </style>
 
 @code {
+    private string inputEmail;
+
     private async Task RegisterLogin()
     {
         var loginLog = new LoginLog
         {
-            Email = "teste.teste@petrotec.com",
+            Email = inputEmail,
             LoginTimeStamp = DateTime.Now
         };
 
