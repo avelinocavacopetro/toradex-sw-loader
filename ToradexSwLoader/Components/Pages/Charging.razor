@@ -1,6 +1,11 @@
-﻿@page "/charging/{selectedDeviceName}/{selectedPackageName}/{selectedFleetName}"
+﻿@page "/charging/{deviceId}/{packageId}/{fleetId}"
 
+@using Microsoft.EntityFrameworkCore
+@using ToradexSwLoader.Data
+@using ToradexSwLoader.Models
 @inject NavigationManager UriHelper
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+
 
 <PageTitle>Carregamento</PageTitle>
 
@@ -8,10 +13,14 @@
 	<i class="bi bi-arrow-left fs-1"></i>
 </a>
 
-<h3 style="text-align: center;">Estado do Carregamento</h3>
-<h5 style="text-align: center;">Dispositivo: @selectedDeviceName </h5>
-<h5 style="text-align: center;">Software: @selectedPackageName </h5>
-<h5 style="text-align: center;">Frota: @selectedFleetName </h5>
+@if (!isLoading)
+{
+	<h3 style="text-align: center;">Estado do Carregamento</h3>
+	<h5 style="text-align: center;">Dispositivo: @selectedDevice.DeviceName </h5>
+	<h5 style="text-align: center;">Software: @selectedPackage.PackageName </h5>
+	<h5 style="text-align: center;">Frota: @selectedFleet.FleetName </h5>
+}
+
 <br />
 <br />
 <br />
@@ -58,17 +67,33 @@
 </style>
 
 @code {
-	[Parameter]
-	public string selectedDeviceName { get; set; }
+	private bool isLoading = true;
 
 	[Parameter]
-	public string selectedPackageName { get; set; }
+	public string deviceId { get; set; }
+	private Device selectedDevice;
 
 	[Parameter]
-	public string selectedFleetName { get; set; }
+	public string packageId { get; set; }
+	private Package selectedPackage;
+
+	[Parameter]
+	public string fleetId { get; set; }
+	private Fleet selectedFleet;
+
+	protected override async Task OnInitializedAsync()
+	{
+		using var context = DbContextFactory.CreateDbContext();
+		selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+		selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == packageId);
+		selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
+
+		isLoading = false;
+	}
+
 
 	private async Task OnClick()
 	{
-		UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
+		UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(fleetId)}");
 	}
 }

@@ -1,4 +1,4 @@
-@page "/selectFleet/{selectedDeviceName}/{selectedPackageName}"
+@page "/selectFleet/{deviceId}/{packageId}"
 
 @using ToradexSwLoader.Data
 @using ToradexSwLoader.Models
@@ -77,13 +77,14 @@ else
 
 @code {
     [Parameter]
-    public string selectedDeviceName { get; set; }
-
+    public string deviceId { get; set; }
+    private Device selectedDevice;
     [Parameter]
-    public string selectedPackageName { get; set; }
+    public string packageId { get; set; }
+    private Package selectedPackage;
+
     private List<Fleet> fleets = new List<Fleet>();
     private Fleet? selectedFleet;
-    private string selectedFleetName;
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -95,6 +96,8 @@ else
 
         var importTask = Task.Run(async () =>
         {
+            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+            selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == packageId);
             var fleetUrl = "https://app.torizon.io/api/v2beta/fleets";
             bool imported = await FleetService.ImportFleetsFromApiAsync(fleetUrl);
             return imported;
@@ -115,7 +118,6 @@ else
     private async void SelectFleetName(Fleet fleet)
     {
         selectedFleet = fleet;
-        selectedFleetName = fleet.FleetName;
         await OnClick();
     }
 
@@ -134,7 +136,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
+            UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
         }
     }
 }

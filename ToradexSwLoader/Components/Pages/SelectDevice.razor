@@ -113,7 +113,6 @@ else
     private int devicesPerPage = 5;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
     private string state = "Error";
-    private string selectedDeviceName;
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,7 +128,6 @@ else
     private void SelectRow(Device device)
     {
         selectedDevice = device;
-        selectedDeviceName = device.DeviceName;
     }
 
     private async Task OnClick()
@@ -149,7 +147,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDeviceName)}");
+            UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDevice.DeviceId)}");
         }
         else
         {

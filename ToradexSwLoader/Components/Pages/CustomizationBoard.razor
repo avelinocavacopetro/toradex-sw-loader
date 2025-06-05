@@ -1,4 +1,9 @@
-﻿@page "/customization/{selectedDeviceName}/{selectedPackageName}/{selectedFleet}"
+﻿@page "/customization/{deviceId}/{packageId}/{fleetId}"
+@using ToradexSwLoader.Models
+@using Microsoft.EntityFrameworkCore
+@using ToradexSwLoader.Data
+@inject NavigationManager UriHelper
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 
 <PageTitle>Customizar Placa</PageTitle>
 
@@ -8,9 +13,12 @@
 
 <h3 class="text-center py-4">Placa Final</h3>
 
-<h5 style="text-align: center;">Dispositivo: @selectedDeviceName </h5>
-<h5 style="text-align: center;">Software: @selectedPackageName </h5>
-<h5 style="text-align: center;">Frota: @selectedFleet </h5>
+@if(!isLoading){
+    <h5 style="text-align: center;">Dispositivo: @selectedDevice.DeviceName </h5>
+    <h5 style="text-align: center;">Software: @selectedPackage.PackageId</h5>
+    <h5 style="text-align: center;">Frota: @selectedFleet.FleetName </h5>
+}
+
 
 <div class="center">
     @if (!isEditing)
@@ -55,14 +63,19 @@
 </style>
 
 @code {
-    [Parameter]
-    public string selectedDeviceName { get; set; }
+    private bool isLoading = true;
 
     [Parameter]
-    public string selectedPackageName { get; set; }
+    public string deviceId { get; set; }
+    private Device selectedDevice;
 
     [Parameter]
-    public string selectedFleet { get; set; }
+    public string packageId { get; set; }
+    private Package selectedPackage;
+
+    [Parameter]
+    public string fleetId { get; set; }
+    private Fleet selectedFleet;
 
     long serial;
 
@@ -72,11 +85,21 @@
 
     private string originalFinalBoard;
 
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+        selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == packageId);
+        selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
+
+        isLoading = false;
+    }
+
     protected override void OnParametersSet()
     {
         if (string.IsNullOrEmpty(finalBoard))
         {
-            finalBoard = $"{selectedDeviceName}_{selectedPackageName}_{selectedFleet}";
+            finalBoard = $"{selectedDevice.DeviceName}_{selectedPackage.PackageVersion}_{selectedFleet.FleetName}";
         }
     }
 
