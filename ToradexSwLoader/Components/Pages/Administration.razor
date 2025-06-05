@@ -1,0 +1,82 @@
+﻿@page "/administration"
+
+@using ToradexSwLoader.Services
+@inject TorizonService TorizonService
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<PageTitle>Administração</PageTitle>
+
+<a href="" onclick="history.back()" class="text-black">
+    <i class="bi bi-arrow-left fs-1"></i>
+</a>
+
+<h2 class="text-center pb-5">Administração</h2>
+
+<div class="col-md-4 px-5">
+    <EditForm Model="@this" OnValidSubmit="ConfirmAndSubmit">
+        <label for="NewSecret" class="form-label mb-2 custom-lbl">Novo Segredo</label>
+        <InputText type="password" @bind-Value="NewSecret" placeholder="Valor" class="form-control w-75 custom-field" />
+        <button type="submit" class="btn btn-color mt-2">Alterar</button>
+    </EditForm>
+</div>
+
+<style>
+    .custom-field{
+        height: 4vh;
+        font-size: 18px;
+    }
+
+    .custom-lbl, .btn-color{
+        font-size: 20px;
+    }
+
+</style>
+@code {
+    private string NewSecret;
+
+    private async Task HandleValidSubmit()
+    {
+        await TorizonService.ChangeSecretAndSave(NewSecret);
+
+        await JS.InvokeVoidAsync("Swal.fire", new
+        {
+            title = "Segredo alterado com sucesso!",
+            icon = "success",
+            confirmButtonColor = "#0B5120"
+        });
+    }
+
+
+    private async Task ConfirmAndSubmit()
+    {
+        var result = await JS.InvokeAsync<JSResult>("Swal.fire", new
+        {
+            title = "Tem a certeza?",
+            icon = "warning",
+            showCancelButton = true,
+            confirmButtonText = "Sim, alterar!",
+            confirmButtonColor = "#0B5120",
+            cancelButtonText = "Cancelar"
+        });
+
+        if (result.IsConfirmed)
+        {
+            await TorizonService.ChangeSecretAndSave(NewSecret);
+
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                text = "Segredo alterado com sucesso!",
+                icon = "success",
+                confirmButtonColor = "#0B5120"
+            });
+        }
+    }
+
+    public class JSResult
+    {
+        public bool IsConfirmed { get; set; }
+    }
+}

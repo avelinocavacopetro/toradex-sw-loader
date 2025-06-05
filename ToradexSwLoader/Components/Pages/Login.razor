@@ -24,6 +24,17 @@
 <br />
 <br />
 
+<div class="d-flex justify-content-center full-height pb-2">
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show w-25" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+</div>
+
+
 <div class="d-flex justify-content-center align-items-center full-height">
     <div class="col-md-4">
         <section>
@@ -37,7 +48,7 @@
             </div>
             <br />
             <div>
-                <a href="/home" class="w-100 btn btn-custom btn-lg btn-primary" @onclick="RegisterLogin">Log in</a>
+                <a class="w-100 btn btn-custom btn-lg btn-primary" @onclick="RegisterLogin">Log in</a>
             </div>
         </section>
     </div>
@@ -58,18 +69,50 @@
 
 @code {
     private string inputEmail;
+    private bool isLoading = true;
+    private string errorMessage;
+
 
     private async Task RegisterLogin()
     {
-        var loginLog = new LoginLog
+        errorMessage = null;
+        @if (!string.IsNullOrWhiteSpace(inputEmail))
         {
-            Email = inputEmail,
-            LoginTimeStamp = DateTime.Now
-        };
+            if (inputEmail.Contains("petrotec.com"))
+            {
+                
 
-        DbContext.LoginLogs.Add(loginLog);
-        await DbContext.SaveChangesAsync();
+                var loginLog = new LoginLog
+            {
+                Email = inputEmail,
+                LoginTimeStamp = DateTime.Now
+            };
 
-        LoginService.SetLogin(loginLog.LoginId, loginLog.Email);
+                DbContext.LoginLogs.Add(loginLog);
+                await DbContext.SaveChangesAsync();
+
+                LoginService.SetLogin(loginLog.LoginId, loginLog.Email);
+
+                isLoading = false;
+
+                EnterLogin();
+
+            } else
+            {
+                errorMessage = "O email inserido não é petrotec.com";
+            }
+        }
+        else
+        {
+            errorMessage = "O email inserido está vazio";
+        }
+    }
+
+    private void EnterLogin()
+    {
+        if (!isLoading)
+        {
+            UriHelper.NavigateTo($"/home");
+        }
     }
 }

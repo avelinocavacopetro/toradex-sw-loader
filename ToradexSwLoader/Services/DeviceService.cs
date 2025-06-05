@@ -34,7 +34,6 @@ namespace ToradexSwLoader.Services
                 }
                 else
                 {
-                    // Atualiza campos
                     deviceDb.DeviceName = device.DeviceName;
                     deviceDb.DeviceId = device.DeviceId;
                     deviceDb.LastSeen = device.LastSeen;

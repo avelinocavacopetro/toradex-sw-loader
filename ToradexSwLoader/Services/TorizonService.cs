@@ -64,5 +64,45 @@ namespace ToradexSwLoader.Services
 
             return null;
         }
+
+        public async Task ChangeSecretAndSave(string newSecret)
+        {
+            try
+            {
+                var filePath = "appsettings.json";
+
+                if (!File.Exists(filePath))
+                    throw new FileNotFoundException("O arquivo appsettings.json não foi encontrado.");
+
+                var json = await File.ReadAllTextAsync(filePath);
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement.Clone();
+
+                var jsonObj = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+
+                if (jsonObj is null || !jsonObj.TryGetValue("Torizon", out var torizonSectionRaw))
+                    throw new InvalidOperationException("Configuração 'Torizon' não encontrada.");
+
+                var torizonJson = torizonSectionRaw.ToString();
+                var torizonSection = JsonSerializer.Deserialize<Dictionary<string, string>>(torizonJson ?? "{}");
+
+                if (torizonSection == null)
+                    throw new InvalidOperationException("Estrutura 'Torizon' inválida.");
+
+                torizonSection["Secret"] = newSecret;
+
+                jsonObj["Torizon"] = torizonSection;
+
+                var updatedJson = JsonSerializer.Serialize(jsonObj, new JsonSerializerOptions { WriteIndented = true });
+                await File.WriteAllTextAsync(filePath, updatedJson);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Erro ao alterar o segredo: {ex.Message}");
+                throw; 
+            }
+        }
+
+
     }
 }
