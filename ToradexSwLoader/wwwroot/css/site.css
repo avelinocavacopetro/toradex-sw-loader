@@ -1,0 +1,227 @@
+﻿/* 
+    CSS para a página de seleção de frotas
+*/
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+    padding: 10px;
+}
+
+.grid-item {
+    background-color: #0c6527;
+    color: white;
+    text-align: center;
+    display: flex;
+    align-items: center; 
+    justify-content: center; 
+
+    padding: 30px 15px;
+    font-size: 22px;
+    border-radius: 5px;
+    white-space: normal;
+}
+
+.pag-bts {
+    visibility: hidden;
+}
+
+/*
+    CSS para as tabelas e seus respetivos elementos
+*/
+
+/*
+    Tabela da página dos dispositivos, de seleção de dispositivos e pacotes
+*/
+.custom-table {
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.custom-table td {
+    padding: 8px;
+}
+
+.custom-table1 {
+    border-spacing: 0 10px;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.custom-table1 tbody {
+    vertical-align: initial !important;
+}
+
+.custom-table1 td {
+    padding: 10px;
+}
+
+.package-table td {
+    padding: 15px;
+}
+
+/*
+    CSS para as caixas de estado dos dispositivos
+*/
+.status-box {
+    display: inline-block;
+    width: 120px;
+    text-align: center;
+    padding: 6px 10px;
+    border: 2px solid;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.status-uptodate {
+    border-color: #63AA5B;
+}
+
+.status-updatepending {
+    border-color: #0092ff;
+}
+
+.status-error {
+    border-color: #D90000;
+}
+
+.status-notseen {
+    border-color: #B0B0B0;
+}
+
+.status-outdated {
+    border-color: #FFA500;
+}
+
+.status-default {
+    border-color: #000000;
+}
+
+/*
+    CSS para a página de customização das placas
+*/
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.bi-pencil-square {
+    font-size: 28px;
+    color: #0c6527;
+    transition: transform 0.2s ease;
+}
+
+.bi-pencil-square:hover {
+    transform: scale(1.2);
+    color: #06501c;
+}
+
+.custom-h4 {
+    background-color: #f1f1f1;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 90vw;
+    word-break: break-word;
+    justify-content: center;
+}
+
+.custom-input {
+    font-size: 1.2rem;
+    padding: 0.75rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+/*
+    CSS para classes globais
+*/
+td, th {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: ellipsis;
+}
+
+.custom-outline-button {
+    background-color: white;
+    color: #6c757d;
+    border: 1px solid #6c757d;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.custom-outline-button:hover {
+    background-color: darkgrey;
+    color: white;
+}
+
+.custom-outline-button:active {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 80vh;
+}
+
+.center-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 50vh;
+}
+
+.swal2-title,
+.swal2-html-container {
+    color: black !important;
+}
+
+.btn-color {
+    background-color: #0B5120;
+    color: white;
+}
+
+.btn-color:hover {
+    background-color: #0B5120;
+    color: white;
+}
+
+@media (max-width: 1024px) {
+    /*
+        Media Querie para a páginad de seleção de frotas
+    */
+    .pag-bts {
+        visibility: visible;
+    }
+
+    .grid-container {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(2, 150px);
+        gap: 15px;
+    }
+
+    .grid-item {
+        font-size: 22px;
+        padding: 15px;
+    }
+}

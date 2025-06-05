@@ -1,0 +1,36 @@
+﻿@using ToradexSwLoader.Services
+@inject WindowService WindowService
+@inject IJSRuntime JS
+
+@code {
+    [Parameter]
+    public EventCallback<WindowDimension> OnChange { get; set; }
+
+    private DotNetObjectReference<WindowDimensions>? _dotNetRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NotifyDimensionsAsync();
+
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("registerResizeCallback", _dotNetRef);
+    }
+
+    private async Task NotifyDimensionsAsync()
+    {
+        var dimension = await WindowService.GetDimensions();
+        if (OnChange.HasDelegate)
+            await OnChange.InvokeAsync(dimension);
+    }
+
+    [JSInvokable]
+    public async Task OnResize()
+    {
+        await NotifyDimensionsAsync();
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

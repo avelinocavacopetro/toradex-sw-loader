@@ -15,7 +15,7 @@
 <div class="center">
     @if (!isEditing)
     {
-        <h4 class="text-center px-5">
+        <h4 class="custom-h4 text-center px-5">
             @finalBoard
             <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
         </h4>
@@ -29,30 +29,12 @@
     else
     {
         <div class="edit-form">
-            <input type="text" @bind="finalBoard" class="form-control w-50 mx-auto" />
+            <input type="text" @bind="finalBoard" class="custom-input form-control w-50 mx-auto" />
             <button class="btn btn-color mt-2" @onclick="SaveName">Salvar</button>
             <button class="btn btn-danger mt-2 ms-2" @onclick="CancelEdit">Cancelar</button>
         </div>
     }
 </div>
-
-<style>
-    .edit-form{
-        width: 90vw;
-    }
-
-    .bi-pencil-square {
-        font-size: 30px;
-    }
-
-    .center {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        min-height: 50vh;
-    }
-</style>
 
 @code {
     [Parameter]
