@@ -25,11 +25,11 @@
 <br />
 <br />
 
-<div class="center">
-	<div class="w-25 pt-5" id="app">
+<div class="center-bar">
+	<div class="w-50 pt-5" id="app">
 		<h2 class="pb-3" style="text-align: center;">A carregar...</h2>
 
-		<div class="progress mt-2" style="height: 2em;">
+		<div class="progress mt-2 mb-3" style="height: 2em;">
 			<div id="progressbar" class="progress-bar progress-bar-striped progress-bar-animated"
 				 style="width: 50%; background-color: #0B5120;"></div>
 		</div>
@@ -38,32 +38,24 @@
 			<span id="progressLabel" class="text-muted">A instalar software</span>
 		</div>
 
-		<div class="text-center pt-5">
-			<a class="btn btn-custom btn-lg" style="width:10vw" @onclick="OnClick">OK</a>
+		<div class="text-center fixed-bottom pb-5">
+			<a class="btn btn-custom btn-lg" @onclick="OnClick">OK</a>
 		</div>
 	</div>
 </div>
 
-
-
 <style>
-	.center {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		text-align: center;
-		min-height: 50vh;
-	}
-
 	.btn-custom {
 		background-color: #0B5120;
 		color: white;
+		width: 20vw;
+		font-size: 1.5rem;
 	}
 
-		.btn-custom:hover {
-			background-color: #073816;
-			color: white;
-		}
+	.btn-custom:hover {
+		background-color: #073816;
+		color: white;
+	}
 </style>
 
 @code {

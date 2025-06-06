@@ -20,46 +20,35 @@
     <h5 style="text-align: center;">Frota: @selectedFleet?.FleetName</h5>
 }
 
-<div class="center">
+<div class="center-customization">
     @if (!isEditing)
     {
-        <h4 class="text-center px-5">
+        <h4 class="custom-h4 text-center px-5">
             @finalBoard
             <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
         </h4>
 
         <div class="text-center fixed-bottom pb-5">
-            <a href="/home" class="btn btn-color btn-lg">OK</a>
+            <a href="/home">
+                <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;">OK</button>
+            </a>
         </div>
 
     }
     else
     {
         <div class="edit-form">
-            <input type="text" @bind="finalBoard" class="form-control w-50 mx-auto" />
-            <button class="btn btn-color mt-2" @onclick="SaveName">Salvar</button>
-            <button class="btn btn-danger mt-2 ms-2" @onclick="CancelEdit">Cancelar</button>
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Alterar nome da placa</label>
+            <input type="text" @bind="finalBoard" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;"/>
+            <div>
+                <button class="btn btn-color mt-5 btn-lg btn-edit-custom" @onclick="SaveName">Salvar</button>
+                <button class="btn btn-danger mt-5 ms-5 btn-lg btn-edit-custom" @onclick="CancelEdit">Cancelar</button>
+
+            </div>
+            
         </div>
     }
 </div>
-
-<style>
-    .edit-form{
-        width: 90vw;
-    }
-
-    .bi-pencil-square {
-        font-size: 30px;
-    }
-
-    .center {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        min-height: 50vh;
-    }
-</style>
 
 @code {
     private bool isLoading = true;

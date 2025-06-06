@@ -1,15 +1,17 @@
 ﻿@page "/devices"
 
-@rendermode InteractiveServer
-@inject AppDbContext DbContext
-@inject TorizonService TorizonService
-@inject DeviceService DeviceService
 @using ToradexSwLoader.Data
 @using ToradexSwLoader.Models
 @using ToradexSwLoader.Services
 @using Microsoft.EntityFrameworkCore
+@rendermode InteractiveServer
+@inject AppDbContext DbContext
+@inject TorizonService TorizonService
+@inject DeviceService DeviceService
 
 <PageTitle>Dispositivos</PageTitle>
+
+<WindowDimensions OnChange="OnDimensionsChanged" />
 
 @if (isLoading)
 {
@@ -21,7 +23,6 @@
             <p class="mt-3">A carregar...</p>
         </div>
     </div>
-
 }
 else
 {
@@ -110,8 +111,13 @@ else
             @foreach (var device in paginetdDevices)
             {
                 <tr>
-                    <td>@device.DeviceId</td>
-                    <td>@device.DeviceName</td>
+                    <td title="@device.DeviceId" style="word-break: break-word; white-space: normal;">
+                        @device.DeviceId
+                    </td>
+                    <td title="@device.DeviceName" style="word-break: break-word; white-space: normal;">
+                        @device.DeviceName
+                    </td>
+
                     <td style="text-align: center;">@(device.Hibernated ? "Sim" : "Não")</td>
                     <td style="text-align: center;">@(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)</td>
                     <td>@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
@@ -126,16 +132,6 @@ else
     </table>
 }
 
-<style>
-    .center {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        min-height: 80vh;
-    }
-</style>
-
 @code {
     private List<Device> originalDevices = new List<Device>();
     private List<Device> devices = new List<Device>();
@@ -146,6 +142,14 @@ else
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
 
     private string selectedOrder = "relevance";
+
+    private WindowDimension? dimension;
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {

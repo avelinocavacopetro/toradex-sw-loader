@@ -6,18 +6,16 @@
 @using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
 @inject LoginService LoginService
 @inject NavigationManager UriHelper
-@inject IJSRuntime JS
 @inject SweetAlertService Swal
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <PageTitle>Selecionar Equipamento</PageTitle>
-
-
 
 @if (isLoading)
 {
@@ -83,24 +81,9 @@ else
     </table>
 
     <div class="text-center fixed-bottom pb-5">
-        <button class="btn btn-color btn-lg" @onclick="OnClick">Seguinte</button>
+        <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Seguinte</button>
     </div>
 }
-
-<style>
-    table tbody{
-        vertical-align: initial !important;
-    }
-
-    .center {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		text-align: center;
-		min-height: 80vh;
-	}
-
-</style>
 
 @code {
     private List<Device> totalDevices = new List<Device>();
