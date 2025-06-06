@@ -16,9 +16,9 @@
 @if (!isLoading)
 {
 	<h3 style="text-align: center;">Estado do Carregamento</h3>
-	<h5 style="text-align: center;">Dispositivo: @selectedDevice.DeviceName </h5>
-	<h5 style="text-align: center;">Software: @selectedPackage.PackageName </h5>
-	<h5 style="text-align: center;">Frota: @selectedFleet.FleetName </h5>
+	<h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceName</h5>
+	<h5 style="text-align: center;">Software: @selectedPackage?.PackageName </h5>
+	<h5 style="text-align: center;">Frota: @selectedFleet?.FleetName</h5>
 }
 
 <br />
@@ -70,16 +70,16 @@
 	private bool isLoading = true;
 
 	[Parameter]
-	public string deviceId { get; set; }
-	private Device selectedDevice;
+	public string deviceId { get; set; } = string.Empty;
+	private Device? selectedDevice = new Device();
 
 	[Parameter]
-	public string packageId { get; set; }
-	private Package selectedPackage;
+	public string packageId { get; set; } = string.Empty;
+	private Package? selectedPackage = new Package();
 
 	[Parameter]
-	public string fleetId { get; set; }
-	private Fleet selectedFleet;
+	public string fleetId { get; set; } = string.Empty;
+	private Fleet? selectedFleet = new Fleet();
 
 	protected override async Task OnInitializedAsync()
 	{

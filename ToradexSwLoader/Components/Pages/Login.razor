@@ -68,14 +68,13 @@
 </style>
 
 @code {
-    private string inputEmail;
+    private string inputEmail = string.Empty;
     private bool isLoading = true;
-    private string errorMessage;
+    private string errorMessage = string.Empty;
 
 
     private async Task RegisterLogin()
     {
-        errorMessage = null;
         @if (!string.IsNullOrWhiteSpace(inputEmail))
         {
             if (inputEmail.Contains("petrotec.com"))

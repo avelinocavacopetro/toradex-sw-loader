@@ -13,11 +13,11 @@ namespace ToradexSwLoader.Models
         public int UserLoginId { get; set; }
 
         [ForeignKey(nameof(UserLoginId))]
-        public LoginLog LoginLog { get; set; }
+        public LoginLog? LoginLog { get; set; } 
 
         [Required]
         [MaxLength(500)]
-        public string ActMessage { get; set; }
+        public string ActMessage { get; set; } = string.Empty;
 
         [Required]
         public DateTime ActTimeStamp { get; set; }

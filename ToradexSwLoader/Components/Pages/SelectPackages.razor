@@ -40,7 +40,7 @@ else
 
 
     <h3 style="text-align: center;">Selecionar Software</h3>
-    <h5 style="text-align: center;">Dispositivo: @selectedDevice.DeviceName</h5>
+    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceName</h5>
     <br />
     <br />
     <br />
@@ -106,8 +106,8 @@ else
 
 @code {
     [Parameter]
-    public string deviceId { get; set; }
-    private Device selectedDevice;
+    public string deviceId { get; set; } = string.Empty;
+    private Device? selectedDevice = new Device();
 
     private List<Package> totalPackages = new List<Package>();
     private List<Package> packages = new List<Package>();
