@@ -8,17 +8,17 @@ namespace ToradexSwLoader.Models
     public class Fleet
     {
         [Key]
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         
         [Required]
         [MaxLength(30)]
         [JsonPropertyName("name")]
-        public string FleetName { get; set; }
+        public string FleetName { get; set; } = string.Empty;
 
         [Required]
         public DateTime CreatedAt { get; set; }
 
-        private string fleetType;
+        private string fleetType = string.Empty;
 
         [Required]
         public string FleetType

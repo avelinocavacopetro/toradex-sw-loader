@@ -19,7 +19,6 @@ namespace ToradexSwLoader.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Chave composta da tabela de ligação
             modelBuilder.Entity<PackageHardware>()
                 .HasKey(ph => new { ph.PackageId, ph.HardwareId });
 
@@ -33,7 +32,6 @@ namespace ToradexSwLoader.Data
                 .WithMany(h => h.PackageHardwares)
                 .HasForeignKey(ph => ph.HardwareId);
 
-            // Índice único para HardwareCode para evitar duplicados
             modelBuilder.Entity<Hardware>()
                 .HasIndex(h => h.HardwareName)
                 .IsUnique();

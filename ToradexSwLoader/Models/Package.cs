@@ -11,17 +11,17 @@ namespace ToradexSwLoader.Models
         [Required]
         [MaxLength(200)]
         [JsonPropertyName("packageId")]
-        public string PackageId { get; set; }
+        public string PackageId { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
         [JsonPropertyName("name")]
-        public string PackageName { get; set; }
+        public string PackageName { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(50)]
         [JsonPropertyName("version")]
-        public string PackageVersion { get; set; }
+        public string PackageVersion { get; set; } = string.Empty;
 
         [NotMapped]
         public List<string> HardwareIds { get; set; } = new List<string>();

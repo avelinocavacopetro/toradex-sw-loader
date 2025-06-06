@@ -1,4 +1,4 @@
-﻿@page "/packages/{selectedDeviceName}"
+﻿@page "/packages/{deviceId}"
 
 @using ToradexSwLoader.Data
 @using ToradexSwLoader.Models
@@ -42,7 +42,7 @@ else
 
 
     <h3 style="text-align: center;">Selecionar Software</h3>
-    <h5 style="text-align: center;">Dispositivo: @selectedDeviceName</h5>
+    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceName</h5>
     <br />
     <br />
 
@@ -98,7 +98,8 @@ else
 
 @code {
     [Parameter]
-    public string selectedDeviceName { get; set; }
+    public string deviceId { get; set; } = string.Empty;
+    private Device? selectedDevice = new Device();
 
     private List<Package> totalPackages = new List<Package>();
     private List<Package> packages = new List<Package>();
@@ -110,7 +111,6 @@ else
     private int packagesPerPage = 5;
     private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
     private string state = "docker-compose";
-    private string selectedPackageName;
     private bool isLoading = true;
 
     private void OnDimensionsChanged(WindowDimension newDimension)
@@ -134,6 +134,7 @@ else
 
         var importTask = Task.Run(async () =>
         {
+            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
             var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
             bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
             return imported;
@@ -157,7 +158,6 @@ else
     private void SelectRow(Package package)
     {
         selectedPackage = package;
-        selectedPackageName = package.PackageName;
     }
 
     private async Task OnClick()
@@ -176,7 +176,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectFleet/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}");
+            UriHelper.NavigateTo($"/selectFleet/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(selectedPackage.PackageId)}");
         }
         else
         {

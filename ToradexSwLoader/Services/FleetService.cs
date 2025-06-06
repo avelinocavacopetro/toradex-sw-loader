@@ -39,7 +39,6 @@ namespace ToradexSwLoader.Services
                 }
                 else
                 {
-                    // Atualiza campos
                     fleetDb.FleetName = fleet.FleetName;
                     fleetDb.CreatedAt = fleet.CreatedAt;
                     fleetDb.FleetType = fleet.FleetType;

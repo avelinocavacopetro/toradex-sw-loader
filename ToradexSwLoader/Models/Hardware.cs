@@ -7,9 +7,9 @@ namespace ToradexSwLoader.Models
     public class Hardware
     {
         [Key]
-        public int HardwareId { get; set; }  // auto increment
+        public int HardwareId { get; set; } 
 
-        public string HardwareName { get; set; }  // ex: "Apalis iMX8"
+        public string HardwareName { get; set; } = string.Empty;
 
         public List<PackageHardware> PackageHardwares { get; set; } = new List<PackageHardware>();
     }
