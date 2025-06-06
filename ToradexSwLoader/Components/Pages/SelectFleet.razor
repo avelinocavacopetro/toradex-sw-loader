@@ -6,14 +6,17 @@
 @using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject FleetService FleetService
+@inject WindowService WindowService
 @inject NavigationManager UriHelper
-@inject IJSRuntime JS
 @inject SweetAlertService Swal
 @inject LoginService LoginService
 
 <PageTitle>Selecionar Frota</PageTitle>
+
+<WindowDimensions OnChange="OnDimensionsChanged" />
 
 @if (isLoading)
 {
@@ -39,59 +42,66 @@ else
     <br />
     <br />
 
+
+    <div class="d-flex justify-content-end align-items-center gap-3 pag-bts">
+            <span>@actualPage - @totalPages de @totalPages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextPage" disabled="@(!CanGoNext)">
+                    &gt;
+                </button>
+            </div>
+     </div>
+
     <div class="grid-container">
-        @foreach (var fleet in fleets)
+        @foreach (var fleet in paginatedFleets)
         {
             <div class="grid-item" @onclick="() => SelectFleetName(fleet)">@fleet.FleetName</div>
         }
     </div>
 }
 
-
-<style>
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 25px;
-        padding: 10px;
-    }
-
-    .grid-item {
-        background-color: #0c6527;
-        color: white;
-        text-align: center;
-        padding: 30px 15px;
-        font-size: 22px;
-        border-radius: 5px;
-    }
-
-    .center {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        min-height: 80vh;
-    }
-
-</style>
-
 @code {
+    private List<Fleet> fleets = new List<Fleet>();
+    private List<Fleet> paginatedFleets = new List<Fleet>();
+    private Fleet? selectedFleet;
+
     [Parameter]
     public string selectedDeviceName { get; set; }
 
     [Parameter]
     public string selectedPackageName { get; set; }
-    private List<Fleet> fleets = new List<Fleet>();
-    private Fleet? selectedFleet;
+
     private string selectedFleetName;
     private bool isLoading = true;
+    private int actualPage = 1;
+    private int fleetsPerPage = 14;
+    private int totalPages => (int)Math.Ceiling((double)fleets.Count / fleetsPerPage);
+
+    private WindowDimension? dimension;
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+        fleetsPerPage = dimension.Width <= 1024 ? 8 : fleets.Count;
+
+        UpdatePage();
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
         fleets = await context.Fleets.ToListAsync();
 
-        StateHasChanged();
+        fleetsPerPage = dimension?.Width <= 1024 ? 8 : fleets.Count;
+
+        UpdatePage();
 
         var importTask = Task.Run(async () =>
         {
@@ -106,7 +116,7 @@ else
         {
             using var newContext = DbContextFactory.CreateDbContext();
             fleets = await newContext.Fleets.ToListAsync();
-            StateHasChanged();
+            UpdatePage();
         }
 
         isLoading = false;
@@ -137,5 +147,33 @@ else
             UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(selectedDeviceName)}/{Uri.EscapeDataString(selectedPackageName)}/{Uri.EscapeDataString(selectedFleetName)}");
         }
     }
-}
 
+    private void UpdatePage()
+    {
+        paginatedFleets = fleets
+                              .Skip((actualPage - 1) * fleetsPerPage)
+                              .Take(fleetsPerPage)
+                              .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (actualPage < totalPages)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (actualPage > 1)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
+}

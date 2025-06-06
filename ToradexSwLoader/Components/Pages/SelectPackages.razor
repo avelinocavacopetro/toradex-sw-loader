@@ -6,16 +6,18 @@
 @using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
 @inject PackageService PackageService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject NavigationManager UriHelper
-@inject IJSRuntime JS
 @inject SweetAlertService Swal
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <PageTitle>Selecionar Software</PageTitle>
+
+<WindowDimensions OnChange="OnDimensionsChanged" />
 
 @if (isLoading)
 {
@@ -41,7 +43,6 @@ else
 
     <h3 style="text-align: center;">Selecionar Software</h3>
     <h5 style="text-align: center;">Dispositivo: @selectedDeviceName</h5>
-    <br />
     <br />
     <br />
 
@@ -74,7 +75,9 @@ else
             @foreach (var package in paginatedPackages)
             {
                 <tr class="@GetRowClass(package)" @onclick="() => SelectRow(package)">
-                    <td>@package.PackageName</td>
+                    <td title="@package.PackageName" style="word-break: break-word; white-space: normal;">
+                        @package.PackageName
+                    </td>
                     <td style="text-align: center;">
                         @foreach (var h in @package.PackageHardwares)
                         {
@@ -88,13 +91,10 @@ else
         </tbody>
     </table>
 
-
     <div class="text-center fixed-bottom pb-5">
-        <button class="btn btn-color btn-lg" @onclick="OnClick">Seguinte</button>
+        <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick ="OnClick">Seguinte</button>
     </div>
-
 }
-
 
 @code {
     [Parameter]
@@ -104,6 +104,7 @@ else
     private List<Package> packages = new List<Package>();
     private List<Package> paginatedPackages = new List<Package>();
     private Package? selectedPackage;
+    private WindowDimension? dimension;
 
     private int actualPage = 1;
     private int packagesPerPage = 5;
@@ -111,6 +112,15 @@ else
     private string state = "docker-compose";
     private string selectedPackageName;
     private bool isLoading = true;
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+        packagesPerPage = dimension.Width <= 1024 ? 3 : 5;
+
+        UpdatePage();
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -143,7 +153,6 @@ else
 
         isLoading = false;
     }
-
 
     private void SelectRow(Package package)
     {
@@ -187,6 +196,8 @@ else
 
     private void UpdatePage()
     {
+     
+
         paginatedPackages = totalPackages
                                  .Skip((actualPage - 1) * packagesPerPage)
                                  .Take(packagesPerPage)
