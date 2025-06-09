@@ -10,6 +10,7 @@
 @inject PackageService PackageService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
+@inject FilterService FilterService
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
 
@@ -78,13 +79,13 @@ else
                     <td title="@package.PackageName" style="word-break: break-word; white-space: normal;">
                         @package.PackageName
                     </td>
-                    <td style="text-align: center;">
+                   @*  <td style="text-align: center;">
                         @foreach (var h in @package.PackageHardwares)
                         {
                             @h.Hardware.HardwareName
                             ;
                         }
-                    </td>
+                    </td> *@
                     <td style="text-align: center;">@package.PackageVersion</td>
                 </tr>
             }
@@ -110,8 +111,41 @@ else
     private int actualPage = 1;
     private int packagesPerPage = 5;
     private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
-    private string state = "docker-compose";
-    private bool isLoading = true;
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        FilterService.OnFilterChanged += async () => await LoadPackagesAsync();
+
+        await LoadPackagesAsync();
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadPackagesAsync()
+    {
+        actualPage = 1;
+
+        var packageFilterName = FilterService.SelectedPackage;
+        var packageFilterVersion = FilterService.Version;
+
+        var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200&offset=0";
+
+        if (!string.IsNullOrWhiteSpace(packageFilterName) && !string.IsNullOrWhiteSpace(packageFilterVersion))
+        {
+            packagesUrl += $"&nameContains={Uri.EscapeDataString(packageFilterName)}&version={Uri.EscapeDataString(packageFilterVersion)}";
+        }
+
+        bool authOk = await TorizonService.AuthenticateAsync();
+        if (authOk)
+        {
+            totalPackages = await TorizonService.GetItemsAsync<Package>(packagesUrl) ?? new List<Package>();
+            packages = new List<Package>(totalPackages);
+
+            UpdatePage();
+        }
+    }
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
@@ -120,39 +154,6 @@ else
 
         UpdatePage();
         StateHasChanged();
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        using var context = DbContextFactory.CreateDbContext();
-        totalPackages = await context.Packages
-                                     .Include(p => p.PackageHardwares)
-                                     .ThenInclude(ph => ph.Hardware)
-                                     .ToListAsync();
-
-        UpdatePage();
-
-        var importTask = Task.Run(async () =>
-        {
-            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
-            var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
-            bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
-            return imported;
-        });
-
-        bool importResult = await importTask;
-
-        if (importResult)
-        {
-            using var newContext = DbContextFactory.CreateDbContext();
-            totalPackages = await newContext.Packages
-                                            .Include(p => p.PackageHardwares)
-                                            .ThenInclude(ph => ph.Hardware)
-                                            .ToListAsync();
-            UpdatePage();
-        }
-
-        isLoading = false;
     }
 
     private void SelectRow(Package package)
