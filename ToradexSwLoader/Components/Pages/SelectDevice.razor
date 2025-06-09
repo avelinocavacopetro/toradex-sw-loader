@@ -10,6 +10,7 @@
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
 @inject LoginService LoginService
+@inject FilterService FilterService 
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
 
@@ -30,12 +31,11 @@
 }
 else
 {
-    <a href="" onclick="history.back()" class="text-black">
+    <a href="/home" class="text-black">
         <i class="bi bi-arrow-left fs-1"></i>
     </a>
 
     <h3 class="text-center pb-5">Selecionar Equipamento</h3>
-    <br />
     <br />
     <br />
 
@@ -71,9 +71,14 @@ else
                     <td>@device.DeviceId</td>
                     <td style="text-align: center;">@device.DeviceName</td>
                     <td style="text-align: center;">
-                        <span class="status-box @(GetStatusClass(device.DeviceStatus))">
-                            @device.DeviceStatus
-                        </span>
+                        @if (device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime)
+                        {
+                            <span class="fw-bold" style="color: forestgreen;">Online</span>
+                        }
+                        else
+                        {
+                            <span class="fw-bold" style="color: red;">Offline</span>
+                        }
                     </td>
                 </tr>
             }
@@ -93,23 +98,64 @@ else
     private bool isLoading = true;
 
     private int actualPage = 1;
-    private int devicesPerPage = 5;
+    private int devicesPerPage = 4;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
     private string state = "Error";
+    private int OnlineTime => FilterService.OnlineTime;
+
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
+        FilterService.OnFilterChanged += async () => await LoadDevicesAsync();
 
-        totalDevices = await context.Devices.Where(d => d.DeviceStatus.Equals(state)).ToListAsync();
+        await LoadDevicesAsync();
 
         isLoading = false;
-
-        UpdatePage();
+        StateHasChanged();
     }
 
-    private void SelectRow(Device device)
+    private async Task LoadDevicesAsync()
     {
+        actualPage = 1;
+
+        var deviceFilter = FilterService.SelectedDevice;
+
+        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
+
+        if (!string.IsNullOrWhiteSpace(deviceFilter))
+        {
+            devicesUrl += $"&nameContains={Uri.EscapeDataString(deviceFilter)}";
+        }
+
+        bool authOk = await TorizonService.AuthenticateAsync();
+        if (authOk)
+        {
+            var apiDevices = await TorizonService.GetItemsAsync<Device>(devicesUrl) ?? new List<Device>();
+
+            totalDevices = new List<Device>(apiDevices);
+            devices = new List<Device>(totalDevices);
+
+            UpdatePage();
+        }
+    }
+
+    private async void SelectRow(Device device)
+    {
+        bool isOnline = device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime;
+
+        if (!isOnline)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este dispositivo está offline e não pode ser selecionado.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
         selectedDevice = device;
     }
 
@@ -150,7 +196,6 @@ else
 
     private void UpdatePage()
     {
-
         paginetdDevices = totalDevices
                                  .Skip((actualPage - 1) * devicesPerPage)
                                  .Take(devicesPerPage)
@@ -176,9 +221,6 @@ else
         }
     }
 
-    private bool CanGoNext => actualPage < totalPages;
-    private bool CanGoPrev => actualPage > 1;
-
     private string GetStatusClass(string status)
     {
         return status.ToLower() switch
@@ -188,5 +230,10 @@ else
             "updatepending" => "status-updatepending",
             _ => "status-default"
         };
+    }
+
+    public void Dispose()
+    {
+        FilterService.OnFilterChanged -= UpdatePage;
     }
 }

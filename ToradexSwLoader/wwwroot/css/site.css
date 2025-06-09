@@ -70,35 +70,34 @@
     width: 120px;
     text-align: center;
     padding: 6px 10px;
-    border: 2px solid;
-    border-radius: 6px;
     font-size: 14px;
     font-weight: bold;
     white-space: nowrap;
+    border: none;
 }
 
 .status-uptodate {
-    border-color: #63AA5B;
+    color: #63AA5B;
 }
 
 .status-updatepending {
-    border-color: #0092ff;
+    color: #0092ff;
 }
 
 .status-error {
-    border-color: #D90000;
+    color: #D90000;
 }
 
 .status-notseen {
-    border-color: #B0B0B0;
+    color: #B0B0B0;
 }
 
 .status-outdated {
-    border-color: #FFA500;
+    color: #FFA500;
 }
 
 .status-default {
-    border-color: #000000;
+    color: #000000;
 }
 
 /*

@@ -8,7 +8,7 @@
 
 <div class="page">
 
-    @if (IsCurrentPage("/home"))
+    @if (IsCurrentPage(new[] { "/home", "/manageDevices" }))
     {
         <div class="sidebar">
             <NavMenu />
@@ -20,7 +20,7 @@
     }
 
     <main>
-        @if (IsCurrentPage("/"))
+        @if (IsCurrentPage(new[] { "/" }))
         {
             <article class="content px-4">  
                 @Body
@@ -29,7 +29,7 @@
              <div class="top-row px-4 d-flex justify-content-between">
                 <span>@username</span>
                 <span>@currentTime</span>
-                @if (IsCurrentPage("/home"))
+                @if (IsCurrentPage(new[] { "/home" }))
                 {
                     <a href="" class="logout" target="">Terminar Sessão</a>
                 }
@@ -129,11 +129,15 @@
         LoginService.OnLoginChanged -= OnLoginChanged;
     }
 
-    private bool IsCurrentPage(string page)
+    private bool IsCurrentPage(IEnumerable<string> pages)
     {
         var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
         relativePath = "/" + relativePath.TrimStart('/');
 
-        return string.IsNullOrEmpty(relativePath) && page == "/" || relativePath == page;
+        if (string.IsNullOrEmpty(relativePath) && pages.Contains("/"))
+            return true;
+
+        return pages.Contains(relativePath, StringComparer.OrdinalIgnoreCase);
     }
+
 }
