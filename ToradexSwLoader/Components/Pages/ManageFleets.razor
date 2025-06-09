@@ -1,0 +1,154 @@
+﻿@page "/manageFleets"
+
+@using ToradexSwLoader.Models
+@using ToradexSwLoader.Services
+@inject TorizonService TorizonService
+@inject FleetService FleetService
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+@inject IJSRuntime JS
+
+<PageTitle>Gerir Frotas</PageTitle>
+
+<h3 class="text-center">Gerir Frotas</h3>
+
+<h5 class="pt-5">Configurar frotas a visualizar</h5>
+
+<div class="fleets-grid pt-5">
+    @foreach (var fleet in fleets)
+    {
+        <div class="fleet-item">
+            <h4 class="fleet-name">@fleet.FleetName</h4>
+            <div class="toggle-switch">
+                <input type="checkbox" id="toggle-@fleet.Id" @onchange="(e => ToggleFleet(e, fleet))" checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+
+                <label for="toggle-@fleet.Id"></label>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="text-center fixed-bottom pb-5">
+    <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="SaveFleetFilter">Aplicar</button>
+</div>
+
+<style>
+    .fleets-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .fleet-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .fleet-name {
+        min-width: 350px;
+        margin: 0;
+    }
+
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 75px;
+        height: 35px;
+    }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-switch label {
+            position: absolute;
+            cursor: pointer;
+            background-color: #ccc;
+            border-radius: 25px;
+            width: 100%;
+            height: 100%;
+            transition: background-color 0.3s;
+        }
+
+            .toggle-switch label:before {
+                content: "";
+                position: absolute;
+                background-color: white;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                left: 2.5px;
+                top: 2.5px;
+                transition: transform 0.3s;
+            }
+
+        .toggle-switch input:checked + label {
+            background-color: #4caf50;
+        }
+
+            .toggle-switch input:checked + label:before {
+                transform: translateX(40px);
+            }
+</style>
+
+@code {
+    private List<Fleet> fleets = new List<Fleet>();
+    private List<Fleet> paginatedFleets = new List<Fleet>();
+    private List<Fleet> selectedFleets = new List<Fleet>();
+    private bool IsToggled { get; set; } = false;
+
+    private bool isLoading = true;
+
+    private WindowDimension? dimension;
+
+    private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedFleets.Any(f => f.Id == fleet.Id))
+                selectedFleets.Add(fleet);
+        }
+        else
+        {
+            selectedFleets.RemoveAll(f => f.Id == fleet.Id);
+        }
+    }
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+
+        StateHasChanged();
+    }
+
+    private async Task SaveFleetFilter()
+    {
+        FilterService.ApplyFleetFilter(new List<Fleet>(selectedFleets));
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Filtros aplicados com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var fleetsUrl = "https://app.torizon.io/api/v2beta/fleets";
+
+        bool authOk = await TorizonService.AuthenticateAsync();
+        if (authOk)
+        {
+            fleets = await TorizonService.GetItemsAsync<Fleet>(fleetsUrl) ?? new List<Fleet>();
+        }
+
+        selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
+    }
+}
