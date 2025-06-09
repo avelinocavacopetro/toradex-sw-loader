@@ -1,0 +1,100 @@
+﻿@page "/manageDevices"
+
+@using ToradexSwLoader.Services
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+@inject IJSRuntime JS
+
+<PageTitle>Gerir Dispositivos</PageTitle>
+
+<h3>Configurar filtros a aplicar:</h3>
+
+<br />
+
+@if (deviceNames?.Any() == true)
+{
+    <table class="table table-hover table-bordered align-middle text-center">
+        <thead style="background-color: #0c6527; color: white;">
+            <tr>
+                <th>Nome do Dispositivo</th>
+                <th>Selecionar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var device in deviceNames)
+            {
+                <tr class="table-light">
+                    <td>@device</td>
+                    <td>
+                        <div class="form-check d-flex justify-content-center">
+                            <input class="form-check-input" type="radio" name="deviceSelection"
+                                   @onchange="@(() => selectedDevice = device)"
+                                   checked="@(selectedDevice == device)" />
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <br />
+
+    <div class="row mb-3">
+        <div class="col-auto">
+            <label for="onlineTime" class="fw-bold fs-5">
+                Duração de estado online (máx. 5 min.)
+            </label>
+            <input id="onlineTime" @bind="onlineTime" type="number" min="1" max="5" class="form-control mt-2" />
+        </div>
+    </div>
+
+    <div class="text-center fixed-bottom pb-5">
+        <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
+    </div>
+}
+
+@code {
+    private List<string>? deviceNames;
+    private string? selectedDevice;
+    private int onlineTime = 1;
+    private bool showSuccessMessage = false;
+
+    protected override void OnInitialized()
+    {
+        deviceNames = new List<string> { "OPT", "NEURON", "FM27", "OPT Multimedia" };
+    }
+
+    private async Task ApplyFilter()
+    {
+        if (onlineTime < 1 || onlineTime > 5)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor coloque um valor entre 1 a 5 minutos!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (string.IsNullOrEmpty(selectedDevice))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor selecione um dispositivo!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        FilterService.ApplyFilter(selectedDevice, onlineTime);
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Filtros aplicados com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+}

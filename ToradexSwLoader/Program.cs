@@ -22,6 +22,7 @@ builder.Services.AddScoped<PackageService>();
 builder.Services.AddScoped<FleetService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<WindowService>();
+builder.Services.AddScoped<FilterService>();
 builder.Services.AddSweetAlert2();
 
 var app = builder.Build();

@@ -26,7 +26,7 @@
 }
 else
 {
-    <a href="" onclick="history.back()" class="text-black">
+    <a href="/home" class="text-black">
         <i class="bi bi-arrow-left fs-1"></i>
     </a>
 
@@ -153,21 +153,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=100&offset=0";
+        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
 
-        bool imported = await DeviceService.ImportDevicesFromApiAsync(devicesUrl);
-
-        if (imported)
+        bool authOk = await TorizonService.AuthenticateAsync();
+        if (authOk)
         {
-            originalDevices = await DbContext.Devices.ToListAsync();
+            var apiDevices = await TorizonService.GetItemsAsync<Device>(devicesUrl) ?? new List<Device>();
+
+            originalDevices = new List<Device>(apiDevices);
             devices = new List<Device>(originalDevices);
-        }
-        else
-        {
-            originalDevices = new List<Device>();
-        }
 
-        isLoading = false;
+            isLoading = false;
+        }
 
         UpdatePage();
     }

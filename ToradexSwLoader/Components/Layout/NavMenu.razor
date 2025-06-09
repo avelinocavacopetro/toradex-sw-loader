@@ -6,7 +6,7 @@
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="selectdevices">
@@ -18,11 +18,18 @@
                 <span class="bi bi-motherboard-nav-menu" aria-hidden="true"></span> Dispositivos
             </NavLink>
         </div>
-         <div class="nav-item px-3">
+        <div class="nav-item px-3">
             <NavLink class="nav-link" href="administration" style="gap: 0.5rem;">
                 <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Administração
             </NavLink>
         </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="managedevices" style="gap: 0.5rem;">
+                <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Gestor Dis.
+            </NavLink>
+        </div>
+
+        
     </nav>
 </div>
 
