@@ -145,16 +145,16 @@ else
     {
         bool isOnline = device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime;
 
-        // if (!isOnline)
-        // {
-        //     await Swal.FireAsync(new SweetAlertOptions
-        //     {
-        //         Title = "Este dispositivo está offline e não pode ser selecionado.",
-        //         Icon = SweetAlertIcon.Warning,
-        //         ConfirmButtonColor = "#0B5120"
-        //     });
-        //     return;
-        // }
+        if (!isOnline)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este dispositivo está offline e não pode ser selecionado.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
 
         selectedDevice = device;
     }
