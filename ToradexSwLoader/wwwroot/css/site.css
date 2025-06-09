@@ -213,6 +213,20 @@ td, th {
     color: white;
 }
 
+/*
+    Para a sidenav
+
+*/
+
+/*.sidebar .collapse{
+    display:block;
+}
+
+.nav-item a.active::after{
+    content= "*";
+    margin-left: 1em;
+}*/
+
 @media (max-width: 1024px) {
     /*
         Media Querie para a páginad de seleção de frotas

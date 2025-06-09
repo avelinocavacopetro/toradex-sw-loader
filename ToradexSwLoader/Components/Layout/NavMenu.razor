@@ -9,7 +9,7 @@
 <div class="nav" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="selectdevices">
+            <NavLink class="nav-link" href="selectdevices" Match="NavLinkMatch.All">
                 <span class="bi bi-usb-symbol-nav-menu" aria-hidden="true"></span> Wizard
             </NavLink>
         </div>
@@ -19,22 +19,51 @@
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="administration" style="gap: 0.5rem;">
+            <a class="nav-link" style="gap: 0.5rem; cursor:pointer;" @onclick="ToggleMenu">
                 <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Administração
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="managedevices" style="gap: 0.5rem;">
-                <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Gestor Dis.
-            </NavLink>
-        </div>
+            </a>
 
-        
+            @if (menuOpen)
+            {
+                <div class="pt-1">
+                    <NavLink class="nav-link pb-1" href="manageDevices" style="gap: 1rem;">
+                        <span  aria-hidden="true"></span> Gerir Dispositivos
+                    </NavLink>
+                    <NavLink class="nav-link pb-1" href="" style="gap: 1rem;">
+                        <span  aria-hidden="true"></span> Gerir Produtos
+                    </NavLink>
+                    <NavLink class="nav-link pb-1" href="managePackages" style="gap: 1rem;">
+                        <span aria-hidden="true"></span> Gerir Pacotes
+                    </NavLink>
+                    <NavLink class="nav-link pb-1" href="manageFleets" style="gap: 1rem;">
+                        <span  aria-hidden="true"></span> Gerir Frotas
+                    </NavLink>
+                    <NavLink class="nav-link pb-1" href="manageSecret" style="gap: 1rem;">
+                        <span aria-hidden="true"></span> Alterar Segredo
+                    </NavLink>
+                </div>
+            }
+        </div>
     </nav>
 </div>
 
 <style>
     .nav-link {
         font-size: 20px;
+        background-color: transparent !important;
     }
+
+    .nav-link:hover{
+            background-color: rgba(205, 205, 205, 0.2) !important;
+    }
+
 </style>
+
+@code {
+    private bool menuOpen = false;
+
+    void ToggleMenu()
+    {
+        menuOpen = !menuOpen;
+    }
+}
