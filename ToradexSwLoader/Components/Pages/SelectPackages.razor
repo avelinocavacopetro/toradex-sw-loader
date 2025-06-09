@@ -9,6 +9,7 @@
 @inject IJSRuntime JS
 @inject PackageService PackageService
 @inject TorizonService TorizonService
+@inject FilterService FilterService
 @inject LoginService LoginService
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
@@ -124,35 +125,36 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        totalPackages = await context.Packages
-                                     .Include(p => p.PackageHardwares)
-                                     .ThenInclude(ph => ph.Hardware)
-                                     .ToListAsync();
+        FilterService.OnFilterChanged += async () => await LoadPackagesAsync();
 
-        UpdatePage();
-
-        var importTask = Task.Run(async () =>
-        {
-            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
-            var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200";
-            bool imported = await PackageService.ImportPackagesFromApiAsync(packagesUrl);
-            return imported;
-        });
-
-        bool importResult = await importTask;
-
-        if (importResult)
-        {
-            using var newContext = DbContextFactory.CreateDbContext();
-            totalPackages = await newContext.Packages
-                                            .Include(p => p.PackageHardwares)
-                                            .ThenInclude(ph => ph.Hardware)
-                                            .ToListAsync();
-            UpdatePage();
-        }
+        await LoadPackagesAsync();
 
         isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadPackagesAsync()
+    {
+        actualPage = 1;
+
+        var packageFilter = FilterService.SelectedPackage;
+
+        var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200&offset=0";
+
+        if (!string.IsNullOrWhiteSpace(packageFilter))
+        {
+            packagesUrl += $"&nameContains={Uri.EscapeDataString(packageFilter)}";
+        }
+
+        bool authOk = await TorizonService.AuthenticateAsync();
+        if (authOk)
+        {
+
+            totalPackages = await TorizonService.GetItemsAsync<Package>(packagesUrl) ?? new List<Package>();
+            packages = new List<Package>(totalPackages);
+
+            UpdatePage();
+        }
     }
 
     private void SelectRow(Package package)

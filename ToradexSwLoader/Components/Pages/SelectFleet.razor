@@ -13,6 +13,7 @@
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
 @inject LoginService LoginService
+@inject FilterService FilterService
 
 <PageTitle>Selecionar Frota</PageTitle>
 
@@ -74,9 +75,6 @@ else
     [Parameter]
     public string packageId { get; set; } = string.Empty;
     private Package? selectedPackage = new Package();
-
-    private List<Fleet> fleets = new List<Fleet>();
-    private Fleet? selectedFleet;
 
     private bool isLoading = true;
     private int actualPage = 1;
