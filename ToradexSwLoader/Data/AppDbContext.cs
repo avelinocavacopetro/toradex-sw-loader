@@ -16,6 +16,7 @@ namespace ToradexSwLoader.Data
         public DbSet<Fleet> Fleets { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; } 
         public DbSet<LoginLog> LoginLogs { get; set; }
+        public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,9 +1,5 @@
 ﻿@page "/selectdevices"
 
-@using ToradexSwLoader.Data
-@using ToradexSwLoader.Models
-@using ToradexSwLoader.Services
-@using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
@@ -108,6 +104,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await FilterService.LoadFilterAsync();
+
         FilterService.OnFilterChanged += async () => await LoadDevicesAsync();
 
         await LoadDevicesAsync();
@@ -145,16 +143,16 @@ else
     {
         bool isOnline = device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime;
 
-        if (!isOnline)
-        {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Este dispositivo está offline e não pode ser selecionado.",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+        // if (!isOnline)
+        // {
+        //     await Swal.FireAsync(new SweetAlertOptions
+        //     {
+        //         Title = "Este dispositivo está offline e não pode ser selecionado.",
+        //         Icon = SweetAlertIcon.Warning,
+        //         ConfirmButtonColor = "#0B5120"
+        //     });
+        //     return;
+        // }
 
         selectedDevice = device;
     }

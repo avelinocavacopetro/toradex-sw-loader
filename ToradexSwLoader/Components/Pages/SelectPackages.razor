@@ -1,9 +1,5 @@
 ﻿@page "/packages/{deviceId}"
 
-@using ToradexSwLoader.Data
-@using ToradexSwLoader.Models
-@using ToradexSwLoader.Services
-@using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
@@ -79,13 +75,9 @@ else
                     <td title="@package.PackageName" style="word-break: break-word; white-space: normal;">
                         @package.PackageName
                     </td>
-                   @*  <td style="text-align: center;">
-                        @foreach (var h in @package.PackageHardwares)
-                        {
-                            @h.Hardware.HardwareName
-                            ;
-                        }
-                    </td> *@
+                    <td style="text-align: center;">
+                        Por ver
+                    </td>
                     <td style="text-align: center;">@package.PackageVersion</td>
                 </tr>
             }
@@ -115,6 +107,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await FilterService.LoadFilterAsync();
+
         FilterService.OnFilterChanged += async () => await LoadPackagesAsync();
 
         await LoadPackagesAsync();
@@ -132,10 +126,16 @@ else
 
         var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200&offset=0";
 
-        if (!string.IsNullOrWhiteSpace(packageFilterName) && !string.IsNullOrWhiteSpace(packageFilterVersion))
+        if (!string.IsNullOrWhiteSpace(packageFilterName))
         {
-            packagesUrl += $"&nameContains={Uri.EscapeDataString(packageFilterName)}&version={Uri.EscapeDataString(packageFilterVersion)}";
+            packagesUrl += $"&nameContains={Uri.EscapeDataString(packageFilterName)}";
         }
+
+        if (!string.IsNullOrWhiteSpace(packageFilterVersion))
+        {
+            packagesUrl += $"&version={Uri.EscapeDataString(packageFilterVersion)}";
+        }
+
 
         bool authOk = await TorizonService.AuthenticateAsync();
         if (authOk)

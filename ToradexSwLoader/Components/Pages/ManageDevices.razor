@@ -1,6 +1,5 @@
 ﻿@page "/manageDevices"
 
-@using ToradexSwLoader.Services
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject IJSRuntime JS
@@ -88,7 +87,7 @@
             return;
         }
 
-        FilterService.ApplyFilter(selectedDevice, onlineTime);
+        await FilterService.ApplyFilter(selectedDevice, onlineTime);
 
         await Swal.FireAsync(new SweetAlertOptions
         {

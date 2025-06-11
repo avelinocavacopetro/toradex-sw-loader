@@ -1,9 +1,5 @@
 @page "/selectFleet/{deviceId}/{packageId}"
 
-@using ToradexSwLoader.Data
-@using ToradexSwLoader.Models
-@using ToradexSwLoader.Services
-@using Microsoft.EntityFrameworkCore
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
@@ -43,8 +39,12 @@ else
     <br />
     <br />
 
-
-    <div class="d-flex justify-content-end align-items-center gap-3 pag-bts">
+    @if(paginatedFleets == null)
+    {
+        <p>Não existem frotas disponiveis no momento.</p>
+    } else
+    {
+        <div class="d-flex justify-content-end align-items-center gap-3 pag-bts">
             <span>@actualPage - @totalPages de @totalPages</span>
             <div class="d-flex gap-2">
                 <button class="btn custom-outline-button btn-lg"
@@ -57,16 +57,17 @@ else
                     &gt;
                 </button>
             </div>
-     </div>
+        </div>
 
-    <div class="grid-container">
-        @foreach (var fleet in FilterService.SelectedFleets)
-        {
-            <div class="grid-item" @onclick="() => SelectFleetName(fleet)">
-                @fleet.FleetName
-            </div>
-        }
-    </div>
+        <div class="grid-container">
+            @foreach (var fleet in FilterService.SelectedFleets)
+            {
+                <div class="grid-item" @onclick="() => SelectFleetName(fleet)">
+                    @fleet.FleetName
+                </div>
+            }
+        </div>
+    }
 }
 
 @code {
