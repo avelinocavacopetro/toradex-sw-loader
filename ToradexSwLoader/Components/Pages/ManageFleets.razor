@@ -1,7 +1,5 @@
 ﻿@page "/manageFleets"
 
-@using ToradexSwLoader.Models
-@using ToradexSwLoader.Services
 @inject TorizonService TorizonService
 @inject FleetService FleetService
 @inject FilterService FilterService
@@ -30,7 +28,9 @@
             <div class="fleet-item py-2">
                 <h5 class="fleet-name">@fleet.FleetName</h5>
                 <div class="toggle-switch">
-                    <input type="checkbox" id="toggle-@fleet.Id" @onchange="(e => ToggleFleet(e, fleet))" checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+                    <input type="checkbox" id="toggle-@fleet.Id" 
+                        @onchange="(e => ToggleFleet(e, fleet))" 
+                        checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
 
                     <label for="toggle-@fleet.Id"></label>
                 </div>
@@ -150,19 +150,21 @@
         }
         else
         {
-        FilterService.ApplyFleetFilter(new List<Fleet>(selectedFleets));
+            await FilterService.ApplyFleetFilter(new List<Fleet>(selectedFleets));
 
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = "Filtros aplicados com sucesso!",
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Filtros aplicados com sucesso!",
+                Icon = SweetAlertIcon.Success,
+                ConfirmButtonColor = "#0B5120"
+            });
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
+        await FilterService.LoadFilterAsync();
+
         var fleetsUrl = "https://app.torizon.io/api/v2beta/fleets";
 
         bool authOk = await TorizonService.AuthenticateAsync();
