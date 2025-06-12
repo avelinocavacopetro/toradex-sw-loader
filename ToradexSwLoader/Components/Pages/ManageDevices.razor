@@ -26,7 +26,7 @@
                     <td>@device</td>
                     <td>
                         <div class="form-check d-flex justify-content-center">
-                            <input class="form-check-input" type="radio" name="deviceSelection"
+                            <input class="form-check-input largerCheckbox" type="radio" name="deviceSelection"
                                    @onchange="@(() => selectedDevice = device)"
                                    checked="@(selectedDevice == device)" />
                         </div>
@@ -58,9 +58,14 @@
     private int onlineTime = 1;
     private bool showSuccessMessage = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         deviceNames = new List<string> { "OPT", "NEURON", "FM27", "OPT Multimedia" };
+
+        await FilterService.LoadFilterAsync();
+
+        selectedDevice = FilterService.SelectedDevice;
+        onlineTime = FilterService.OnlineTime;
     }
 
     private async Task ApplyFilter()

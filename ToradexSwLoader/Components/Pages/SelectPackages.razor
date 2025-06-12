@@ -107,6 +107,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // using var context = DbContextFactory.CreateDbContext();
+        // selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+
         await FilterService.LoadFilterAsync();
 
         FilterService.OnFilterChanged += async () => await LoadPackagesAsync();

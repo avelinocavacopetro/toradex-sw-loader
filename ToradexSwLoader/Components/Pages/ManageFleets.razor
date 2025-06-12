@@ -22,97 +22,93 @@
 {
     <h3 class="pb-2">Gerir Frotas</h3>
 
-    <div class="fleets-grid pt-4">
-        @foreach (var fleet in fleets)
-        {
-            <div class="fleet-item py-2">
-                <h5 class="fleet-name">@fleet.FleetName</h5>
-                <div class="toggle-switch">
-                    <input type="checkbox" id="toggle-@fleet.Id" 
-                        @onchange="(e => ToggleFleet(e, fleet))" 
-                        checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="w-50"> 
+            <input type="text" class="form-control" placeholder="Pesquisar frota pelo nome..."
+                   @bind="searchTerm" @bind:event="oninput" />
+        </div>
 
-                    <label for="toggle-@fleet.Id"></label>
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>@actualPage - @totalPages de @totalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
                 </div>
-            </div>
-        }
+        </div>
     </div>
 
+    <div class="d-flex justify-content-center align-items-center">
+        <table class="table mt-5 w-100">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th>Nome</th>
+                    <th class="text-center">Selecionar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var fleet in PaginatedFleets)
+                {
+                    <tr class="table-light">
+                        <td>@fleet.FleetName</td>
+                        <td>
+                            <div class="form-check d-flex justify-content-center">
+                                <input type="checkbox" class="largerCheckbox" id="toggle-@fleet.Id"
+                                       @onchange="(e => ToggleFleet(e, fleet))"
+                                       checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
     <div class="text-center fixed-bottom pb-4">
         <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="SaveFleetFilter">Aplicar</button>
     </div>
 }
-
-<style>
-    .fleets-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-
-    .fleet-item {
-        display: flex;
-        align-items: center;
-    }
-
-    .fleet-name {
-        min-width: 293px;
-        margin: 0;
-    }
-
-    .toggle-switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 30px;
-    }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-switch label {
-            position: absolute;
-            cursor: pointer;
-            background-color: #ccc;
-            border-radius: 25px;
-            width: 100%;
-            height: 100%;
-            transition: background-color 0.3s;
-        }
-
-            .toggle-switch label:before {
-                content: "";
-                position: absolute;
-                background-color: white;
-                border-radius: 50%;
-                width: 25px;
-                height: 25px;
-                left: 2.5px;
-                top: 2.5px;
-                transition: transform 0.3s;
-            }
-
-        .toggle-switch input:checked + label {
-            background-color: #4caf50;
-        }
-
-            .toggle-switch input:checked + label:before {
-                transform: translateX(30px);
-            }
-</style>
 
 @code {
     private List<Fleet> fleets = new List<Fleet>();
     private List<Fleet> paginatedFleets = new List<Fleet>();
     private List<Fleet> selectedFleets = new List<Fleet>();
     private bool IsToggled { get; set; } = false;
-
+    private int actualPage = 1;
+    private int fleetsPerPage = 7;
+    private int totalPages => (int)Math.Ceiling((double)fleets.Count / fleetsPerPage);
     private bool isLoading = true;
-
     private WindowDimension? dimension;
+
+    private IEnumerable<Fleet> FilteredFleets =>
+    string.IsNullOrWhiteSpace(searchTerm)
+        ? fleets
+        : fleets.Where(f => f.FleetName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<Fleet> PaginatedFleets =>
+    FilteredFleets
+        .Skip((actualPage - 1) * fleetsPerPage)
+        .Take(fleetsPerPage);
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
 
     private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
     {
@@ -133,6 +129,7 @@
     {
         dimension = newDimension;
 
+        UpdatePage();
         StateHasChanged();
     }
 
@@ -176,5 +173,36 @@
         selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
 
         isLoading = false;
+
+        UpdatePage();
     }
+
+    private void UpdatePage()
+    {
+        paginatedFleets = fleets
+                                 .Skip((actualPage - 1) * fleetsPerPage)
+                                 .Take(fleetsPerPage)
+                                 .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (actualPage < totalPages)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (actualPage > 1)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
 }

@@ -1,4 +1,12 @@
 ﻿/* 
+    CSS para a gestor
+*/
+input.largerCheckbox {
+    width: 25px;
+    height: 25px;
+}
+
+/* 
     CSS para a página de seleção de frotas
 */
 .grid-container {
