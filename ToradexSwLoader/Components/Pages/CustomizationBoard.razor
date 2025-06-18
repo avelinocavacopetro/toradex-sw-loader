@@ -1,6 +1,7 @@
 ﻿@page "/customization/{deviceId}/{packageId}/{fleetId}"
 
 @inject NavigationManager UriHelper
+@inject LoginService LoginService
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 
 <PageTitle>Customizar Placa</PageTitle>
@@ -27,9 +28,7 @@
         </h4>
 
         <div class="text-center fixed-bottom pb-5">
-            <a href="/home">
-                <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;">OK</button>
-            </a>
+            <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=OnClick>OK</button>
         </div>
 
     }
@@ -63,8 +62,6 @@
     public string fleetId { get; set; } = string.Empty;
     private Fleet? selectedFleet = new Fleet();
 
-    long serial;
-
     private string finalBoard = string.Empty;
 
     private bool isEditing = false;
@@ -83,9 +80,9 @@
 
     protected override void OnParametersSet()
     {
-        if (string.IsNullOrEmpty(finalBoard) && selectedDevice != null && selectedPackage != null && selectedFleet != null)
+        if (string.IsNullOrEmpty(finalBoard)/*  && selectedDevice != null */ && selectedPackage != null && selectedFleet != null)
         {
-            finalBoard = $"{selectedDevice.DeviceName}_{selectedPackage.PackageVersion}_{selectedFleet.FleetName}";
+            finalBoard = $"{selectedPackage.PackageVersion}_{selectedFleet.FleetName}";
         }
     }
 
@@ -104,5 +101,21 @@
     {
         finalBoard = originalFinalBoard;
         isEditing = false;
+    }
+
+    private async Task OnClick()
+    {
+            using var context = DbContextFactory.CreateDbContext();
+            var userAct = new UserActivity
+            {
+                UserLoginId = LoginService.CurrentLoginId,
+                ActMessage = $"Colaborador iniciou o carregamento da placa -> Nome: {finalBoard}",
+                ActTimeStamp = DateTime.Now
+            };
+
+            context.UserActivities.Add(userAct);
+            await context.SaveChangesAsync();
+
+            UriHelper.NavigateTo("/home");
     }
 }
