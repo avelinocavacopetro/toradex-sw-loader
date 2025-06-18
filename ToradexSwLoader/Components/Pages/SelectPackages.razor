@@ -37,10 +37,8 @@ else
     </a>
 
 
-    <h3 style="text-align: center;">Selecionar Software</h3>
+    <h3 class="mb-5" style="text-align: center;">Selecionar Software</h3>
     <h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceId</h5>
-    <br />
-    <br />
 
     <div class="d-flex justify-content-end pe-5">
         <div class="d-flex justify-content-between align-items-center gap-3">
@@ -185,11 +183,11 @@ else
         }
         else
         {
-            await JS.InvokeVoidAsync("Swal.fire", new
+            await Swal.FireAsync(new SweetAlertOptions
             {
-                title = "Selecione um software!",
-                icon = "warning",
-                confirmButtonColor = "#0B5120"
+                Title = "Selecione um software!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120",
             });
         }
     }

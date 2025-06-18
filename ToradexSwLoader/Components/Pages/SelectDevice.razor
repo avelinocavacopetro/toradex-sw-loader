@@ -184,15 +184,15 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDevice.DeviceId)}");
+            UriHelper.NavigateTo($"/selectProduct/{Uri.EscapeDataString(selectedDevice.DeviceId)}");
         }
         else
         {
-            await JS.InvokeVoidAsync("Swal.fire", new
+            await Swal.FireAsync(new SweetAlertOptions
             {
-                title = "Selecione um dispositivo!",
-                icon = "warning",
-                confirmButtonColor = "#0B5120"
+                Title = "Selecione um dispositivo!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120",
             });
         }
     }

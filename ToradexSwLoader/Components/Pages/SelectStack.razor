@@ -1,0 +1,40 @@
+﻿@page "/selectStack/{deviceId}"
+
+<PageTitle>Selecionar Stack</PageTitle>
+
+@inject NavigationManager UriHelper
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+
+<a href="#"
+   onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+   class="text-black"
+   style="cursor: @(isLoading ? "default" : "pointer");">
+    <i class="bi bi-arrow-left fs-1"></i>
+</a>
+
+<h3 class="mb-5 text-center">Selecionar Stack</h3> 
+
+<h5>NÃO TEM NADA</h5>
+
+<div class="text-center fixed-bottom pb-5">
+    <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Seguinte</button>
+</div>
+@code {
+    [Parameter]
+    public string deviceId { get; set; } = string.Empty;
+    private Device? selectedDevice = new Device();
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+
+        isLoading = false;
+    }
+
+    private async Task OnClick()
+    {
+        UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDevice.DeviceId)}");
+    }
+}

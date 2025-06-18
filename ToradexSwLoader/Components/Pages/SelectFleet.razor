@@ -119,7 +119,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/charging/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
+            UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
         }
     }
 

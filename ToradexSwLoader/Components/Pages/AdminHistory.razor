@@ -1,6 +1,6 @@
 ﻿@page "/adminHistory"
 
-@inject AppDbContext DbContextFactory
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 
 <PageTitle>Histórico de Carregamentos</PageTitle>
 
@@ -63,7 +63,7 @@ else
                     <tr>
                         <td>@GetPlacaFromMessage(activity.ActMessage)</td>
                         <td class="text-center">@activity.ActTimeStamp.ToString(" HH:mm:ss dd-MM-yyyy")</td>
-                        <td class="text-center">@activity.UserId</td>
+                        <td class="text-center">@activity.UserPetrotec?.UserName</td>
                     </tr>
                 }
             </tbody>
@@ -106,8 +106,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        AllUserActivities = await DbContextFactory.UserActivities
-            .Where(a => a.ActMessage.Contains("Colaborador iniciou o carregamento da placa"))
+        using var context = DbContextFactory.CreateDbContext();
+        AllUserActivities = await context.UserActivities
+            .Include(a => a.UserPetrotec)
+            .Where(a => a.ActMessage.Contains("Iniciou o carregamento da placa"))
             .OrderByDescending(a => a.ActTimeStamp)
             .ToListAsync();
 
