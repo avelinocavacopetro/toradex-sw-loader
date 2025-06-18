@@ -107,7 +107,6 @@ else
     private int actualPage = 1;
     private int devicesPerPage = 4;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
-    private string state = "Error";
     private int OnlineTime => FilterService.OnlineTime;
 
     private bool CanGoNext => actualPage < totalPages;

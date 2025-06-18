@@ -80,8 +80,9 @@
 	}
 
 
-	private async Task OnClick()
+	private Task OnClick()
 	{
 		UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(fleetId)}");
+		return Task.CompletedTask;
 	}
 }

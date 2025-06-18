@@ -1,3 +1,64 @@
 ﻿@page "/home"
 
+@inject AppDbContext DbContextFactory
+
 <PageTitle>Página Inicial</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <h3 class="mt-5">Últimos Carregamentos</h3>
+
+    <div class="d-flex justify-content-center align-items-center">
+        <table class="table mt-5 w-100">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th>Placa</th>
+                    <th class="text-center">Hora</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var activity in AllUserActivities)
+                {
+                    <tr>
+                        <td>@GetPlacaFromMessage(activity.ActMessage)</td>
+                        <td class="text-center">@activity.ActTimeStamp.ToString(" HH:mm:ss dd-MM-yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    bool isLoading = true;
+    private List<UserActivity> AllUserActivities = new List<UserActivity>();
+    private List<UserActivity> paginatedActivities = new List<UserActivity>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        AllUserActivities = await DbContextFactory.UserActivities
+            .Where(a => a.ActMessage.Contains("Colaborador iniciou o carregamento da placa"))
+            .OrderByDescending(a => a.ActTimeStamp)
+            .Take(10)
+            .ToListAsync();
+
+        isLoading = false;
+    }
+
+    private string GetPlacaFromMessage(string message)
+    {
+        var parts = message.Split("-> Nome:");
+        return parts.Length > 1 ? parts[1].Trim() : "N/A";
+    }
+}
