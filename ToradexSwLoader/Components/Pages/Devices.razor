@@ -137,8 +137,6 @@ else
     private int devicesPerPage = 4;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
 
-    private string selectedOrder = "relevance";
-
     private WindowDimension? dimension;
 
     private void OnDimensionsChanged(WindowDimension newDimension)

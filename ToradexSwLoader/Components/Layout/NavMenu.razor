@@ -25,7 +25,7 @@
 
             @if (menuOpen)
             {
-                <div class="pt-1">
+                <div class="pt-1" @onclick="ToggleMenu">
                     <NavLink class="nav-link pb-1" href="manageDevices" style="gap: 1rem;">
                         <span  aria-hidden="true"></span> Gerir Dispositivos
                     </NavLink>
@@ -40,6 +40,9 @@
                     </NavLink>
                     <NavLink class="nav-link pb-1" href="manageSecret" style="gap: 1rem;">
                         <span aria-hidden="true"></span> Alterar Segredo
+                    </NavLink>
+                    <NavLink class="nav-link pb-1" href="adminHistory" style="gap: 1rem;">
+                        <span aria-hidden="true"></span> Carregamentos
                     </NavLink>
                 </div>
             }
