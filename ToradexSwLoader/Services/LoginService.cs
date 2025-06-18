@@ -2,18 +2,16 @@
 {
     public class LoginService
     {
-        public int CurrentLoginId { get; private set; }
-        public string Email { get; private set; } = string.Empty;
+        public int UserId { get; private set; }
+        public string Username { get; private set; } = string.Empty;
 
         public event Action? OnLoginChanged;
 
-        public void SetLogin(int loginId, string email)
+        public void SetLogin(int userId, string username)
         {
-            CurrentLoginId = loginId;
-            Email = email;
+            UserId = userId;
+            Username = username;
             OnLoginChanged?.Invoke();
         }
     }
-
-
 }

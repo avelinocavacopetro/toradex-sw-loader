@@ -1,0 +1,16 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ToradexSwLoader.Models
+{
+    [Table("Product")]
+    public class Product
+    {
+        [Key]
+        public int ProductId { get; set; }
+
+        [Required]
+        [MaxLength(30)]
+        public string ProductName { get; set; } = string.Empty;
+    }
+}

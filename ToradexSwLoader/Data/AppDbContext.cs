@@ -17,6 +17,8 @@ namespace ToradexSwLoader.Data
         public DbSet<UserActivity> UserActivities { get; set; } 
         public DbSet<LoginLog> LoginLogs { get; set; }
         public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<UserPetrotec> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

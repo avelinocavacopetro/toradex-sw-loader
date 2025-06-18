@@ -107,8 +107,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // using var context = DbContextFactory.CreateDbContext();
-        // selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+        using var context = DbContextFactory.CreateDbContext();
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
 
         await FilterService.LoadFilterAsync();
 
@@ -172,8 +172,8 @@ else
         {
             var userAct = new UserActivity
             {
-                UserLoginId = LoginService.CurrentLoginId,
-                ActMessage = $"Colaborador selecionou o software: Nome: {selectedPackage.PackageName} | Versão: {selectedPackage.PackageVersion}",
+                UserId = LoginService.UserId,
+                ActMessage = $"Selecionou o software: Nome: {selectedPackage.PackageName} | Versão: {selectedPackage.PackageVersion}",
                 ActTimeStamp = DateTime.Now
             };
 

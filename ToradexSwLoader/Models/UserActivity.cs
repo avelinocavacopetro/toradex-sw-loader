@@ -10,10 +10,10 @@ namespace ToradexSwLoader.Models
         public int UserActId { get; set; }
 
         [Required]
-        public int UserLoginId { get; set; }
+        public int UserId { get; set; }
 
-        [ForeignKey(nameof(UserLoginId))]
-        public LoginLog? LoginLog { get; set; } 
+        [ForeignKey(nameof(UserId))]
+        public UserPetrotec? UserPetrotec { get; set; } 
 
         [Required]
         [MaxLength(500)]

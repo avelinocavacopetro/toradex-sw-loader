@@ -16,6 +16,7 @@ namespace ToradexSwLoader.Services
         public string? SelectedPackage { get; set; }
         public string? Version { get; set; }
         public List<Fleet> SelectedFleets { get; private set; } = new List<Fleet>();
+        public List<Product> SelectedProducts { get; private set; } = new List<Product>();
 
         public FilterService(IDbContextFactory<AppDbContext> contextFactory)
         {
@@ -36,6 +37,10 @@ namespace ToradexSwLoader.Services
                 SelectedFleets = string.IsNullOrWhiteSpace(filter.SelectedFleetsJson)
                                  ? new List<Fleet>()
                                  : JsonSerializer.Deserialize<List<Fleet>>(filter.SelectedFleetsJson) ?? new List<Fleet>();
+
+                SelectedProducts = string.IsNullOrWhiteSpace(filter.SelectedProductsJson)
+                                 ? new List<Product>()
+                                 : JsonSerializer.Deserialize<List<Product>>(filter.SelectedProductsJson) ?? new List<Product>();
             }
         }
         
@@ -54,6 +59,7 @@ namespace ToradexSwLoader.Services
             filter.SelectedPackage = SelectedPackage;
             filter.Version = Version;
             filter.SelectedFleetsJson = JsonSerializer.Serialize(SelectedFleets);
+            filter.SelectedProductsJson = JsonSerializer.Serialize(SelectedProducts);
             filter.LastUpdated = DateTime.Now;
 
             await context.SaveChangesAsync();
@@ -77,6 +83,12 @@ namespace ToradexSwLoader.Services
         public async Task ApplyFleetFilter(List<Fleet> fleetNames)
         {
             SelectedFleets = fleetNames;
+            await SaveFilterAsync();
+        }
+
+        public async Task ApplyProductsFilter(List<Product> productsNames)
+        {
+            SelectedProducts = productsNames;
             await SaveFilterAsync();
         }
     }

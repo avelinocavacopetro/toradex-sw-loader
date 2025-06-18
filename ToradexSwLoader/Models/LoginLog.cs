@@ -10,6 +10,12 @@ namespace ToradexSwLoader.Models
         public int LoginId { get; set; }
 
         [Required]
+        public int UserId { get; set; }
+
+        [ForeignKey(nameof(UserId))]
+        public UserPetrotec? UserPetrotec { get; set; }
+
+        [Required]
         [MaxLength(50)]
         public string Email { get; set; } = string.Empty;
 
