@@ -108,7 +108,7 @@
             using var context = DbContextFactory.CreateDbContext();
             var userAct = new UserActivity
             {
-                UserLoginId = LoginService.CurrentLoginId,
+                UserId = LoginService.UserId,
                 ActMessage = $"Colaborador iniciou o carregamento da placa -> Nome: {finalBoard}",
                 ActTimeStamp = DateTime.Now
             };
