@@ -40,21 +40,30 @@ else
                             <tr>
                                 <th>Nome do Produto</th>
                                 <th class="text-center">Selecionar</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var product in products)
                             {
                                 <tr class="table-light">
-                                    <td>@product.ProductName</td>
-                                    <td>
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" class="largerCheckbox" id="toggle-@product.ProductId"
-                                                   @onchange="(e => ToggleProduct(e, product))"
-                                                   checked="@selectedProducts.Any(p => p.ProductId == product.ProductId)" />
-                                        </div>
-                                    </td>
+                                        <td>@product.ProductName</td>
+                                        <td>
+                                            <div class="form-check d-flex justify-content-center">
+                                                <input type="checkbox" class="largerCheckbox" id="toggle-@product.ProductId"
+                                                       @onchange="(e => ToggleProduct(e, product))"
+                                                       checked="@selectedProducts.Any(p => p.ProductId == product.ProductId)" />
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-danger btn-sm"
+                                                    title="Desativar"
+                                                    @onclick="() => DisableProduct(product.ProductId)">
+                                                <i class="fa-solid fa-trash fa-lg"></i> 
+                                            </button>
+                                        </td>
                                 </tr>
+                               
                             }
                         </tbody>
                     </table>
@@ -162,8 +171,25 @@ else
         using var context = DbContextFactory.CreateDbContext();
         var newProduct = new Product
             {
-                ProductName = productName
+                ProductName = productName,
+                Enabled = true
             };
+
+        bool exists = await context.Products.AnyAsync(p => p.ProductName.ToLower() == productName.Trim().ToLower());
+
+        if(exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este produto já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+
+            productName = string.Empty;
+
+            return;
+        }
 
         products.Add(newProduct);
         context.Products.Add(newProduct);
@@ -184,5 +210,37 @@ else
     private void CancelAdd()
     {
         isAdding = false;
+    }
+
+    private async Task DisableProduct(int productId)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deseja desativar este produto?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
+
+        if (result.IsConfirmed)
+        {
+            isLoading = true;
+
+            using var context = DbContextFactory.CreateDbContext();
+            var productDb = await context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+
+            if (productDb != null)
+            {
+                productDb.Enabled = false;
+                await context.SaveChangesAsync();
+            }
+
+            products.RemoveAll(p => p.ProductId == productId);
+
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 }
