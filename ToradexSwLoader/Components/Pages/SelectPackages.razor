@@ -173,8 +173,8 @@ else
         {
             var userAct = new UserActivity
             {
-                UserLoginId = LoginService.CurrentLoginId,
-                ActMessage = $"Colaborador selecionou o software: Nome: {selectedPackage.PackageName} | Versão: {selectedPackage.PackageVersion}",
+                UserId = LoginService.UserId,
+                ActMessage = $"Selecionou o software: Nome: {selectedPackage.PackageName} | Versão: {selectedPackage.PackageVersion}",
                 ActTimeStamp = DateTime.Now
             };
 

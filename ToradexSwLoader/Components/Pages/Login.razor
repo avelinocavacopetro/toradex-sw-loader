@@ -1,7 +1,7 @@
 ﻿@page "/"
 
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject NavigationManager UriHelper
-@inject AppDbContext DbContext
 @inject LoginService LoginService
 
 <PageTitle>Log in</PageTitle>
@@ -39,7 +39,7 @@
                 <label for="email" class="form-label">Email</label>
             </div>
             <div class="form-floating mb-3">
-                <input type="password" class="form-control custom-input" autocomplete="current-password" aria-required="true" placeholder="password" />
+                <input type="password" class="form-control custom-input" @bind="inputPassword" autocomplete="current-password" aria-required="true" placeholder="password" />
                 <label for="password" class="form-label">Password</label>
             </div>
             <br />
@@ -65,42 +65,55 @@
 
 @code {
     private string inputEmail = string.Empty;
+    private string inputPassword = string.Empty;
     private bool isLoading = true;
     private string? errorMessage = string.Empty;
 
 
     private async Task RegisterLogin()
     {
-        @if (!string.IsNullOrWhiteSpace(inputEmail))
+        if (string.IsNullOrWhiteSpace(inputEmail))
         {
-            if (inputEmail.Contains("petrotec.com"))
-            {
-                
+            errorMessage = "O campo Email não pode estar vazio";
+            return;
+        }
 
-                var loginLog = new LoginLog
+        if (string.IsNullOrWhiteSpace(inputPassword))
+        {
+            errorMessage = "O campo Password não pode estar vazio";
+            return;
+        }
+
+        if (!inputEmail.EndsWith("@petrotec.com"))
+        {
+            errorMessage = "O email inserido não é petrotec.com";
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == inputEmail);
+
+        if (user == null)
+        {
+            errorMessage = "Email ou password inválidos";
+            return;
+        }
+
+        var loginLog = new LoginLog
             {
+                UserId = user.UserId,
                 Email = inputEmail,
                 LoginTimeStamp = DateTime.Now
             };
 
-                DbContext.LoginLogs.Add(loginLog);
-                await DbContext.SaveChangesAsync();
+        context.LoginLogs.Add(loginLog);
+        await context.SaveChangesAsync();
 
-                LoginService.SetLogin(loginLog.LoginId, loginLog.Email);
+        LoginService.SetLogin(user.UserId, user.UserName);
 
-                isLoading = false;
+        isLoading = false;
 
-                EnterLogin();
-
-            } else
-            {
-                errorMessage = "O email inserido não é petrotec.com";
-            }
-        }
-        else
-        {
-            errorMessage = "O email inserido está vazio";
-        }
+        EnterLogin();
     }
 
     private void EnterLogin()

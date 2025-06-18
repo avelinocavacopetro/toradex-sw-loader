@@ -111,8 +111,8 @@ else
             using var context = DbContextFactory.CreateDbContext();
             var userAct = new UserActivity
             {
-                UserLoginId = LoginService.CurrentLoginId,
-                ActMessage = $"Colaborador selecionou a frota -> Nome: {selectedFleet.FleetName}",
+                UserId = LoginService.UserId,
+                ActMessage = $"Selecionou a frota: Nome: {selectedFleet.FleetName}",
                 ActTimeStamp = DateTime.Now
             };
 

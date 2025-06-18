@@ -8,7 +8,7 @@
 
 <div class="page">
 
-    @if (IsCurrentPage(new[] { "/home", "/manageDevices", "/manageFleets", "/manageSecret", "/managePackages"}))
+    @if (IsCurrentPage(new[] { "/home", "/manageDevices", "/manageFleets", "/manageSecret", "/managePackages", "/manageProducts" }))
     {
         <div class="sidebar">
             <NavMenu />
@@ -78,41 +78,41 @@
         timer.AutoReset = true;
         timer.Enabled = true;
 
-        username = GetUserNameFromEmail(LoginService.Email);
+        username = LoginService.Username;
         LoginService.OnLoginChanged += OnLoginChanged;
 
         return Task.CompletedTask;
     }
 
-    private string GetUserNameFromEmail(string email)
-    {
-        if (string.IsNullOrEmpty(email))
-            return string.Empty;
+    // private string GetUserNameFromEmail(string email)
+    // {
+    //     if (string.IsNullOrEmpty(email))
+    //         return string.Empty;
 
-        var atIndex = email.IndexOf('@');
-        if (atIndex > 0)
-        {
-            var usernamePart = email.Substring(0, atIndex);
-            
-            var parts = usernamePart.Split('.');
+    //     var atIndex = email.IndexOf('@');
+    //     if (atIndex > 0)
+    //     {
+    //         var usernamePart = email.Substring(0, atIndex);
 
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (!string.IsNullOrEmpty(parts[i]))
-                {
-                    parts[i] = char.ToUpper(parts[i][0]) + parts[i].Substring(1).ToLower();
-                }
-            }
+    //         var parts = usernamePart.Split('.');
 
-            return string.Join(" ", parts);
-        }
+    //         for (int i = 0; i < parts.Length; i++)
+    //         {
+    //             if (!string.IsNullOrEmpty(parts[i]))
+    //             {
+    //                 parts[i] = char.ToUpper(parts[i][0]) + parts[i].Substring(1).ToLower();
+    //             }
+    //         }
 
-        return email;
-    }
+    //         return string.Join(" ", parts);
+    //     }
+
+    //     return email;
+    // }
 
     private void OnLoginChanged()
     {
-        username = GetUserNameFromEmail(LoginService.Email);
+        username = LoginService.Username;
         InvokeAsync(StateHasChanged);
     }
 
