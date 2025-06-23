@@ -55,6 +55,7 @@ else
                     <th>Placa</th>
                     <th class="text-center">Hora</th>
                     <th class="text-center">Colaborador</th>
+                    <th>Estado</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,6 +65,7 @@ else
                         <td>@GetPlacaFromMessage(activity.ActMessage)</td>
                         <td class="text-center">@activity.ActTimeStamp.ToString(" HH:mm:ss dd-MM-yyyy")</td>
                         <td class="text-center">@activity.UserPetrotec?.UserName</td>
+                        <td>VER</td>
                     </tr>
                 }
             </tbody>

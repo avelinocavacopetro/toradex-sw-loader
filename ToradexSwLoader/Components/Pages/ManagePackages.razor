@@ -11,6 +11,19 @@
 
 <h3 class="pb-5">Configurar pacotes a visualizar</h3>
 
+<div>
+    <h5 class="fw-bold">Produto(s) selecionado(s)</h5>
+    @foreach (var products in FilterService.SelectedProducts)
+    {
+        <span class="mb-5">@products.ProductName, </span>
+    }
+    <h5 class="fw-bold">Stack(s) selecionada(s)</h5>
+@*     @foreach (var stacks in FilterService.SelectedStack)
+    {
+        <span class="mb-5">@stacks.StackName, </span>
+    } *@
+</div>
+
 <div class="pt-3 w-50">
     <label for="packageName" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
     <select id="packageName" class="form-select" @onchange="OnPackageNameChanged">
@@ -91,6 +104,8 @@
             .Distinct()
             .OrderBy(p => p)
             .ToHashSet();
+
+        await FilterService.LoadFilterAsync();
     }
 
     private void OnPackageNameChanged(ChangeEventArgs e)

@@ -100,7 +100,7 @@ else
     private int actualPage = 1;
     private int packagesPerPage = 5;
     private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
-    private bool isLoading = false;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,8 +115,6 @@ else
 
         isLoading = false;
         StateHasChanged();
-
-        Console.WriteLine($"device: {deviceId}");
     }
 
     private async Task LoadPackagesAsync()
