@@ -13,13 +13,14 @@ namespace ToradexSwLoader.Data
         public DbSet<Device> Devices { get; set; }
         public DbSet<Package> Packages { get; set; }
         public DbSet<Hardware> Hardwares { get; set; }
-        public DbSet<PackageHardware> PackageHardwares { get; set; }
         public DbSet<Fleet> Fleets { get; set; }
-        public DbSet<UserActivity> UserActivities { get; set; } 
-        public DbSet<LoginLog> LoginLogs { get; set; }
         public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<UserPetrotec> Users { get; set; }
+        public DbSet<PackageHardware> PackageHardwares { get; set; }
+        public DbSet<UserActivity> UserActivities { get; set; } 
+        public DbSet<LoginLog> LoginLogs { get; set; }
+        public DbSet<DeviceProduct> DeviceProducts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -39,6 +40,19 @@ namespace ToradexSwLoader.Data
             modelBuilder.Entity<Hardware>()
                 .HasIndex(h => h.HardwareName)
                 .IsUnique();
+
+            modelBuilder.Entity<DeviceProduct>()
+                .HasKey(dp => new { dp.DeviceId, dp.ProductId });
+
+            modelBuilder.Entity<DeviceProduct>()
+                .HasOne(dp => dp.Device)
+                .WithMany(d => d.DeviceProducts)
+                .HasForeignKey(dp => dp.DeviceId);
+
+            modelBuilder.Entity<DeviceProduct>()
+                .HasOne(dp => dp.Product)
+                .WithMany(p => p.DeviceProducts)
+                .HasForeignKey(dp => dp.ProductId);
 
             base.OnModelCreating(modelBuilder);
         }
