@@ -25,13 +25,6 @@
             {
                 <tr class="table-light">
                     <td>@device.DeviceName</td>
-                    @* <td>
-                        <div class="form-check d-flex justify-content-center">
-                            <input class="form-check-input largerCheckbox" type="radio" name="deviceSelection"
-                                   @onchange="@(() => selectedDevice = device.DeviceName)"
-                                   checked="@(selectedDevice == device.DeviceName)" />
-                        </div>
-                    </td> *@
                     <td>
                         <div class="form-check d-flex justify-content-center">
                             <input type="checkbox" class="largerCheckbox" id="toggle-@device.DeviceId"
@@ -63,6 +56,7 @@
 @code {
     private List<Device>? devices;
     private List<Device> selectedDevices = new List<Device>();
+
     private string deviceName = string.Empty;
     private bool isLoading = true;
     private int onlineTime = 1;
@@ -128,25 +122,4 @@
             ConfirmButtonColor = "#0B5120"
         });
     }
-
-        // if (string.IsNullOrEmpty(selectedDevice))
-        // {
-        //     await Swal.FireAsync(new SweetAlertOptions
-        //     {
-        //         Title = "Por favor selecione um dispositivo!",
-        //         Icon = SweetAlertIcon.Warning,
-        //         ConfirmButtonColor = "#0B5120"
-        //     });
-        //     return;
-        // }
-
-        // await FilterService.ApplyFilter(selectedDevice, onlineTime);
-
-        // await Swal.FireAsync(new SweetAlertOptions
-        // {
-        //     Title = "Filtros aplicados com sucesso!",
-        //     Icon = SweetAlertIcon.Success,
-        //     ConfirmButtonColor = "#0B5120"
-        // });
-    // }
 }

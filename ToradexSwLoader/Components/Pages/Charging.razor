@@ -1,4 +1,4 @@
-﻿@page "/charging/{deviceId}/{packageId}/{fleetId}"
+﻿@page "/charging/{deviceId:int}/{packageId}/{fleetId}"
 
 @inject NavigationManager UriHelper
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -55,8 +55,6 @@
 </style>
 
 @code {
-	private bool isLoading = true;
-
 	[Parameter]
 	public int deviceId { get; set; }
 	private Device? selectedDevice = new Device();
@@ -69,6 +67,8 @@
 	public string fleetId { get; set; } = string.Empty;
 	private Fleet? selectedFleet = new Fleet();
 
+	private bool isLoading = true;
+
 	protected override async Task OnInitializedAsync()
 	{
 		using var context = DbContextFactory.CreateDbContext();
@@ -78,7 +78,6 @@
 
 		isLoading = false;
 	}
-
 
 	private Task OnClick()
 	{

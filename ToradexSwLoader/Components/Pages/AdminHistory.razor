@@ -74,12 +74,15 @@ else
 }
 
 @code {
-    bool isLoading = true;
     private List<UserActivity> AllUserActivities = new List<UserActivity>();
     private List<UserActivity> paginatedActivities = new List<UserActivity>();
+
     private int actualPage = 1;
     private int activitiesPerPage = 7;
     private int totalPages => (int)Math.Ceiling((double)AllUserActivities.Count / activitiesPerPage);
+    bool isLoading = true;
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     private IEnumerable<UserActivity> FilteredPages =>
     string.IsNullOrWhiteSpace(searchTerm)
@@ -104,7 +107,6 @@ else
             }
         }
     }
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -151,7 +153,4 @@ else
             UpdatePage();
         }
     }
-
-    private bool CanGoNext => actualPage < totalPages;
-    private bool CanGoPrev => actualPage > 1;
 }

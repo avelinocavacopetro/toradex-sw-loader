@@ -1,4 +1,4 @@
-﻿@page "/selectStack/{deviceId}"
+﻿@page "/selectStack/{deviceId:int}"
 
 <PageTitle>Selecionar Stack</PageTitle>
 
@@ -23,6 +23,7 @@
     [Parameter]
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
+
     private bool isLoading = false;
 
     protected override async Task OnInitializedAsync()
@@ -35,6 +36,6 @@
 
     private async Task OnClick()
     {
-        UriHelper.NavigateTo($"/packages/{selectedDevice.DeviceId}");
+        UriHelper.NavigateTo($"/packages/{deviceId}");
     }
 }

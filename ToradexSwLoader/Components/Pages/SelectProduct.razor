@@ -1,10 +1,10 @@
-﻿@page "/selectProduct/{deviceId}"
+﻿@page "/selectProduct/{deviceId:int}"
 
-@inject NavigationManager UriHelper
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject NavigationManager UriHelper
 @inject LoginService LoginService
 @inject FilterService FilterService
-
+@inject PackageService PackageService
 
 <PageTitle>Selecionar Produto</PageTitle>
 
@@ -60,20 +60,21 @@ else
 }
 
 @code {
-    private List<Product> paginatedProducts = new List<Product>();
     [Parameter]
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
 
     private Product? selectedProduct;
     private List<Product> products = new List<Product>();
+    private List<Product> paginatedProducts = new List<Product>();
+    private WindowDimension? dimension;
 
     private bool isLoading = false;
     private int actualPage = 1;
     private int productsPerPage = 14;
     private int totalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
-
-    private WindowDimension? dimension;
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
@@ -84,7 +85,7 @@ else
         StateHasChanged();
     }
 
-    private async void SelectProductName(Product product)
+    private async Task SelectProductName(Product product)
     {
         selectedProduct = product;
         await OnClick();
@@ -92,6 +93,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
 
@@ -113,7 +115,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectStack/{Uri.EscapeDataString(deviceId)}");
+            UriHelper.NavigateTo($"/selectStack/{deviceId}");
         }
     }
 
@@ -142,7 +144,4 @@ else
             UpdatePage();
         }
     }
-
-    private bool CanGoNext => actualPage < totalPages;
-    private bool CanGoPrev => actualPage > 1;
 }

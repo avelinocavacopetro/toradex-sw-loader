@@ -1,4 +1,4 @@
-﻿@page "/customization/{deviceId}/{packageId}/{fleetId}"
+﻿@page "/customization/{deviceId:int}/{packageId}/{fleetId}"
 
 @inject NavigationManager UriHelper
 @inject LoginService LoginService
@@ -50,8 +50,6 @@
 </div>
 
 @code {
-    private bool isLoading = true;
-
     [Parameter]
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
@@ -64,14 +62,15 @@
     public string fleetId { get; set; } = string.Empty;
     private Fleet? selectedFleet = new Fleet();
 
+    private bool isLoading = true;
     private string finalBoard = string.Empty;
-
     private bool isEditing = false;
-
     private string originalFinalBoard = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine($"ID DO PACOTE RECEBIDO: {packageId}");
+
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
         selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == packageId);

@@ -1,4 +1,4 @@
-@page "/selectFleet/{deviceId}/{packageId}"
+@page "/selectFleet/{deviceId:int}/{packageId}"
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -71,23 +71,30 @@ else
 }
 
 @code {
-    private List<Fleet> paginatedFleets = new List<Fleet>();
     [Parameter]
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
+
     [Parameter]
     public string packageId { get; set; } = string.Empty;
     private Package? selectedPackage = new Package();
 
     private Fleet? selectedFleet;
     private List<Fleet> fleets = new List<Fleet>();
+    private List<Fleet> paginatedFleets = new List<Fleet>();
+    private WindowDimension? dimension;
 
     private bool isLoading = false;
     private int actualPage = 1;
     private int fleetsPerPage = 14;
     private int totalPages => (int)Math.Ceiling((double)fleets.Count / fleetsPerPage);
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
 
-    private WindowDimension? dimension;
+    protected override void OnInitialized()
+    {
+        Console.WriteLine($"ID DO PACOTE RECEBIDO: {packageId}");
+    }
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
@@ -148,7 +155,4 @@ else
             UpdatePage();
         }
     }
-
-    private bool CanGoNext => actualPage < totalPages;
-    private bool CanGoPrev => actualPage > 1;
 }
