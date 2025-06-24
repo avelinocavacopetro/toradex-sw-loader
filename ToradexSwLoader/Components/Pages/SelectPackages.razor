@@ -61,7 +61,6 @@ else
         <thead>
             <tr>
                 <th>Nome</th>
-                <th style="text-align: center;">Hardware</th>
                 <th style="text-align: center;">Versão</th>
             </tr>
         </thead>
@@ -71,9 +70,6 @@ else
                 <tr class="@GetRowClass(package)" @onclick="() => SelectRow(package)">
                     <td title="@package.PackageName" style="word-break: break-word; white-space: normal;">
                         @package.PackageName
-                    </td>
-                    <td style="text-align: center;">
-                        Por ver
                     </td>
                     <td style="text-align: center;">@package.PackageVersion</td>
                 </tr>

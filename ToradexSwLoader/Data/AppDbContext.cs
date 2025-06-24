@@ -20,6 +20,7 @@ namespace ToradexSwLoader.Data
         public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<UserPetrotec> Users { get; set; }
+        public DbSet<ProductPackage> ProductPackages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -39,6 +40,19 @@ namespace ToradexSwLoader.Data
             modelBuilder.Entity<Hardware>()
                 .HasIndex(h => h.HardwareName)
                 .IsUnique();
+
+            modelBuilder.Entity<ProductPackage>()
+                .HasKey(pp => new { pp.ProductId, pp.PackageId });
+
+            modelBuilder.Entity<ProductPackage>()
+                .HasOne(pp => pp.Product)
+                .WithMany(p => p.ProductPackages)
+                .HasForeignKey(pp => pp.ProductId);
+
+            modelBuilder.Entity<ProductPackage>()
+                .HasOne(pp => pp.Package)
+                .WithMany(p => p.ProductPackages)
+                .HasForeignKey(pp => pp.PackageId);
 
             base.OnModelCreating(modelBuilder);
         }

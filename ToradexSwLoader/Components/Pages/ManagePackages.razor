@@ -1,49 +1,80 @@
 ﻿@page "/managePackages"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
-@inject TorizonService TorizonService
-@inject LoginService LoginService
-@inject PackageService PackageService
-@inject FilterService FilterService
-@inject NavigationManager UriHelper
 @inject SweetAlertService Swal
+@inject FilterService FilterService
 
 <PageTitle>Gerir Pacotes</PageTitle>
 
-<h3 class="pb-5">Configurar pacotes a visualizar</h3>
+<h3 class="pb-3">Configurar pacotes a visualizar</h3>
 
 <div>
-    <h5 class="fw-bold">Produto(s) selecionado(s)</h5>
-    @foreach (var products in FilterService.SelectedProducts)
-    {
-        <span class="mb-5">@products.ProductName, </span>
-    }
-    <h5 class="fw-bold">Stack(s) selecionada(s)</h5>
-@*     @foreach (var stacks in FilterService.SelectedStack)
-    {
-        <span class="mb-5">@stacks.StackName, </span>
-    } *@
+    <table class="table w-50">
+        <tbody>
+            @foreach (var products in FilterService.SelectedProducts)
+            {
+                <tr class="table-light">
+                    <td>@products.ProductName</td>
+                    <td>
+                        <div class="form-check d-flex justify-content-center">
+                            <input type="checkbox" class="largerCheckbox" />
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
 
-<div class="pt-3 w-50">
-    <label for="packageName" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
-    <select id="packageName" class="form-select" @onchange="OnPackageNameChanged">
-        <option value="">Selecione um pacote</option>
-        @foreach (var name in packageNames)
-        {
-            <option value="@name">@name</option>
-        }
-    </select>
+<div class="w-50">
+    <label for="packageInput" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
+    <div class="position-relative">
+        <input id="packageInput" class="form-control" type="text"
+               @bind="searchTerm"
+               @oninput="FilterPackageNames"
+               @onfocus="() => showSuggestions = true"
+               @onblur="HideSuggestions" />
 
-    <label for="packageVersion" class="pt-4" style="font-size: 18px; font-weight: bold;">Versão</label>
-    <select id="packageVersion" class="form-select" @bind="selectedPackageVersion">
-        <option value="">Selecione uma versão</option>
-        @foreach (var version in filteredVersions)
+        @if (showSuggestions && filteredPackageNames.Any())
         {
-            <option value="@version">@version</option>
+            <ul class="list-group position-absolute w-100 shadow"
+                style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                @foreach (var name in filteredPackageNames)
+                {
+                    <li class="list-group-item list-group-item-action"
+                        style="cursor: pointer;"
+                        @onclick="() => SelectPackage(name)">
+                        @name
+                    </li>
+                }
+            </ul>
         }
-    </select>
+    </div>
+
+    <label for="versionInput" class="pt-3" style="font-size: 18px; font-weight: bold;">Versão</label>
+    <div class="position-relative">
+        <input id="versionInput" class="form-control" type="text"
+               @bind="versionSearchTerm"
+               @oninput="FilterVersions"
+               @onfocus="() => showVersionSuggestions = true"
+               @onblur="HideVersionSuggestions"
+               disabled="@versionDisabled" />
+
+        @if (showVersionSuggestions && filteredVersionList.Any())
+        {
+            <ul class="list-group position-absolute w-100 shadow"
+                style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                @foreach (var version in filteredVersionList)
+                {
+                    <li class="list-group-item list-group-item-action"
+                        style="cursor: pointer;"
+                        @onclick="() => SelectVersion(version)">
+                        @version
+                    </li>
+                }
+            </ul>
+        }
+    </div>
 </div>
 
 <div class="text-center fixed-bottom pb-4">
@@ -51,23 +82,80 @@
 </div>
 
 @code {
-    private List<Package> packages = new List<Package>();
-    private List<Package> paginatedPackages = new List<Package>();
-    private WindowDimension? dimension;
+    private List<Package> packages = new();
     private HashSet<string> packageNames = new();
     private List<string> filteredVersions = new();
-    
+    private List<string> filteredVersionList = new();
+    private List<string> filteredPackageNames = new();
     private string? selectedPackageName;
     private string? selectedPackageVersion;
-    private int packagesPerPage = 5;
-    private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
+    private string versionSearchTerm = "";
+    private bool showVersionSuggestions = false;
+    private string searchTerm = "";
+    private bool showSuggestions = false;
+    private bool versionDisabled = true;
 
-    private void OnDimensionsChanged(WindowDimension newDimension)
+    protected override async Task OnInitializedAsync()
     {
-        dimension = newDimension;
-        packagesPerPage = dimension.Width <= 1024 ? 3 : 5;
+        using var context = DbContextFactory.CreateDbContext();
+        packages = await context.Packages
+                                .Include(p => p.PackageHardwares)
+                                .ThenInclude(ph => ph.Hardware)
+                                .ToListAsync();
 
-        StateHasChanged();
+        packageNames = packages
+            .Select(p => p.PackageName)
+            .Distinct()
+            .OrderBy(p => p)
+            .ToHashSet();
+
+        filteredPackageNames = packageNames.ToList();
+
+        await FilterService.LoadFilterAsync();
+    }
+
+    private void FilterPackageNames(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        showSuggestions = true;
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredPackageNames = packageNames.ToList();
+        }
+        else
+        {
+            filteredPackageNames = packageNames
+                .Where(p => p.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void SelectPackage(string name)
+    {
+        selectedPackageName = name;
+        searchTerm = name;
+        showSuggestions = false;
+
+        filteredVersions = packages
+            .Where(p => p.PackageName == selectedPackageName)
+            .Select(p => p.PackageVersion)
+            .OrderByDescending(v => v)
+            .ToList();
+
+        filteredVersionList = filteredVersions.ToList();
+
+        selectedPackageVersion = null;
+        versionSearchTerm = "";
+
+        versionDisabled = false;
+    }
+
+
+    private async Task HideSuggestions()
+    {
+        await Task.Delay(200);
+        showSuggestions = false;
     }
 
     private async Task SavePackageFilter()
@@ -93,31 +181,34 @@
         });
     }
 
-    protected override async Task OnInitializedAsync()
+    private void FilterVersions(ChangeEventArgs e)
     {
-        using var context = DbContextFactory.CreateDbContext();
-        packages = await context.Packages
-                                     .Include(p => p.PackageHardwares)
-                                     .ThenInclude(ph => ph.Hardware)
-                                     .ToListAsync();
-        packageNames = packages
-            .Select(p => p.PackageName)
-            .Distinct()
-            .OrderBy(p => p)
-            .ToHashSet();
+        versionSearchTerm = e.Value?.ToString() ?? "";
+        showVersionSuggestions = true;
 
-        await FilterService.LoadFilterAsync();
+        if (string.IsNullOrWhiteSpace(versionSearchTerm))
+        {
+            filteredVersionList = filteredVersions.ToList();
+        }
+        else
+        {
+            filteredVersionList = filteredVersions
+                .Where(v => v.Contains(versionSearchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
     }
 
-    private void OnPackageNameChanged(ChangeEventArgs e)
+    private void SelectVersion(string version)
     {
-        selectedPackageName = e.Value?.ToString();
-        filteredVersions = packages
-            .Where(p => p.PackageName == selectedPackageName)
-            .Select(p => p.PackageVersion)
-            .OrderByDescending(v => v)
-            .ToList();
-
-        selectedPackageVersion = null;
+        selectedPackageVersion = version;
+        versionSearchTerm = version;
+        showVersionSuggestions = false;
     }
+
+    private async Task HideVersionSuggestions()
+    {
+        await Task.Delay(200);
+        showVersionSuggestions = false;
+    }
+
 }

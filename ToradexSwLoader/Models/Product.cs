@@ -14,5 +14,7 @@ namespace ToradexSwLoader.Models
         public string ProductName { get; set; } = string.Empty;
 
         public bool Enabled { get; set; }
+
+        public ICollection<ProductPackage> ProductPackages { get; set; } = new List<ProductPackage>();
     }
 }
