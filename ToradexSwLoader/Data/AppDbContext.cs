@@ -9,6 +9,7 @@ namespace ToradexSwLoader.Data
         {
         }
 
+        public DbSet<DetailedDevice> DetailedDevices { get; set; }
         public DbSet<Device> Devices { get; set; }
         public DbSet<Package> Packages { get; set; }
         public DbSet<Hardware> Hardwares { get; set; }

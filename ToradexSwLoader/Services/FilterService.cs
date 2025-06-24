@@ -11,12 +11,12 @@ namespace ToradexSwLoader.Services
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
         public event Action? OnFilterChanged;
 
-        public string? SelectedDevice { get; set; }
         public int OnlineTime { get; set; }
         public string? SelectedPackage { get; set; }
         public string? Version { get; set; }
         public List<Fleet> SelectedFleets { get; private set; } = new List<Fleet>();
         public List<Product> SelectedProducts { get; private set; } = new List<Product>();
+        public List<Device> SelectedDevices { get; private set; } = new List<Device>();
 
         public FilterService(IDbContextFactory<AppDbContext> contextFactory)
         {
@@ -29,7 +29,6 @@ namespace ToradexSwLoader.Services
             var filter = await context.GlobalFilters.FirstOrDefaultAsync();
             if(filter != null)
             {
-                SelectedDevice = filter.SelectedDevice;
                 OnlineTime = filter.OnlineTime;
                 SelectedPackage = filter.SelectedPackage;
                 Version = filter.Version;
@@ -41,6 +40,10 @@ namespace ToradexSwLoader.Services
                 SelectedProducts = string.IsNullOrWhiteSpace(filter.SelectedProductsJson)
                                  ? new List<Product>()
                                  : JsonSerializer.Deserialize<List<Product>>(filter.SelectedProductsJson) ?? new List<Product>();
+
+                SelectedDevices = string.IsNullOrWhiteSpace(filter.SelectedDevicesJson)
+                                 ? new List<Device>()
+                                 : JsonSerializer.Deserialize<List<Device>>(filter.SelectedDevicesJson) ?? new List<Device>();
             }
         }
         
@@ -54,23 +57,16 @@ namespace ToradexSwLoader.Services
                 context.GlobalFilters.Add(filter);
             }
 
-            filter.SelectedDevice = SelectedDevice;
             filter.OnlineTime = OnlineTime;
             filter.SelectedPackage = SelectedPackage;
             filter.Version = Version;
             filter.SelectedFleetsJson = JsonSerializer.Serialize(SelectedFleets);
             filter.SelectedProductsJson = JsonSerializer.Serialize(SelectedProducts);
+            filter.SelectedDevicesJson = JsonSerializer.Serialize(SelectedDevices);
             filter.LastUpdated = DateTime.Now;
 
             await context.SaveChangesAsync();
             OnFilterChanged?.Invoke();
-        }
-
-        public async Task ApplyFilter(string? name, int time)
-        {
-            SelectedDevice = name;
-            OnlineTime = time;
-            await SaveFilterAsync();
         }
 
         public async Task ApplyPackageFilter(string? name, string? version)
@@ -89,6 +85,12 @@ namespace ToradexSwLoader.Services
         public async Task ApplyProductsFilter(List<Product> productsNames)
         {
             SelectedProducts = productsNames;
+            await SaveFilterAsync();
+        }
+
+        public async Task ApplyDevicesFilter(List<Device> devicesNames)
+        {
+            SelectedDevices = devicesNames;
             await SaveFilterAsync();
         }
     }

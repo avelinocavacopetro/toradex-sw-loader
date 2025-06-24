@@ -12,5 +12,7 @@ namespace ToradexSwLoader.Models
         [Required]
         [MaxLength(30)]
         public string ProductName { get; set; } = string.Empty;
+
+        public bool Enabled { get; set; }
     }
 }

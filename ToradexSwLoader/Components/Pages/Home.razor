@@ -1,6 +1,6 @@
 ﻿@page "/home"
 
-@inject AppDbContext DbContextFactory
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 
 <PageTitle>Página Inicial</PageTitle>
 
@@ -25,6 +25,7 @@ else
                 <tr>
                     <th>Placa</th>
                     <th class="text-center">Hora</th>
+                    <th>Estado</th>
                 </tr>
             </thead>
             <tbody>
@@ -33,6 +34,7 @@ else
                     <tr>
                         <td>@GetPlacaFromMessage(activity.ActMessage)</td>
                         <td class="text-center">@activity.ActTimeStamp.ToString(" HH:mm:ss dd-MM-yyyy")</td>
+                        <td>VER</td>
                     </tr>
                 }
             </tbody>
@@ -47,8 +49,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        AllUserActivities = await DbContextFactory.UserActivities
-            .Where(a => a.ActMessage.Contains("Colaborador iniciou o carregamento da placa"))
+        using var context = DbContextFactory.CreateDbContext();
+        AllUserActivities = await context.UserActivities
+            .Where(a => a.ActMessage.Contains("Iniciou o carregamento da placa"))
             .OrderByDescending(a => a.ActTimeStamp)
             .Take(10)
             .ToListAsync();

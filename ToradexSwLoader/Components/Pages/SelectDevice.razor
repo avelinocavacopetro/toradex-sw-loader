@@ -52,120 +52,81 @@ else
         </div>
     </div>
 
-    <table class="table custom-table1 custom-td mt-5">
-        <thead>
-            <tr>
-                <th style="cursor: pointer;" @onclick="@(() => ChangeOrder("DeviceId"))">
-                    ID @(lastSortField == "DeviceId"
-                                    ? (sortAscending ? "↑" : "↓")
-                                    : "↕")
-                </th>
-                <th style="text-align: center; cursor: pointer;" @onclick="@(() => ChangeOrder("DeviceName"))">
-                    Nome @(lastSortField == "DeviceName"
-                                    ? (sortAscending ? "↑" : "↓")
-                                    : "↕")
-                </th>
-                <th style="text-align: center;">Estado</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            @foreach (var device in paginetdDevices)
-            {
-                <tr class="@GetRowClass(device)" @onclick="() => SelectRow(device)">
-                    <td>@device.DeviceId</td>
-                    <td style="text-align: center;">@device.DeviceName</td>
-                    <td style="text-align: center;">
-                        @if (device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime)
-                        {
-                            <span class="fw-bold" style="color: forestgreen;">Online</span>
-                        }
-                        else
-                        {
-                            <span class="fw-bold" style="color: red;">Offline</span>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <div class="text-center fixed-bottom pb-5">
-        <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Seguinte</button>
+    <div class="grid-container">
+        @foreach (var device in FilterService.SelectedDevices)
+        {
+            <div class="grid-item" @onclick="() => ChooseDevice(device)">
+                @device.DeviceName
+            </div>
+        }
     </div>
 }
 
 @code {
     private List<Device> totalDevices = new List<Device>();
     private List<Device> devices = new List<Device>();
-    private List<Device> paginetdDevices = new List<Device>();
+    private List<Device> paginatedDevices = new List<Device>();
     private Device? selectedDevice;
+    private WindowDimension? dimension;
+
     private bool isLoading = true;
     private bool sortAscending = true;
     private string? lastSortField = null;
-
     private int actualPage = 1;
-    private int devicesPerPage = 4;
+    private int devicesPerPage = 8;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
-    private int OnlineTime => FilterService.OnlineTime;
-
+    // private int OnlineTime => FilterService.OnlineTime;
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+        devicesPerPage = dimension.Width <= 1024 ? 8 : devices.Count;
+
+        UpdatePage();
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await FilterService.LoadFilterAsync();
 
-        FilterService.OnFilterChanged += async () => await LoadDevicesAsync();
+        // FilterService.OnFilterChanged += async () => await LoadDevicesAsync();
 
-        await LoadDevicesAsync();
+        // await LoadDevicesAsync();
+
+        totalDevices = FilterService.SelectedDevices;
+        devices = new List<Device>(totalDevices);
+        UpdatePage();
 
         isLoading = false;
         StateHasChanged();
     }
 
-    private async Task LoadDevicesAsync()
+    private async Task ChooseDevice(Device device)
     {
-        actualPage = 1;
-
-        var deviceFilter = FilterService.SelectedDevice;
-
-        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
-
-        if (!string.IsNullOrWhiteSpace(deviceFilter))
-        {
-            devicesUrl += $"&nameContains={Uri.EscapeDataString(deviceFilter)}";
-        }
-
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
-        {
-            var apiDevices = await TorizonService.GetItemsAsync<Device>(devicesUrl) ?? new List<Device>();
-
-            totalDevices = new List<Device>(apiDevices);
-            devices = new List<Device>(totalDevices);
-
-            UpdatePage();
-        }
-    }
-
-    private async void SelectRow(Device device)
-    {
-        bool isOnline = device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime;
-
-        // if (!isOnline)
-        // {
-        //     await Swal.FireAsync(new SweetAlertOptions
-        //     {
-        //         Title = "Este dispositivo está offline e não pode ser selecionado.",
-        //         Icon = SweetAlertIcon.Warning,
-        //         ConfirmButtonColor = "#0B5120"
-        //     });
-        //     return;
-        // }
-
         selectedDevice = device;
+        await OnClick();
     }
+
+    // private async void SelectRow(Device device)
+    // {
+    //     // bool isOnline = device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime;
+
+    //     // if (!isOnline)
+    //     // {
+    //     //     await Swal.FireAsync(new SweetAlertOptions
+    //     //     {
+    //     //         Title = "Este dispositivo está offline e não pode ser selecionado.",
+    //     //         Icon = SweetAlertIcon.Warning,
+    //     //         ConfirmButtonColor = "#0B5120"
+    //     //     });
+    //     //     return;
+    //     // }
+
+    //     selectedDevice = device;
+    // }
 
     private async Task OnClick()
     {
@@ -184,15 +145,15 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDevice.DeviceId)}");
+            UriHelper.NavigateTo($"/selectProduct/{selectedDevice.DeviceId}");
         }
         else
         {
-            await JS.InvokeVoidAsync("Swal.fire", new
+            await Swal.FireAsync(new SweetAlertOptions
             {
-                title = "Selecione um dispositivo!",
-                icon = "warning",
-                confirmButtonColor = "#0B5120"
+                Title = "Selecione um dispositivo!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120",
             });
         }
     }
@@ -202,39 +163,9 @@ else
         return selectedDevice == device ? "table-primary" : string.Empty;
     }
 
-    private void ChangeOrder(string field)
-    {
-        if (lastSortField == field)
-        {
-            sortAscending = !sortAscending;
-        }
-        else
-        {
-            sortAscending = true;
-            lastSortField = field;
-        }
-
-        switch (field)
-        {
-            case "DeviceId":
-                totalDevices = sortAscending
-                    ? totalDevices.OrderBy(d => d.DeviceId).ToList()
-                    : totalDevices.OrderByDescending(d => d.DeviceId).ToList();
-                break;
-
-            case "DeviceName":
-                totalDevices = sortAscending
-                    ? totalDevices.OrderBy(d => d.DeviceName).ToList()
-                    : totalDevices.OrderByDescending(d => d.DeviceName).ToList();
-                break;
-        }
-
-        UpdatePage();
-    }
-
     private void UpdatePage()
     {
-        paginetdDevices = totalDevices
+        paginatedDevices = totalDevices
                                  .Skip((actualPage - 1) * devicesPerPage)
                                  .Take(devicesPerPage)
                                  .ToList();
@@ -257,17 +188,6 @@ else
             actualPage--;
             UpdatePage();
         }
-    }
-
-    private string GetStatusClass(string status)
-    {
-        return status.ToLower() switch
-        {
-            "uptodate" => "status-uptodate",
-            "error" => "status-error",
-            "updatepending" => "status-updatepending",
-            _ => "status-default"
-        };
     }
 
     public void Dispose()

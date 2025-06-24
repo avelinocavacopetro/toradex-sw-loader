@@ -1,10 +1,10 @@
 ﻿@page "/manageFleets"
 
+@inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject FleetService FleetService
 @inject FilterService FilterService
 @inject SweetAlertService Swal
-@inject IJSRuntime JS
 
 <PageTitle>Gerir Frotas</PageTitle>
 
@@ -79,13 +79,16 @@
     private List<Fleet> fleets = new List<Fleet>();
     private List<Fleet> paginatedFleets = new List<Fleet>();
     private List<Fleet> selectedFleets = new List<Fleet>();
+    private WindowDimension? dimension;
+
     private bool IsToggled { get; set; } = false;
     private int actualPage = 1;
     private int fleetsPerPage = 7;
     private int totalPages => (int)Math.Ceiling((double)fleets.Count / fleetsPerPage);
     private bool isLoading = true;
-    private WindowDimension? dimension;
-
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
+    
     private IEnumerable<Fleet> FilteredFleets =>
     string.IsNullOrWhiteSpace(searchTerm)
         ? fleets
@@ -202,7 +205,4 @@
             UpdatePage();
         }
     }
-
-    private bool CanGoNext => actualPage < totalPages;
-    private bool CanGoPrev => actualPage > 1;
 }

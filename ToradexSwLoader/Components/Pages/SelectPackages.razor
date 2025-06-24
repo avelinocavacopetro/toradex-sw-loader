@@ -1,4 +1,4 @@
-﻿@page "/packages/{deviceId}"
+﻿@page "/packages/{deviceId:int}"
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -37,10 +37,8 @@ else
     </a>
 
 
-    <h3 style="text-align: center;">Selecionar Software</h3>
-    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceId</h5>
-    <br />
-    <br />
+    <h3 class="mb-5" style="text-align: center;">Selecionar Software</h3>
+    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceName</h5>
 
     <div class="d-flex justify-content-end pe-5">
         <div class="d-flex justify-content-between align-items-center gap-3">
@@ -90,7 +88,7 @@ else
 
 @code {
     [Parameter]
-    public string deviceId { get; set; } = string.Empty;
+    public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
 
     private List<Package> totalPackages = new List<Package>();
@@ -102,7 +100,9 @@ else
     private int actualPage = 1;
     private int packagesPerPage = 5;
     private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
-    private bool isLoading = false;
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,8 +117,6 @@ else
 
         isLoading = false;
         StateHasChanged();
-
-        Console.WriteLine($"device: {deviceId}");
     }
 
     private async Task LoadPackagesAsync()
@@ -128,11 +126,13 @@ else
         var packageFilterName = FilterService.SelectedPackage;
         var packageFilterVersion = FilterService.Version;
 
-        var packagesUrl = "https://app.torizon.io/api/v2beta/packages?limit=200&offset=0";
+        var packagesUrl = "https://app.torizon.io/api/v2beta/packages";
+
+        await PackageService.ImportPackagesFromApiAsync(packagesUrl); 
 
         if (!string.IsNullOrWhiteSpace(packageFilterName))
         {
-            packagesUrl += $"&nameContains={Uri.EscapeDataString(packageFilterName)}";
+            packagesUrl += $"?name={Uri.EscapeDataString(packageFilterName)}";
         }
 
         if (!string.IsNullOrWhiteSpace(packageFilterVersion))
@@ -181,15 +181,15 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectFleet/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(selectedPackage.PackageId)}");
+            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{Uri.EscapeDataString(selectedPackage.PackageId)}");
         }
         else
         {
-            await JS.InvokeVoidAsync("Swal.fire", new
+            await Swal.FireAsync(new SweetAlertOptions
             {
-                title = "Selecione um software!",
-                icon = "warning",
-                confirmButtonColor = "#0B5120"
+                Title = "Selecione um software!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120",
             });
         }
     }
@@ -228,7 +228,4 @@ else
             UpdatePage();
         }
     }
-
-    private bool CanGoNext => actualPage < totalPages;
-    private bool CanGoPrev => actualPage > 1;
 }

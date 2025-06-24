@@ -17,6 +17,7 @@ namespace ToradexSwLoader.Models
 
         public string? SelectedFleetsJson { get; set; }
         public string? SelectedProductsJson { get; set; }
+        public string? SelectedDevicesJson { get; set; }
         public DateTime LastUpdated { get; set; }
     }
 
