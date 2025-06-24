@@ -129,9 +129,9 @@ else
 }
 
 @code {
-    private List<Device> originalDevices = new List<Device>();
-    private List<Device> devices = new List<Device>();
-    private List<Device> paginetdDevices = new List<Device>();
+    private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
+    private List<DetailedDevice> devices = new List<DetailedDevice>();
+    private List<DetailedDevice> paginetdDevices = new List<DetailedDevice>();
     private bool isLoading = true;
     private int actualPage = 1;
     private int devicesPerPage = 4;
@@ -149,13 +149,15 @@ else
     {
         var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
 
+        await DeviceService.ImportDevicesFromApiAsync(devicesUrl);
+
         bool authOk = await TorizonService.AuthenticateAsync();
         if (authOk)
         {
-            var apiDevices = await TorizonService.GetItemsAsync<Device>(devicesUrl) ?? new List<Device>();
+            var apiDevices = await TorizonService.GetItemsAsync<DetailedDevice>(devicesUrl) ?? new List<DetailedDevice>();
 
-            originalDevices = new List<Device>(apiDevices);
-            devices = new List<Device>(originalDevices);
+            originalDevices = new List<DetailedDevice>(apiDevices);
+            devices = new List<DetailedDevice>(originalDevices);
 
             isLoading = false;
         }

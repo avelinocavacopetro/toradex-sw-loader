@@ -65,17 +65,17 @@ else
                                     ? (sortAscending ? "↑" : "↓")
                                     : "↕")
                 </th>
-                <th style="text-align: center;">Estado</th>
+                @* <th style="text-align: center;">Estado</th> *@
             </tr>
         </thead>
 
         <tbody>
-            @foreach (var device in paginetdDevices)
+            @foreach (var device in paginatedDevices)
             {
                 <tr class="@GetRowClass(device)" @onclick="() => SelectRow(device)">
                     <td>@device.DeviceId</td>
                     <td style="text-align: center;">@device.DeviceName</td>
-                    <td style="text-align: center;">
+                    @* <td style="text-align: center;">
                         @if (device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime)
                         {
                             <span class="fw-bold" style="color: forestgreen;">Online</span>
@@ -84,7 +84,7 @@ else
                         {
                             <span class="fw-bold" style="color: red;">Offline</span>
                         }
-                    </td>
+                    </td> *@
                 </tr>
             }
         </tbody>
@@ -98,7 +98,7 @@ else
 @code {
     private List<Device> totalDevices = new List<Device>();
     private List<Device> devices = new List<Device>();
-    private List<Device> paginetdDevices = new List<Device>();
+    private List<Device> paginatedDevices = new List<Device>();
     private Device? selectedDevice;
     private bool isLoading = true;
     private bool sortAscending = true;
@@ -107,18 +107,35 @@ else
     private int actualPage = 1;
     private int devicesPerPage = 4;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
-    private int OnlineTime => FilterService.OnlineTime;
+    // private int OnlineTime => FilterService.OnlineTime;
 
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
+
+    private WindowDimension? dimension;
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+        devicesPerPage = dimension.Width <= 1024 ? 8 : devices.Count;
+
+        UpdatePage();
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await FilterService.LoadFilterAsync();
 
-        FilterService.OnFilterChanged += async () => await LoadDevicesAsync();
+        // FilterService.OnFilterChanged += async () => await LoadDevicesAsync();
 
-        await LoadDevicesAsync();
+        // await LoadDevicesAsync();
+
+        totalDevices = FilterService.SelectedDevices;
+        devices = new List<Device>(totalDevices);
+        UpdatePage();
+
+        Console.WriteLine(totalDevices);
 
         isLoading = false;
         StateHasChanged();
@@ -126,32 +143,32 @@ else
 
     private async Task LoadDevicesAsync()
     {
-        actualPage = 1;
+        // actualPage = 1;
 
-        var deviceFilter = FilterService.SelectedDevice;
+        // var deviceFilter = FilterService.SelectedDevice;
 
-        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
+        // var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
 
-        if (!string.IsNullOrWhiteSpace(deviceFilter))
-        {
-            devicesUrl += $"&nameContains={Uri.EscapeDataString(deviceFilter)}";
-        }
+        // if (!string.IsNullOrWhiteSpace(deviceFilter))
+        // {
+        //     devicesUrl += $"&nameContains={Uri.EscapeDataString(deviceFilter)}";
+        // }
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
-        {
-            var apiDevices = await TorizonService.GetItemsAsync<Device>(devicesUrl) ?? new List<Device>();
+        // bool authOk = await TorizonService.AuthenticateAsync();
+        // if (authOk)
+        // {
+        //     var apiDevices = await TorizonService.GetItemsAsync<Device>(devicesUrl) ?? new List<Device>();
 
-            totalDevices = new List<Device>(apiDevices);
-            devices = new List<Device>(totalDevices);
+        //     totalDevices = new List<Device>(apiDevices);
+        //     devices = new List<Device>(totalDevices);
 
-            UpdatePage();
-        }
+        //     UpdatePage();
+        // }
     }
 
     private async void SelectRow(Device device)
     {
-        bool isOnline = device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime;
+        // bool isOnline = device.LastSeen.HasValue && (DateTime.Now - device.LastSeen.Value).TotalMinutes <= OnlineTime;
 
         // if (!isOnline)
         // {
@@ -169,7 +186,7 @@ else
 
     private async Task OnClick()
     {
-        if (selectedDevice != null)
+        if (selectedDevice?.DeviceId != null)
         {
 
             using var context = DbContextFactory.CreateDbContext();
@@ -184,7 +201,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectProduct/{Uri.EscapeDataString(selectedDevice.DeviceId)}");
+            UriHelper.NavigateTo($"/selectProduct/{selectedDevice.DeviceId}");
         }
         else
         {
@@ -234,7 +251,7 @@ else
 
     private void UpdatePage()
     {
-        paginetdDevices = totalDevices
+        paginatedDevices = totalDevices
                                  .Skip((actualPage - 1) * devicesPerPage)
                                  .Take(devicesPerPage)
                                  .ToList();

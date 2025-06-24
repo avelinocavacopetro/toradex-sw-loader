@@ -88,7 +88,7 @@ else
 
 @code {
     [Parameter]
-    public string deviceId { get; set; } = string.Empty;
+    public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
 
     private List<Package> totalPackages = new List<Package>();
@@ -177,7 +177,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectFleet/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(selectedPackage.PackageId)}");
+            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{Uri.EscapeDataString(selectedPackage.PackageId)}");
         }
         else
         {

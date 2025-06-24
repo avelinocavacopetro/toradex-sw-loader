@@ -21,7 +21,7 @@
 </div>
 @code {
     [Parameter]
-    public string deviceId { get; set; } = string.Empty;
+    public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
     private bool isLoading = false;
 
@@ -35,6 +35,6 @@
 
     private async Task OnClick()
     {
-        UriHelper.NavigateTo($"/packages/{Uri.EscapeDataString(selectedDevice.DeviceId)}");
+        UriHelper.NavigateTo($"/packages/{selectedDevice.DeviceId}");
     }
 }

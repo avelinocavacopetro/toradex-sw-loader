@@ -73,7 +73,7 @@ else
 @code {
     private List<Fleet> paginatedFleets = new List<Fleet>();
     [Parameter]
-    public string deviceId { get; set; } = string.Empty;
+    public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
     [Parameter]
     public string packageId { get; set; } = string.Empty;
@@ -119,7 +119,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/customization/{Uri.EscapeDataString(deviceId)}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
+            UriHelper.NavigateTo($"/customization/{deviceId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
         }
     }
 

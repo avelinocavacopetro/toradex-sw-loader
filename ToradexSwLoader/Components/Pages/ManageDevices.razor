@@ -1,8 +1,9 @@
 ﻿@page "/manageDevices"
 
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
 @inject FilterService FilterService
 @inject SweetAlertService Swal
-@inject IJSRuntime JS
 
 <PageTitle>Gerir Dispositivos</PageTitle>
 
@@ -10,7 +11,7 @@
 
 <br />
 
-@if (deviceNames?.Any() == true)
+@if (devices != null)
 {
     <table class="table table-hover table-bordered align-middle text-center">
         <thead style="background-color: #0c6527; color: white;">
@@ -20,15 +21,22 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var device in deviceNames)
+            @foreach (var device in devices)
             {
                 <tr class="table-light">
-                    <td>@device</td>
-                    <td>
+                    <td>@device.DeviceName</td>
+                    @* <td>
                         <div class="form-check d-flex justify-content-center">
                             <input class="form-check-input largerCheckbox" type="radio" name="deviceSelection"
-                                   @onchange="@(() => selectedDevice = device)"
-                                   checked="@(selectedDevice == device)" />
+                                   @onchange="@(() => selectedDevice = device.DeviceName)"
+                                   checked="@(selectedDevice == device.DeviceName)" />
+                        </div>
+                    </td> *@
+                    <td>
+                        <div class="form-check d-flex justify-content-center">
+                            <input type="checkbox" class="largerCheckbox" id="toggle-@device.DeviceId"
+                                   @onchange="(e => ToggleProduct(e, device))"
+                                   checked="@selectedDevices.Any(d => d.DeviceId == device.DeviceId)" />
                         </div>
                     </td>
                 </tr>
@@ -53,17 +61,38 @@
 }
 
 @code {
-    private List<string>? deviceNames;
-    private string? selectedDevice;
+    private List<Device>? devices;
+    private List<Device> selectedDevices = new List<Device>();
+    private string deviceName = string.Empty;
+    private bool isLoading = true;
     private int onlineTime = 1;
+
     protected override async Task OnInitializedAsync()
     {
-        deviceNames = new List<string> { "OPT", "NEURON", "FM27", "OPT Multimedia" };
-
         await FilterService.LoadFilterAsync();
 
-        selectedDevice = FilterService.SelectedDevice;
+        using var context = DbContextFactory.CreateDbContext();
+        devices = await context.Devices.ToListAsync();
+
+        selectedDevices = FilterService.SelectedDevices;
         onlineTime = FilterService.OnlineTime;
+
+        isLoading = false;
+    }
+
+    private void ToggleProduct(ChangeEventArgs e, Device device)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedDevices.Any(d => d.DeviceId == device.DeviceId))
+                selectedDevices.Add(device);
+        }
+        else
+        {
+            selectedDevices.RemoveAll(d => d.DeviceId == device.DeviceId);
+        }
     }
 
     private async Task ApplyFilter()
@@ -79,18 +108,18 @@
             return;
         }
 
-        if (string.IsNullOrEmpty(selectedDevice))
+        if (selectedDevices.Count == 0)
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione um dispositivo!",
+                Title = "Por favor selecione pelo menos um dispositivo!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
         }
-
-        await FilterService.ApplyFilter(selectedDevice, onlineTime);
+            
+        await FilterService.ApplyDevicesFilter(new List<Device>(selectedDevices));
 
         await Swal.FireAsync(new SweetAlertOptions
         {
@@ -99,4 +128,25 @@
             ConfirmButtonColor = "#0B5120"
         });
     }
+
+        // if (string.IsNullOrEmpty(selectedDevice))
+        // {
+        //     await Swal.FireAsync(new SweetAlertOptions
+        //     {
+        //         Title = "Por favor selecione um dispositivo!",
+        //         Icon = SweetAlertIcon.Warning,
+        //         ConfirmButtonColor = "#0B5120"
+        //     });
+        //     return;
+        // }
+
+        // await FilterService.ApplyFilter(selectedDevice, onlineTime);
+
+        // await Swal.FireAsync(new SweetAlertOptions
+        // {
+        //     Title = "Filtros aplicados com sucesso!",
+        //     Icon = SweetAlertIcon.Success,
+        //     ConfirmButtonColor = "#0B5120"
+        // });
+    // }
 }

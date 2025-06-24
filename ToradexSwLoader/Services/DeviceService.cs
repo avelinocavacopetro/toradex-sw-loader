@@ -20,17 +20,17 @@ namespace ToradexSwLoader.Services
             bool authOk = await _torizonService.AuthenticateAsync();
             if (!authOk) return false;
 
-            var devices = await _torizonService.GetItemsAsync<Device>(apiUrl);
+            var devices = await _torizonService.GetItemsAsync<DetailedDevice>(apiUrl);
             if (devices == null) return false;
 
             using var context = _dbContextFactory.CreateDbContext();
 
             foreach (var device in devices)
             {
-                var deviceDb = await context.Devices.FindAsync(device.DeviceUuid);
+                var deviceDb = await context.DetailedDevices.FindAsync(device.DeviceUuid);
                 if (deviceDb == null)
                 {
-                    context.Devices.Add(device);
+                    context.DetailedDevices.Add(device);
                 }
                 else
                 {
@@ -43,7 +43,7 @@ namespace ToradexSwLoader.Services
                     deviceDb.Notes = device.Notes;
                     deviceDb.Hibernated = device.Hibernated;
 
-                    context.Devices.Update(deviceDb);
+                    context.DetailedDevices.Update(deviceDb);
                 }
             }
 

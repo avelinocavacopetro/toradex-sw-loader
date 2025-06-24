@@ -62,7 +62,7 @@ else
 @code {
     private List<Product> paginatedProducts = new List<Product>();
     [Parameter]
-    public string deviceId { get; set; } = string.Empty;
+    public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
 
     private Product? selectedProduct;
