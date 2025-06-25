@@ -5,6 +5,7 @@
 @inject LoginService LoginService
 @inject FilterService FilterService
 @inject PackageService PackageService
+@inject SweetAlertService Swal
 
 <PageTitle>Selecionar Produto</PageTitle>
 
@@ -87,6 +88,22 @@ else
 
     private async Task SelectProductName(Product product)
     {
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool hasPackages = await context.ProductPackages
+            .AnyAsync(pp => pp.ProductId == product.ProductId);
+
+        if (!hasPackages)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este produto não tem pacotes associados.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
         selectedProduct = product;
         await OnClick();
     }
@@ -115,7 +132,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectStack/{deviceId}");
+            UriHelper.NavigateTo($"/selectStack/{deviceId}/{selectedProduct.ProductId}");
         }
     }
 

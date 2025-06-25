@@ -58,7 +58,6 @@
     private List<Device> selectedDevices = new List<Device>();
 
     private string deviceName = string.Empty;
-    private bool isLoading = true;
     private int onlineTime = 1;
 
     protected override async Task OnInitializedAsync()
@@ -70,8 +69,6 @@
 
         selectedDevices = FilterService.SelectedDevices;
         onlineTime = FilterService.OnlineTime;
-
-        isLoading = false;
     }
 
     private void ToggleProduct(ChangeEventArgs e, Device device)

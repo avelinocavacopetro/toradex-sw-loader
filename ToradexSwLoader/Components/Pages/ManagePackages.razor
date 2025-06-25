@@ -6,80 +6,141 @@
 
 <PageTitle>Gerir Pacotes</PageTitle>
 
-<h3 class="pb-3">Configurar pacotes a visualizar</h3>
-
-<div>
-    <table class="table w-50">
-        <tbody>
-            @foreach (var products in FilterService.SelectedProducts)
-            {
-                <tr class="table-light">
-                    <td>@products.ProductName</td>
-                    <td>
-                        <div class="form-check d-flex justify-content-center">
-                            <input type="checkbox" class="largerCheckbox" />
-                        </div>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-
-<div class="w-50">
-    <label for="packageInput" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
-    <div class="position-relative">
-        <input id="packageInput" class="form-control" type="text"
-               @bind="searchTerm"
-               @oninput="FilterPackageNames"
-               @onfocus="() => showSuggestions = true"
-               @onblur="HideSuggestions" />
-
-        @if (showSuggestions && filteredPackageNames.Any())
-        {
-            <ul class="list-group position-absolute w-100 shadow"
-                style="z-index: 1000; max-height: 200px; overflow-y: auto;">
-                @foreach (var name in filteredPackageNames)
+@if(isAdding || isEditing)
+{
+    <div class="center-customization">
+        <div class="edit-form">
+            <label for="packageName" class="pt-4" style="font-size: 18px; font-weight: bold;">Produto</label>
+            <select id="packageName" class="form-select w-50" @bind="selectedProductId">
+                <option>Selecione um pacote</option>
+                @foreach (var products in FilterService.SelectedProducts)
                 {
-                    <li class="list-group-item list-group-item-action"
-                        style="cursor: pointer;"
-                        @onclick="() => SelectPackage(name)">
-                        @name
-                    </li>
+                    <option value="@products.ProductId">@products.ProductName</option>
                 }
-            </ul>
-        }
+            </select>
+            <div class="w-50">
+                <label for="packageInput" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
+                <div class="position-relative">
+                    <input id="packageInput" class="form-control" type="text"
+                           @bind="searchTerm"
+                           @oninput="FilterPackageNames"
+                           @onfocus="() => showSuggestions = true"
+                           @onblur="HideSuggestions" 
+                           disabled="@packageDisabled" />
+
+                    @if (showSuggestions && filteredPackageNames.Any())
+                    {
+                        <ul class="list-group position-absolute w-100 shadow"
+                            style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                            @foreach (var name in filteredPackageNames)
+                            {
+                                <li class="list-group-item list-group-item-action"
+                                    style="cursor: pointer;"
+                                    @onclick="() => SelectPackage(name)">
+                                    @name
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <label for="versionInput" class="pt-3" style="font-size: 18px; font-weight: bold;">Versão</label>
+                <div class="position-relative">
+                    <input id="versionInput" class="form-control" type="text"
+                           @bind="versionSearchTerm"
+                           @oninput="FilterVersions"
+                           @onfocus="() => showVersionSuggestions = true"
+                           @onblur="HideVersionSuggestions"
+                           disabled="@versionDisabled" />
+
+                    @if (showVersionSuggestions && filteredVersionList.Any())
+                    {
+                        <ul class="list-group position-absolute w-100 shadow"
+                            style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                            @foreach (var version in filteredVersionList)
+                            {
+                                <li class="list-group-item list-group-item-action"
+                                    style="cursor: pointer;"
+                                    @onclick="() => SelectVersion(version)">
+                                    @version
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+            <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+                <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="isAdding? SaveProduct : EditProduct">
+                    Salvar
+                </button>
+                <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="isAdding? CancelAdd : CancelEdit">
+                    Cancelar
+                </button>
+            </div>
+        </div>
     </div>
+} else{
+    <div class="center-customization">
+        <div class="container-fluid">
 
-    <label for="versionInput" class="pt-3" style="font-size: 18px; font-weight: bold;">Versão</label>
-    <div class="position-relative">
-        <input id="versionInput" class="form-control" type="text"
-               @bind="versionSearchTerm"
-               @oninput="FilterVersions"
-               @onfocus="() => showVersionSuggestions = true"
-               @onblur="HideVersionSuggestions"
-               disabled="@versionDisabled" />
+            <h3 style="text-align: left;">Configurar pacotes a visualizar</h3>
 
-        @if (showVersionSuggestions && filteredVersionList.Any())
-        {
-            <ul class="list-group position-absolute w-100 shadow"
-                style="z-index: 1000; max-height: 200px; overflow-y: auto;">
-                @foreach (var version in filteredVersionList)
-                {
-                    <li class="list-group-item list-group-item-action"
-                        style="cursor: pointer;"
-                        @onclick="() => SelectVersion(version)">
-                        @version
-                    </li>
-                }
-            </ul>
-        }
+            <div class="pb-2" style="text-align: right;">
+                <button class="btn btn-color btn-lg"
+                        style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
+                        @onclick="AddProduct">
+                    +
+                </button>
+            </div>
+
+
+            <div class="pb-5">
+                <table class="table mt-3 w-100">
+                    <thead style="background-color: #0c6527; color: white;">
+                        <tr>
+                            <th>Equipamento</th>
+                            <th class="text-center">Pacote</th>
+                            <th class="text-center">Versão</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var productpackage in productsPackages)
+                        {
+                            if (productpackage?.Product != null && productpackage?.Package != null)
+                            {
+                                <tr class="table-light">
+                                <td>@productpackage.Product.ProductName</td>
+                                <td>@productpackage.Package.PackageName</td>
+                                <td>@productpackage.Package.PackageVersion</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm"
+                                            title="Editar"
+                                            @onclick="() => EditProduct(productpackage.ProductId, productpackage.PackageId)"
+                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-danger btn-sm"
+                                            title="Desativar"
+                                            @onclick="() => RemoveProduct(productpackage.ProductId, productpackage.PackageId)"
+                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-</div>
-
-<div class="text-center fixed-bottom pb-4">
-    <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="SavePackageFilter">Aplicar</button>
-</div>
+}
 
 @code {
     private List<Package> packages = new();
@@ -87,6 +148,7 @@
     private List<string> filteredVersions = new();
     private List<string> filteredVersionList = new();
     private List<string> filteredPackageNames = new();
+    private List<ProductPackage> productsPackages = new List<ProductPackage>();
     private string? selectedPackageName;
     private string? selectedPackageVersion;
     private string versionSearchTerm = "";
@@ -94,6 +156,24 @@
     private string searchTerm = "";
     private bool showSuggestions = false;
     private bool versionDisabled = true;
+    private bool packageDisabled = true;
+    private bool isAdding = false;
+    private bool isEditing = false;
+    private Product? selectedProduct;
+    private Package? selectedPackage;
+    private int _selectedProductId;
+    private int editingProductId;
+    private string? oldPackageId;
+
+    private int selectedProductId
+    {
+        get => _selectedProductId;
+        set
+        {
+            _selectedProductId = value;
+            packageDisabled = value == 0;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,6 +182,11 @@
                                 .Include(p => p.PackageHardwares)
                                 .ThenInclude(ph => ph.Hardware)
                                 .ToListAsync();
+
+        productsPackages = await context.ProductPackages
+       .Include(pp => pp.Product)
+       .Include(pp => pp.Package)
+       .ToListAsync();
 
         packageNames = packages
             .Select(p => p.PackageName)
@@ -112,6 +197,194 @@
         filteredPackageNames = packageNames.ToList();
 
         await FilterService.LoadFilterAsync();
+    }
+
+    private async Task RemoveProduct(int productId, string packageId)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deseja remover?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
+
+        if (result.IsConfirmed)
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var toRemoveDb = await context.ProductPackages.FirstOrDefaultAsync(p => p.ProductId == productId & p.PackageId == packageId);
+
+            if (toRemoveDb == null) return;
+            context.ProductPackages.Remove(toRemoveDb);
+
+            productsPackages.RemoveAll(p => p.ProductId == productId & p.PackageId == packageId);
+
+            await context.SaveChangesAsync();
+
+            StateHasChanged();
+        }
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        selectedProductId = 0;
+        searchTerm = "";
+        versionSearchTerm = "";
+        versionDisabled = true;
+    }
+
+    private async Task EditProduct(int productId, string packageId)
+    {
+        isEditing = true;
+        isAdding = false;
+
+        editingProductId = productId;
+        oldPackageId = packageId;
+
+        selectedProductId = productId;
+
+        var selectedPackageEntity = packages.FirstOrDefault(p => p.PackageId == packageId);
+        selectedPackage = selectedPackageEntity;
+        searchTerm = selectedPackageEntity?.PackageName ?? "";
+
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    private async Task EditProduct()
+    {
+        if (selectedPackage is null || string.IsNullOrEmpty(oldPackageId))
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        var oldEntry = await context.ProductPackages
+            .FirstOrDefaultAsync(pp => pp.ProductId == editingProductId && pp.PackageId == oldPackageId);
+
+        if (oldEntry is not null)
+            context.ProductPackages.Remove(oldEntry);
+
+        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.PackageId);
+
+        if (exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var newEntry = new ProductPackage
+        {
+        ProductId = editingProductId,
+        PackageId = selectedPackage.PackageId
+        };
+
+        context.ProductPackages.Add(newEntry);
+        await context.SaveChangesAsync();
+
+        productsPackages.RemoveAll(pp => pp.ProductId == editingProductId && pp.PackageId == oldPackageId);
+        var fullProduct = await context.Products.FirstOrDefaultAsync(p => p.ProductId == editingProductId);
+        var fullPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == selectedPackage.PackageId);
+
+        productsPackages.Add(new ProductPackage
+        {
+        ProductId = editingProductId,
+        PackageId = selectedPackage.PackageId,
+        Product = fullProduct!,
+        Package = fullPackage!
+        });
+
+        isEditing = false;
+        editingProductId = 0;
+        oldPackageId = null;
+        selectedPackage = null;
+        selectedProductId = 0;
+        searchTerm = "";
+        versionSearchTerm = "";
+        versionDisabled = true;
+
+        await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Editado com sucesso!",
+                Icon = SweetAlertIcon.Success,
+                ConfirmButtonColor = "#0B5120"
+            });
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveProduct()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        selectedProduct = FilterService.SelectedProducts.FirstOrDefault(p => p.ProductId == selectedProductId);
+
+        if (selectedProduct is null || selectedPackage is null)
+            return;
+
+        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.PackageId);
+
+        if (exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var newProductPackage = new ProductPackage
+        {
+            ProductId = selectedProduct.ProductId,
+            PackageId = selectedPackage.PackageId,
+        };
+
+        context.ProductPackages.Add(newProductPackage);
+        await context.SaveChangesAsync();
+
+        productsPackages = await context.ProductPackages
+            .Include(pp => pp.Product)
+            .Include(pp => pp.Package)
+            .ToListAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Adicionado com sucesso!",
+                Icon = SweetAlertIcon.Success,
+                ConfirmButtonColor = "#0B5120"
+            });
+
+        isAdding = false;
+        versionDisabled = true;
+        versionSearchTerm = "";
+        StateHasChanged();
+    }
+
+
+    private void CancelAdd()
+    {
+        isAdding = false;
+        selectedProductId = 0;
+        searchTerm = "";
+        versionSearchTerm = "";
+        versionDisabled = true;
+    }
+
+    private void AddProduct()
+    {
+        searchTerm = "";
+        selectedProductId = 0;
+        isAdding = true;
+        isEditing = false;
     }
 
     private void FilterPackageNames(ChangeEventArgs e)
@@ -203,6 +476,9 @@
         selectedPackageVersion = version;
         versionSearchTerm = version;
         showVersionSuggestions = false;
+
+        selectedPackage = packages.FirstOrDefault(p =>
+        p.PackageName == selectedPackageName && p.PackageVersion == selectedPackageVersion);
     }
 
     private async Task HideVersionSuggestions()

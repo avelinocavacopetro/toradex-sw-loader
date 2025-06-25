@@ -1,4 +1,4 @@
-﻿@page "/selectStack/{deviceId:int}"
+﻿@page "/selectStack/{deviceId:int}/{productId:int}"
 
 <PageTitle>Selecionar Stack</PageTitle>
 
@@ -24,18 +24,22 @@
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
 
+    [Parameter]
+    public int productId { get; set; }
+    private Product? selectedProduct = new Product();
+
     private bool isLoading = false;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
-
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
         isLoading = false;
     }
 
-    private async Task OnClick()
+    private void OnClick()
     {
-        UriHelper.NavigateTo($"/packages/{deviceId}");
+        UriHelper.NavigateTo($"/packages/{deviceId}/{productId}");
     }
 }
