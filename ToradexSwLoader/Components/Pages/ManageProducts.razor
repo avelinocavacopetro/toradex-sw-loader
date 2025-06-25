@@ -17,82 +17,131 @@
             <p class="mt-3">A carregar...</p>
         </div>
     </div>
-} 
+}
+else if (isAdding || isEditing)
+{
+    <div class="center-customization">
+        <div class="edit-form">
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome do produto</label>
+            <input type="text" @bind="productName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+            <br />
+            <h4>Selecionar Dispositivo(s):</h4>
+
+            <table class="table mt-3 w-100">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th>Dispositivo</th>
+                        <th class="text-center">Selecionar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var device in FilterService.SelectedDevices)
+                    {
+                        <tr class="table-light">
+                            <td>@device.DeviceName</td>
+                            <td>
+                                <div class="form-check d-flex justify-content-center">
+                                    <input type="checkbox" class="largerCheckbox" id="toggle-@device.DeviceId"
+                                           @onchange="(e => ToggleDevice(e, device))"
+                                           checked="@selectedDevices.Any(d => d.DeviceId == device.DeviceId)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+                <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="isAdding? SaveProduct : EditProduct">
+                    Salvar
+                </button>
+                <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="isAdding? CancelAdd : CancelEdit">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+}
 else
 {
     <div class="center-customization">
         @if (!isAdding)
         {
-            <div class="container-fluid">
-               <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
+          <div class="container-fluid">
 
-               <div class="pb-2 pt-4" style="text-align: right;">
-                    <button class="btn btn-color btn-lg"
-                            style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
-                            @onclick="AddProduct">+</button>
-               </div>
+            <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
 
-                <div class="pb-5">
-                    <table class="table mt-3 w-100">
-                        <thead style="background-color: #0c6527; color: white;">
-                            <tr>
-                                <th>Nome do Produto</th>
-                                <th class="text-center">Selecionar</th>
-                                <th></th>
+            <div class="pb-2 pt-4" style="text-align: right;">
+                <button class="btn btn-color btn-lg"
+                        style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
+                        @onclick="AddProduct">
+                    +
+                </button>
+            </div>
+            
+            <div class="pb-5">
+                <table class="table mt-3 w-100">
+                    <thead style="background-color: #0c6527; color: white;">
+                        <tr>
+                            <th>Nome do Produto</th>
+                            <th class="text-center">Selecionar</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in products)
+                        {
+                            <tr class="table-light">
+                                <td>@product.ProductName</td>
+                                <td>
+                                    <div class="form-check d-flex justify-content-center">
+                                        <input type="checkbox" class="largerCheckbox" id="toggle-@product.ProductId"
+                                               @onchange="(e => ToggleProduct(e, product))"
+                                               checked="@selectedProducts.Any(p => p.ProductId == product.ProductId)" />
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm"
+                                            title="Editar"
+                                            @onclick="() => EditProduct(product.ProductId)"
+                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-danger btn-sm"
+                                            title="Desativar"
+                                            @onclick="() => DisableProduct(product.ProductId)"
+                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                    </button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var product in products)
-                            {
-                                <tr class="table-light">
-                                        <td>@product.ProductName</td>
-                                        <td>
-                                            <div class="form-check d-flex justify-content-center">
-                                                <input type="checkbox" class="largerCheckbox" id="toggle-@product.ProductId"
-                                                       @onchange="(e => ToggleProduct(e, product))"
-                                                       checked="@selectedProducts.Any(p => p.ProductId == product.ProductId)" />
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <button class="btn btn-danger btn-sm"
-                                                    title="Desativar"
-                                                    @onclick="() => DisableProduct(product.ProductId)">
-                                                <i class="fa-solid fa-trash fa-lg"></i> 
-                                            </button>
-                                        </td>
-                                </tr>
-                               
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="text-center fixed-bottom pb-4">
-                    <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
-                </div>
-
+                        }
+                    </tbody>
+                </table>
             </div>
-        }
-        else
-        {
-            <div class="edit-form">
-                <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome do produto</label>
-                <input type="text" @bind="productName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;"/>
-                <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
-                    <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;" @onclick="SaveProduct">Salvar</button>
-                    <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;" @onclick="CancelAdd">Cancelar</button>
-                </div> 
+
+            <div class="text-center fixed-bottom pb-4">
+                <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
             </div>
-        }
-    </div>    
+        </div>
+    </div>
 }
 
 @code {
     private List<Product> products = new List<Product>();
     private List<Product> selectedProducts = new List<Product>();
+    private List<Device> selectedDevices = new List<Device>();
+    private Product selectedProduct = new Product();
 
     private bool isLoading = true;
     private bool isAdding = false;
+    private bool isEditing = false;
     private string productName = string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -103,6 +152,7 @@ else
         products = await context.Products.ToListAsync();
 
         selectedProducts = FilterService.SelectedProducts;
+        selectedDevices = new List<Device>(FilterService.SelectedDevices);
 
         isLoading = false;
     }
@@ -119,6 +169,90 @@ else
         else
         {
             selectedProducts.RemoveAll(p => p.ProductId == product.ProductId);
+        }
+    }
+
+    private void AddProduct()
+    {
+        productName = string.Empty;
+        selectedDevices.Clear();
+        selectedProduct = null;
+        isAdding = true;
+        isEditing = false;
+    }
+
+    private async Task EditProduct(int id)
+    {
+        isEditing = true;
+        isAdding = false;
+
+        using var context = DbContextFactory.CreateDbContext();
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.ProductId == id);
+
+        if (selectedProduct != null)
+        {
+            productName = selectedProduct.ProductName;
+
+            selectedDevices = await context.DeviceProducts
+                .Where(dp => dp.ProductId == id)
+                .Select(dp => dp.Device!)
+                .ToListAsync();
+        }
+    }
+
+    private async Task EditProduct()
+    {
+        if (selectedProduct == null) return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        var productDb = await context.Products.FirstOrDefaultAsync(p => p.ProductId == selectedProduct.ProductId);
+        if (productDb == null) return;
+
+        productDb.ProductName = productName;
+
+        var oldDeviceProducts = context.DeviceProducts.Where(dp => dp.ProductId == productDb.ProductId);
+        context.DeviceProducts.RemoveRange(oldDeviceProducts);
+
+        foreach (var device in selectedDevices)
+        {
+            context.DeviceProducts.Add(new DeviceProduct
+            {
+                ProductId = productDb.ProductId,
+                DeviceId = device.DeviceId
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        var localProduct = products.FirstOrDefault(p => p.ProductId == productDb.ProductId);
+        if (localProduct != null)
+        {
+            localProduct.ProductName = productDb.ProductName;
+        }
+
+        CancelEdit();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Produto editado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private void ToggleDevice(ChangeEventArgs e, Device device)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedDevices.Any(d => d.DeviceId == device.DeviceId))
+                selectedDevices.Add(device);
+        }
+        else
+        {
+            selectedDevices.RemoveAll(d => d.DeviceId == device.DeviceId);
         }
     }
 
@@ -147,12 +281,6 @@ else
         }
     }
 
-    private void AddProduct()
-    {
-        productName = string.Empty;
-        isAdding = true;
-    }
-
     private async Task SaveProduct()
     {
         if (string.IsNullOrWhiteSpace(productName))
@@ -167,15 +295,10 @@ else
         }
 
         using var context = DbContextFactory.CreateDbContext();
-        var newProduct = new Product
-            {
-                ProductName = productName,
-                Enabled = true
-            };
 
         bool exists = await context.Products.AnyAsync(p => p.ProductName.ToLower() == productName.Trim().ToLower());
 
-        if(exists)
+        if (exists)
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
@@ -183,18 +306,21 @@ else
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-
-            productName = string.Empty;
-
             return;
         }
 
-        products.Add(newProduct);
-        context.Products.Add(newProduct);
+        var newProduct = new Product
+        {
+            ProductName = productName,
+            Enabled = true
+        };
 
+        context.Products.Add(newProduct);
         await context.SaveChangesAsync();
 
-        isAdding = false;
+        products.Add(newProduct);
+
+        CancelAdd();
 
         await Swal.FireAsync(new SweetAlertOptions
         {
@@ -202,13 +328,24 @@ else
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
     }
 
     private void CancelAdd()
     {
         isAdding = false;
+        productName = string.Empty;
+        selectedDevices.Clear();
+        selectedProduct = null;
     }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        productName = string.Empty;
+        selectedDevices.Clear();
+        selectedProduct = null;
+    }
+
 
     private async Task DisableProduct(int productId)
     {

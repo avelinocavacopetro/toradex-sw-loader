@@ -51,7 +51,7 @@ else
     </div>
 
     <div class="grid-container">
-        @foreach (var product in FilterService.SelectedProducts)
+        @foreach (var product in products)
         {
             <div class="grid-item" @onclick="() => SelectProductName(product)">
                 @product.ProductName
@@ -110,9 +110,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+
+        products = await context.DeviceProducts
+            .Where(dp => dp.DeviceId == deviceId)
+            .Select(dp => dp.Product!)
+            .Where(p => p.Enabled)
+            .Distinct()
+            .ToListAsync();
 
         isLoading = false;
     }
