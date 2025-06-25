@@ -1,4 +1,4 @@
-﻿@page "/packages/{deviceId:int}"
+﻿@page "/packages/{deviceId:int}/{productId:int}"
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -61,22 +61,21 @@ else
         <thead>
             <tr>
                 <th>Nome</th>
-                <th style="text-align: center;">Hardware</th>
                 <th style="text-align: center;">Versão</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var package in paginatedPackages)
             {
-                <tr class="@GetRowClass(package)" @onclick="() => SelectRow(package)">
-                    <td title="@package.PackageName" style="word-break: break-word; white-space: normal;">
-                        @package.PackageName
-                    </td>
-                    <td style="text-align: center;">
-                        Por ver
-                    </td>
-                    <td style="text-align: center;">@package.PackageVersion</td>
-                </tr>
+                if(package?.Package != null)
+                {
+                    <tr class="@GetRowClass(package.Package)" @onclick="() => SelectRow(package.Package)">
+                        <td title="@package.Package.PackageName" style="word-break: break-word; white-space: normal;">
+                            @package.Package.PackageName
+                        </td>
+                        <td style="text-align: center;">@package.Package.PackageVersion</td>
+                    </tr>
+                }
             }
         </tbody>
     </table>
@@ -91,15 +90,18 @@ else
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
 
-    private List<Package> totalPackages = new List<Package>();
-    private List<Package> packages = new List<Package>();
-    private List<Package> paginatedPackages = new List<Package>();
+    [Parameter]
+    public int productId { get; set; }
+    private Product? selectedProduct = new Product();
+
+    private List<ProductPackage> paginatedPackages = new List<ProductPackage>();
+    private List<ProductPackage> products = new List<ProductPackage>();
     private Package? selectedPackage;
     private WindowDimension? dimension;
 
     private int actualPage = 1;
     private int packagesPerPage = 5;
-    private int totalPages => (int)Math.Ceiling((double)packages.Count / packagesPerPage);
+    private int totalPages => (int)Math.Ceiling((double)products.Count / packagesPerPage);
     private bool isLoading = true;
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
@@ -108,47 +110,21 @@ else
     {
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+
+        products = await context.ProductPackages
+            .Where(pp => pp.ProductId == productId)
+            .Include(pp => pp.Package)
+            .ToListAsync();
 
         await FilterService.LoadFilterAsync();
 
-        FilterService.OnFilterChanged += async () => await LoadPackagesAsync();
-
-        await LoadPackagesAsync();
+        UpdatePage();
 
         isLoading = false;
         StateHasChanged();
-    }
 
-    private async Task LoadPackagesAsync()
-    {
-        actualPage = 1;
-
-        var packageFilterName = FilterService.SelectedPackage;
-        var packageFilterVersion = FilterService.Version;
-
-        var packagesUrl = "https://app.torizon.io/api/v2beta/packages";
-
-        await PackageService.ImportPackagesFromApiAsync(packagesUrl); 
-
-        if (!string.IsNullOrWhiteSpace(packageFilterName))
-        {
-            packagesUrl += $"?name={Uri.EscapeDataString(packageFilterName)}";
-        }
-
-        if (!string.IsNullOrWhiteSpace(packageFilterVersion))
-        {
-            packagesUrl += $"&version={Uri.EscapeDataString(packageFilterVersion)}";
-        }
-
-
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
-        {
-            totalPackages = await TorizonService.GetItemsAsync<Package>(packagesUrl) ?? new List<Package>();
-            packages = new List<Package>(totalPackages);
-
-            UpdatePage();
-        }
+        
     }
 
     private void OnDimensionsChanged(WindowDimension newDimension)
@@ -201,14 +177,10 @@ else
 
     private void UpdatePage()
     {
-
-
-        paginatedPackages = totalPackages
+        paginatedPackages = products
                                  .Skip((actualPage - 1) * packagesPerPage)
                                  .Take(packagesPerPage)
                                  .ToList();
-        packages = totalPackages
-                               .ToList();
     }
 
     private void NextPage()

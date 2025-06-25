@@ -32,5 +32,7 @@ namespace ToradexSwLoader.Models
         public List<string> HardwareNames => PackageHardwares?
             .Select(ph => ph.Hardware.HardwareName)
             .ToList() ?? new List<string>();
+
+        public ICollection<ProductPackage> ProductPackages { get; set; } = new List<ProductPackage>();
     }
 }

@@ -70,8 +70,6 @@ else
     private WindowDimension? dimension;
 
     private bool isLoading = true;
-    private bool sortAscending = true;
-    private string? lastSortField = null;
     private int actualPage = 1;
     private int devicesPerPage = 8;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);

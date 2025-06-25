@@ -68,7 +68,9 @@ else if (isAdding || isEditing)
 else
 {
     <div class="center-customization">
-        <div class="container-fluid">
+        @if (!isAdding)
+        {
+          <div class="container-fluid">
 
             <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
 
@@ -79,8 +81,7 @@ else
                     +
                 </button>
             </div>
-
-
+            
             <div class="pb-5">
                 <table class="table mt-3 w-100">
                     <thead style="background-color: #0c6527; color: white;">
@@ -119,7 +120,6 @@ else
                                         <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                     </button>
                                 </td>
-
                             </tr>
                         }
                     </tbody>

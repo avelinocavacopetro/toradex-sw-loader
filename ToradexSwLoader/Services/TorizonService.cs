@@ -35,13 +35,14 @@ namespace ToradexSwLoader.Services
                 return false;
 
             var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
+            if(tokenResponse == null) return false;
             _accessToken = tokenResponse.AccessToken;
 
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             return true;
         }
 
-        public async Task<List<T>> GetItemsAsync<T>(string url)
+        public async Task<List<T>?> GetItemsAsync<T>(string url)
         {
             var response = await _httpClient.GetAsync(url);
             if (!response.IsSuccessStatusCode)
