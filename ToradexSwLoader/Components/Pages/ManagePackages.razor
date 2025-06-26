@@ -8,9 +8,9 @@
 
 @if(isAdding || isEditing)
 {
-    <div class="center-customization">
+    <div class="center-edit">
         <div class="edit-form">
-            <label for="packageName" class="pt-4" style="font-size: 18px; font-weight: bold;">Produto</label>
+            <label for="packageName" class="pt-4" style="font-size: 18px; font-weight: bold; width: 50%;">Produto</label>
             <select id="packageName" class="form-select w-50" @bind="selectedProductId">
                 <option>Selecione um pacote</option>
                 @foreach (var products in FilterService.SelectedProducts)
