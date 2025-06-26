@@ -1,6 +1,7 @@
 ﻿@page "/adminHistory"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject LoginService LoginService
 
 <PageTitle>Histórico de Carregamentos</PageTitle>
 
@@ -27,11 +28,15 @@ else
     </a>
 
     <div class="d-flex justify-content-between align-items-center mt-3">
-        <div class="d-flex gap-3 w-50">
+        <div class="d-flex gap-3 align-items-center w-50">
             <input type="text" class="form-control" placeholder="Pesquisar placa pelo nome..."
                    @bind="searchTerm" @bind:event="oninput" />
 
-            <input type="date" class="form-control" @bind="searchDate" />
+            <label>Início</label>
+            <input type="date" class="form-control w-25" @bind="startDate" max="@today"/>
+
+            <label>Fim</label>
+            <input type="date" class="form-control w-25" @bind="endDate" max="@today" />
         </div>
 
 
@@ -79,20 +84,25 @@ else
 @code {
     private List<UserActivity> AllUserActivities = new List<UserActivity>();
     private List<UserActivity> paginatedActivities = new List<UserActivity>();
-    private DateTime? searchDate = null;
+    private DateTime? startDate = null;
+    private DateTime? endDate = null;
     private int actualPage = 1;
     private int activitiesPerPage = 7;
     private int totalPages => (int)Math.Ceiling((double)AllUserActivities.Count / activitiesPerPage);
     bool isLoading = true;
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
+    private string today = DateTime.Today.ToString("yyyy-MM-dd");
 
     private IEnumerable<UserActivity> FilteredPages =>
     AllUserActivities
         .Where(a =>
-            (string.IsNullOrWhiteSpace(searchTerm) || a.ActMessage.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
-            (!searchDate.HasValue || a.ActTimeStamp.Date == searchDate.Value.Date)
-        );
+            (string.IsNullOrWhiteSpace(searchTerm) ||
+             a.ActMessage.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (!startDate.HasValue || a.ActTimeStamp.Date >= startDate.Value.Date) &&
+            (!endDate.HasValue || a.ActTimeStamp.Date <= endDate.Value.Date)
+            );
+
 
     private IEnumerable<UserActivity> PaginatedActivities =>
     FilteredPages

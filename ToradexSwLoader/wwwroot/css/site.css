@@ -206,6 +206,12 @@ td, th {
     min-height: 50vh;
 }
 
+.center-edit {
+    display: grid;
+    place-items: center;
+    height: 80vh;
+}
+
 .swal2-title,
 .swal2-html-container {
     color: black !important;

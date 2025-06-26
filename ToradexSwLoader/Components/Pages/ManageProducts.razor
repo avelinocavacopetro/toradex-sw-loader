@@ -20,7 +20,7 @@
 }
 else if (isAdding || isEditing)
 {
-    <div class="center-customization">
+    <div class="center-edit">
         <div class="edit-form">
             <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome do produto</label>
             <input type="text" @bind="productName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
@@ -70,9 +70,8 @@ else
     <div class="center-customization">
         @if (!isAdding)
         {
-          <div class="container-fluid">
-
-            <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
+            <div class="container-fluid">
+                <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
 
             <div class="pb-2 pt-4" style="text-align: right;">
                 <button class="btn btn-color btn-lg"
@@ -138,7 +137,7 @@ else
     private List<Product> products = new List<Product>();
     private List<Product> selectedProducts = new List<Product>();
     private List<Device> selectedDevices = new List<Device>();
-    private Product selectedProduct = new Product();
+    private Product? selectedProduct = new Product();
 
     private bool isLoading = true;
     private bool isAdding = false;
