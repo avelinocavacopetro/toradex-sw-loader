@@ -52,14 +52,25 @@ else
         </div>
     </div> *@
 
-    <div class="grid-container">
-        @foreach (var device in FilterService.SelectedDevices)
-        {
-            <div class="grid-item" @onclick="() => ChooseDevice(device)">
-                @device.Name
+    @if (FilterService.SelectedDevices.Count == 0)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height:50vh;">
+            <div class="alert alert-dark text-center w-75" role="alert">
+                Não existem equipamentos disponíveis.
             </div>
-        }
-    </div>
+        </div>
+    }
+    else
+    {
+        <div class="grid-container">
+            @foreach (var device in FilterService.SelectedDevices)
+            {
+                <div class="grid-item" @onclick="() => ChooseDevice(device)">
+                    @device.Name
+                </div>
+            }
+        </div>
+    }
 }
 
 @code {
