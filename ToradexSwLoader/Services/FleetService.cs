@@ -27,7 +27,7 @@ namespace ToradexSwLoader.Services
 
             foreach (var fleet in fleets)
             {
-                if (string.IsNullOrWhiteSpace(fleet.FleetName))
+                if (string.IsNullOrWhiteSpace(fleet.Name))
                 {
                     throw new Exception($"Fleet com Id {fleet.Id} tem FleetName nulo ou vazio!");
                 }
@@ -39,7 +39,7 @@ namespace ToradexSwLoader.Services
                 }
                 else
                 {
-                    fleetDb.FleetName = fleet.FleetName;
+                    fleetDb.Name = fleet.Name;
                     fleetDb.CreatedAt = fleet.CreatedAt;
                     fleetDb.FleetType = fleet.FleetType;
                     fleetDb.Expression = fleet.Expression;

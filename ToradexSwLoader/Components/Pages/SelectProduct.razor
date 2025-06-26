@@ -54,7 +54,7 @@ else
         @foreach (var product in products)
         {
             <div class="grid-item" @onclick="() => SelectProductName(product)">
-                @product.ProductName
+                @product.Name
             </div>
         }
     </div>
@@ -91,7 +91,7 @@ else
         using var context = DbContextFactory.CreateDbContext();
 
         bool hasPackages = await context.ProductPackages
-            .AnyAsync(pp => pp.ProductId == product.ProductId);
+            .AnyAsync(pp => pp.ProductId == product.Id);
 
         if (!hasPackages)
         {
@@ -111,7 +111,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
-        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
 
         products = await context.DeviceProducts
             .Where(dp => dp.DeviceId == deviceId)
@@ -131,14 +131,14 @@ else
             var userAct = new UserActivity
             {
                 UserId = LoginService.UserId,
-                ActMessage = $"Selecionou o Produto: Nome: {selectedProduct.ProductName}",
+                ActMessage = $"Selecionou o Produto: Nome: {selectedProduct.Name}",
                 ActTimeStamp = DateTime.Now
             };
 
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectStack/{deviceId}/{selectedProduct.ProductId}");
+            UriHelper.NavigateTo($"/selectStack/{deviceId}/{selectedProduct.Id}");
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿@page "/manageFleets"
 
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject FleetService FleetService
@@ -56,7 +57,7 @@
                 @foreach (var fleet in PaginatedFleets)
                 {
                     <tr class="table-light">
-                        <td>@fleet.FleetName</td>
+                        <td>@fleet.Name</td>
                         <td>
                             <div class="form-check d-flex justify-content-center">
                                 <input type="checkbox" class="largerCheckbox" id="toggle-@fleet.Id"
@@ -92,7 +93,7 @@
     private IEnumerable<Fleet> FilteredFleets =>
     string.IsNullOrWhiteSpace(searchTerm)
         ? fleets
-        : fleets.Where(f => f.FleetName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        : fleets.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
     private IEnumerable<Fleet> PaginatedFleets =>
     FilteredFleets
@@ -111,6 +112,34 @@
                 actualPage = 1;
             }
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // await FilterService.LoadFilterAsync();
+
+        // var fleetsUrl = "https://app.torizon.io/api/v2beta/fleets";
+
+        // bool authOk = await TorizonService.AuthenticateAsync();
+        // if (authOk)
+        // {
+        //     fleets = await TorizonService.GetItemsAsync<Fleet>(fleetsUrl) ?? new List<Fleet>();
+        // }
+
+        // selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
+
+        // isLoading = false;
+
+        // UpdatePage();
+
+        await FilterService.LoadFilterAsync();
+
+        using var context = DbContextFactory.CreateDbContext();
+        fleets = await context.Fleets.ToListAsync();
+
+        selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
+
+        isLoading = false;
     }
 
     private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
@@ -159,25 +188,6 @@
                 ConfirmButtonColor = "#0B5120"
             });
         }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        await FilterService.LoadFilterAsync();
-
-        var fleetsUrl = "https://app.torizon.io/api/v2beta/fleets";
-
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
-        {
-            fleets = await TorizonService.GetItemsAsync<Fleet>(fleetsUrl) ?? new List<Fleet>();
-        }
-
-        selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
-
-        isLoading = false;
-
-        UpdatePage();
     }
 
     private void UpdatePage()

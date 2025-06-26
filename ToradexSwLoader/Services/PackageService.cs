@@ -30,15 +30,15 @@ namespace ToradexSwLoader.Services
                 var packageDb = await context.Packages
                     .Include(p => p.PackageHardwares)
                     .ThenInclude(ph => ph.Hardware)
-                    .FirstOrDefaultAsync(p => p.PackageId == package.PackageId);
+                    .FirstOrDefaultAsync(p => p.Id == package.Id);
 
                 if (packageDb == null)
                 {
                     packageDb = new Package
                     {
-                        PackageId = package.PackageId,
-                        PackageName = package.PackageName,
-                        PackageVersion = package.PackageVersion,
+                        Id = package.Id,
+                        Name = package.Name,
+                        Version = package.Version,
                         PackageHardwares = new List<PackageHardware>()
                     };
 
@@ -46,8 +46,8 @@ namespace ToradexSwLoader.Services
                 }
                 else
                 {
-                    packageDb.PackageName = package.PackageName;
-                    packageDb.PackageVersion = package.PackageVersion;
+                    packageDb.Name = package.Name;
+                    packageDb.Version = package.Version;
 
                     context.PackageHardwares.RemoveRange(packageDb.PackageHardwares);
                     packageDb.PackageHardwares.Clear();
@@ -56,13 +56,13 @@ namespace ToradexSwLoader.Services
                 foreach (var hwId in package.HardwareIds)
                 {
                     var hardware = await context.Hardwares
-                        .FirstOrDefaultAsync(h => h.HardwareName == hwId);
+                        .FirstOrDefaultAsync(h => h.Name == hwId);
 
                     if (hardware == null)
                     {
                         hardware = new Hardware
                         {
-                            HardwareName = hwId
+                            Name = hwId
                         };
                         context.Hardwares.Add(hardware);
                         await context.SaveChangesAsync();

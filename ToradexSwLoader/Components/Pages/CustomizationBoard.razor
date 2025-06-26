@@ -16,9 +16,9 @@
 
 @if (!isLoading)
 {
-    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceName</h5>
-    <h5 style="text-align: center;">Software: @selectedPackage?.PackageId</h5>
-    <h5 style="text-align: center;">Frota: @selectedFleet?.FleetName</h5>
+    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.Name</h5>
+    <h5 style="text-align: center;">Software: @selectedPackage?.Id</h5>
+    <h5 style="text-align: center;">Frota: @selectedFleet?.Name</h5>
 }
 
 <div class="center-customization">
@@ -72,8 +72,8 @@
         Console.WriteLine($"ID DO PACOTE RECEBIDO: {packageId}");
 
         using var context = DbContextFactory.CreateDbContext();
-        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
-        selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == packageId);
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+        selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == packageId);
         selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
 
         isLoading = false;
@@ -83,7 +83,7 @@
     {
         if (string.IsNullOrEmpty(finalBoard) && selectedDevice != null && selectedPackage != null && selectedFleet != null)
         {
-            finalBoard = $"{selectedPackage.PackageVersion}_{selectedFleet.FleetName}";
+            finalBoard = $"{selectedPackage.Version}_{selectedFleet.Name}";
         }
     }
 

@@ -7,9 +7,9 @@ namespace ToradexSwLoader.Models
     public class Hardware
     {
         [Key]
-        public int HardwareId { get; set; } 
+        public int Id { get; set; } 
 
-        public string HardwareName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
         public List<PackageHardware> PackageHardwares { get; set; } = new List<PackageHardware>();
     }

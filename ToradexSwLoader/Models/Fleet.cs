@@ -13,27 +13,13 @@ namespace ToradexSwLoader.Models
         [Required]
         [MaxLength(30)]
         [JsonPropertyName("name")]
-        public string FleetName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
         [Required]
         public DateTime CreatedAt { get; set; }
 
-        private string fleetType = string.Empty;
-
         [Required]
-        public string FleetType
-        {
-            get => fleetType;
-            set
-            {
-                if (!string.Equals(value, "static", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(value, "dynamic", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new ArgumentException("FleetType deve ser 'static' ou 'dynamic'");
-                }
-                fleetType = value.ToLower(); 
-            }
-        }
+        public string FleetType { get; set; } = string.Empty;
         public string? Expression { get; set; }
     }
 }

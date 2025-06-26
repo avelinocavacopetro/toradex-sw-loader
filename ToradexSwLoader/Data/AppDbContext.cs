@@ -39,7 +39,7 @@ namespace ToradexSwLoader.Data
                 .HasForeignKey(ph => ph.HardwareId);
 
             modelBuilder.Entity<Hardware>()
-                .HasIndex(h => h.HardwareName)
+                .HasIndex(h => h.Name)
                 .IsUnique();
 
             modelBuilder.Entity<ProductPackage>()

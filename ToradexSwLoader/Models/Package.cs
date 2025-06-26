@@ -11,17 +11,17 @@ namespace ToradexSwLoader.Models
         [Required]
         [MaxLength(200)]
         [JsonPropertyName("packageId")]
-        public string PackageId { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
         [JsonPropertyName("name")]
-        public string PackageName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(50)]
         [JsonPropertyName("version")]
-        public string PackageVersion { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
 
         [NotMapped]
         public List<string> HardwareIds { get; set; } = new List<string>();
@@ -30,7 +30,7 @@ namespace ToradexSwLoader.Models
 
         [NotMapped]
         public List<string> HardwareNames => PackageHardwares?
-            .Select(ph => ph.Hardware.HardwareName)
+            .Select(ph => ph.Hardware.Name)
             .ToList() ?? new List<string>();
 
         public ICollection<ProductPackage> ProductPackages { get; set; } = new List<ProductPackage>();

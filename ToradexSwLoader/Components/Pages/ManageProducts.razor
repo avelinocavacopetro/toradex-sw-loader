@@ -39,12 +39,12 @@ else if (isAdding || isEditing)
                     @foreach (var device in FilterService.SelectedDevices)
                     {
                         <tr class="table-light">
-                            <td>@device.DeviceName</td>
+                            <td>@device.Name</td>
                             <td>
                                 <div class="form-check d-flex justify-content-center">
-                                    <input type="checkbox" class="largerCheckbox" id="toggle-@device.DeviceId"
+                                    <input type="checkbox" class="largerCheckbox" id="toggle-@device.Id"
                                            @onchange="(e => ToggleDevice(e, device))"
-                                           checked="@selectedDevices.Any(d => d.DeviceId == device.DeviceId)" />
+                                           checked="@selectedDevices.Any(d => d.Id == device.Id)" />
                                 </div>
                             </td>
                         </tr>
@@ -96,18 +96,18 @@ else
                         @foreach (var product in products)
                         {
                             <tr class="table-light">
-                                <td>@product.ProductName</td>
+                                <td>@product.Name</td>
                                 <td>
                                     <div class="form-check d-flex justify-content-center">
-                                        <input type="checkbox" class="largerCheckbox" id="toggle-@product.ProductId"
+                                        <input type="checkbox" class="largerCheckbox" id="toggle-@product.Id"
                                                @onchange="(e => ToggleProduct(e, product))"
-                                               checked="@selectedProducts.Any(p => p.ProductId == product.ProductId)" />
+                                               checked="@selectedProducts.Any(p => p.Id == product.Id)" />
                                     </div>
                                 </td>
                                 <td class="text-center">
                                     <button class="btn btn-sm"
                                             title="Editar"
-                                            @onclick="() => EditProduct(product.ProductId)"
+                                            @onclick="() => EditProduct(product.Id)"
                                             style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                         <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                     </button>
@@ -115,7 +115,7 @@ else
                                 <td class="text-center">
                                     <button class="btn btn-danger btn-sm"
                                             title="Desativar"
-                                            @onclick="() => DisableProduct(product.ProductId)"
+                                            @onclick="() => DisableProduct(product.Id)"
                                             style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                         <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                     </button>
@@ -130,6 +130,7 @@ else
                 <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
             </div>
         </div>
+        }
     </div>
 }
 
@@ -163,12 +164,12 @@ else
 
         if (isChecked)
         {
-            if (!selectedProducts.Any(p => p.ProductId == product.ProductId))
+            if (!selectedProducts.Any(p => p.Id == product.Id))
                 selectedProducts.Add(product);
         }
         else
         {
-            selectedProducts.RemoveAll(p => p.ProductId == product.ProductId);
+            selectedProducts.RemoveAll(p => p.Id == product.Id);
         }
     }
 
@@ -187,11 +188,11 @@ else
         isAdding = false;
 
         using var context = DbContextFactory.CreateDbContext();
-        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.ProductId == id);
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == id);
 
         if (selectedProduct != null)
         {
-            productName = selectedProduct.ProductName;
+            productName = selectedProduct.Name;
 
             selectedDevices = await context.DeviceProducts
                 .Where(dp => dp.ProductId == id)
@@ -206,29 +207,29 @@ else
 
         using var context = DbContextFactory.CreateDbContext();
 
-        var productDb = await context.Products.FirstOrDefaultAsync(p => p.ProductId == selectedProduct.ProductId);
+        var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == selectedProduct.Id);
         if (productDb == null) return;
 
-        productDb.ProductName = productName;
+        productDb.Name = productName;
 
-        var oldDeviceProducts = context.DeviceProducts.Where(dp => dp.ProductId == productDb.ProductId);
+        var oldDeviceProducts = context.DeviceProducts.Where(dp => dp.ProductId == productDb.Id);
         context.DeviceProducts.RemoveRange(oldDeviceProducts);
 
         foreach (var device in selectedDevices)
         {
             context.DeviceProducts.Add(new DeviceProduct
             {
-                ProductId = productDb.ProductId,
-                DeviceId = device.DeviceId
+                ProductId = productDb.Id,
+                DeviceId = device.Id
             });
         }
 
         await context.SaveChangesAsync();
 
-        var localProduct = products.FirstOrDefault(p => p.ProductId == productDb.ProductId);
+        var localProduct = products.FirstOrDefault(p => p.Id == productDb.Id);
         if (localProduct != null)
         {
-            localProduct.ProductName = productDb.ProductName;
+            localProduct.Name = productDb.Name;
         }
 
         CancelEdit();
@@ -247,12 +248,12 @@ else
 
         if (isChecked)
         {
-            if (!selectedDevices.Any(d => d.DeviceId == device.DeviceId))
+            if (!selectedDevices.Any(d => d.Id == device.Id))
                 selectedDevices.Add(device);
         }
         else
         {
-            selectedDevices.RemoveAll(d => d.DeviceId == device.DeviceId);
+            selectedDevices.RemoveAll(d => d.Id == device.Id);
         }
     }
 
@@ -296,7 +297,7 @@ else
 
         using var context = DbContextFactory.CreateDbContext();
 
-        bool exists = await context.Products.AnyAsync(p => p.ProductName.ToLower() == productName.Trim().ToLower());
+        bool exists = await context.Products.AnyAsync(p => p.Name.ToLower() == productName.Trim().ToLower());
 
         if (exists)
         {
@@ -311,7 +312,7 @@ else
 
         var newProduct = new Product
         {
-            ProductName = productName,
+            Name = productName,
             Enabled = true
         };
 
@@ -364,7 +365,7 @@ else
             isLoading = true;
 
             using var context = DbContextFactory.CreateDbContext();
-            var productDb = await context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+            var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
 
             if (productDb != null)
             {
@@ -372,7 +373,7 @@ else
                 await context.SaveChangesAsync();
             }
 
-            products.RemoveAll(p => p.ProductId == productId);
+            products.RemoveAll(p => p.Id == productId);
 
             isLoading = false;
             StateHasChanged();

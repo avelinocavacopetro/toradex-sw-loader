@@ -15,7 +15,7 @@
                 <option>Selecione um pacote</option>
                 @foreach (var products in FilterService.SelectedProducts)
                 {
-                    <option value="@products.ProductId">@products.ProductName</option>
+                    <option value="@products.Id">@products.Name</option>
                 }
             </select>
             <div class="w-50">
@@ -113,9 +113,9 @@
                             if (productpackage?.Product != null && productpackage?.Package != null)
                             {
                                 <tr class="table-light">
-                                <td>@productpackage.Product.ProductName</td>
-                                <td>@productpackage.Package.PackageName</td>
-                                <td>@productpackage.Package.PackageVersion</td>
+                                <td>@productpackage.Product.Name</td>
+                                <td>@productpackage.Package.Name</td>
+                                <td>@productpackage.Package.Version</td>
                                 <td class="text-center">
                                     <button class="btn btn-sm"
                                             title="Editar"
@@ -189,7 +189,7 @@
        .ToListAsync();
 
         packageNames = packages
-            .Select(p => p.PackageName)
+            .Select(p => p.Name)
             .Distinct()
             .OrderBy(p => p)
             .ToHashSet();
@@ -246,9 +246,9 @@
 
         selectedProductId = productId;
 
-        var selectedPackageEntity = packages.FirstOrDefault(p => p.PackageId == packageId);
+        var selectedPackageEntity = packages.FirstOrDefault(p => p.Id == packageId);
         selectedPackage = selectedPackageEntity;
-        searchTerm = selectedPackageEntity?.PackageName ?? "";
+        searchTerm = selectedPackageEntity?.Name ?? "";
 
         await InvokeAsync(StateHasChanged);
 
@@ -267,7 +267,7 @@
         if (oldEntry is not null)
             context.ProductPackages.Remove(oldEntry);
 
-        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.PackageId);
+        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.Id);
 
         if (exists)
         {
@@ -283,20 +283,20 @@
         var newEntry = new ProductPackage
         {
         ProductId = editingProductId,
-        PackageId = selectedPackage.PackageId
+            PackageId = selectedPackage.Id
         };
 
         context.ProductPackages.Add(newEntry);
         await context.SaveChangesAsync();
 
         productsPackages.RemoveAll(pp => pp.ProductId == editingProductId && pp.PackageId == oldPackageId);
-        var fullProduct = await context.Products.FirstOrDefaultAsync(p => p.ProductId == editingProductId);
-        var fullPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == selectedPackage.PackageId);
+        var fullProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == editingProductId);
+        var fullPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == selectedPackage.Id);
 
         productsPackages.Add(new ProductPackage
         {
         ProductId = editingProductId,
-        PackageId = selectedPackage.PackageId,
+            PackageId = selectedPackage.Id,
         Product = fullProduct!,
         Package = fullPackage!
         });
@@ -324,12 +324,12 @@
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        selectedProduct = FilterService.SelectedProducts.FirstOrDefault(p => p.ProductId == selectedProductId);
+        selectedProduct = FilterService.SelectedProducts.FirstOrDefault(p => p.Id == selectedProductId);
 
         if (selectedProduct is null || selectedPackage is null)
             return;
 
-        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.PackageId);
+        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.Id);
 
         if (exists)
         {
@@ -344,8 +344,8 @@
 
         var newProductPackage = new ProductPackage
         {
-            ProductId = selectedProduct.ProductId,
-            PackageId = selectedPackage.PackageId,
+            ProductId = selectedProduct.Id,
+            PackageId = selectedPackage.Id,
         };
 
         context.ProductPackages.Add(newProductPackage);
@@ -411,8 +411,8 @@
         showSuggestions = false;
 
         filteredVersions = packages
-            .Where(p => p.PackageName == selectedPackageName)
-            .Select(p => p.PackageVersion)
+            .Where(p => p.Name == selectedPackageName)
+            .Select(p => p.Version)
             .OrderByDescending(v => v)
             .ToList();
 
@@ -478,7 +478,7 @@
         showVersionSuggestions = false;
 
         selectedPackage = packages.FirstOrDefault(p =>
-        p.PackageName == selectedPackageName && p.PackageVersion == selectedPackageVersion);
+        p.Name == selectedPackageName && p.Version == selectedPackageVersion);
     }
 
     private async Task HideVersionSuggestions()
