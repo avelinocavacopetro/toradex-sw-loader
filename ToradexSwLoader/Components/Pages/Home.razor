@@ -25,16 +25,16 @@ else
                 <tr>
                     <th>Placa</th>
                     <th class="text-center">Hora</th>
-                    <th>Estado</th>
+                    <th class="text-center">Estado</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var activity in AllUserActivities)
+                @foreach (var finalProduct in finalProducts)
                 {
                     <tr>
-                        <td>@GetPlacaFromMessage(activity.ActMessage)</td>
-                        <td class="text-center">@activity.ActTimeStamp.ToString(" HH:mm:ss dd-MM-yyyy")</td>
-                        <td>VER</td>
+                        <td>@finalProduct.Name</td>
+                        <td class="text-center">@finalProduct.CreatedAt</td>
+                        <td class="text-center">@finalProduct.Status</td>
                     </tr>
                 }
             </tbody>
@@ -43,25 +43,22 @@ else
 }
 
 @code {
+    private List<FinalProduct> finalProducts = new List<FinalProduct>();
+    private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
     bool isLoading = true;
-    private List<UserActivity> AllUserActivities = new List<UserActivity>();
-    private List<UserActivity> paginatedActivities = new List<UserActivity>();
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
-        AllUserActivities = await context.UserActivities
-            .Where(a => a.ActMessage.Contains("Iniciou o carregamento da placa"))
-            .OrderByDescending(a => a.ActTimeStamp)
-            .Take(10)
+        finalProducts = await context.FinalProducts
+            .Include(fp => fp.Device)
+            .Include(fp => fp.Product)
+            .Include(fp => fp.Package)
+            .Include(fp => fp.Fleet)
+            .Include(fp => fp.UserPetrotec)
+            .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
 
         isLoading = false;
-    }
-
-    private string GetPlacaFromMessage(string message)
-    {
-        var parts = message.Split("-> Nome:");
-        return parts.Length > 1 ? parts[1].Trim() : "N/A";
     }
 }

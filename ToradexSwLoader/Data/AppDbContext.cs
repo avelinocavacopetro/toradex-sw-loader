@@ -22,6 +22,7 @@ namespace ToradexSwLoader.Data
         public DbSet<UserActivity> UserActivities { get; set; } 
         public DbSet<LoginLog> LoginLogs { get; set; }
         public DbSet<DeviceProduct> DeviceProducts { get; set; }
+        public DbSet<FinalProduct> FinalProducts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

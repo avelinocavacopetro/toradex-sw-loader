@@ -1,4 +1,4 @@
-@page "/selectFleet/{deviceId:int}/{packageId}"
+@page "/selectFleet/{deviceId:int}/{productId:int}/{packageId}"
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -77,6 +77,9 @@ else
     public string packageId { get; set; } = string.Empty;
     private Package? selectedPackage = new Package();
 
+    [Parameter]
+    public int productId { get; set; }
+
     private Fleet? selectedFleet;
     private List<Fleet> fleets = new List<Fleet>();
     private List<Fleet> paginatedFleets = new List<Fleet>();
@@ -124,7 +127,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/customization/{deviceId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
+            UriHelper.NavigateTo($"/customization/{deviceId}/{productId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
         }
     }
 
