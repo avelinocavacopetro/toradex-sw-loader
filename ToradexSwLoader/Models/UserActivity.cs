@@ -7,7 +7,7 @@ namespace ToradexSwLoader.Models
     public class UserActivity
     {
         [Key]
-        public int UserActId { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public int UserId { get; set; }

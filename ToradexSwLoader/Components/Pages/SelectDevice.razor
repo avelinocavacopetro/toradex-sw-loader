@@ -56,7 +56,7 @@ else
         @foreach (var device in FilterService.SelectedDevices)
         {
             <div class="grid-item" @onclick="() => ChooseDevice(device)">
-                @device.DeviceName
+                @device.Name
             </div>
         }
     </div>
@@ -103,7 +103,7 @@ else
         using var context = DbContextFactory.CreateDbContext();
 
         bool hasProducts = await context.DeviceProducts
-            .AnyAsync(dp => dp.DeviceId == device.DeviceId);
+            .AnyAsync(dp => dp.DeviceId == device.Id);
 
         if (!hasProducts)
         {
@@ -131,14 +131,14 @@ else
             var userAct = new UserActivity
                 {
                     UserId = LoginService.UserId,
-                    ActMessage = $"Selecionou o dispositivo: Nome: {selectedDevice.DeviceName}",
+                    ActMessage = $"Selecionou o dispositivo: Nome: {selectedDevice.Name}",
                     ActTimeStamp = DateTime.Now
                 };
 
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectProduct/{selectedDevice.DeviceId}");
+            UriHelper.NavigateTo($"/selectProduct/{selectedDevice.Id}");
         }
         else
         {

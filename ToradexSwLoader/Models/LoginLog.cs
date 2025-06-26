@@ -7,7 +7,7 @@ namespace ToradexSwLoader.Models
     public class LoginLog
     {
         [Key]
-        public int LoginId { get; set; }
+        public int Id { get; set; }
 
         [Required]
         public int UserId { get; set; }

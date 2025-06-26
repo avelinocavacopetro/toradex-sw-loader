@@ -38,7 +38,7 @@ else
 
 
     <h3 class="mb-5" style="text-align: center;">Selecionar Software</h3>
-    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceName</h5>
+    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.Name</h5>
 
     <div class="d-flex justify-content-end pe-5">
         <div class="d-flex justify-content-between align-items-center gap-3">
@@ -70,10 +70,10 @@ else
                 if(package?.Package != null)
                 {
                     <tr class="@GetRowClass(package.Package)" @onclick="() => SelectRow(package.Package)">
-                        <td title="@package.Package.PackageName" style="word-break: break-word; white-space: normal;">
-                            @package.Package.PackageName
+                        <td title="@package.Package.Name" style="word-break: break-word; white-space: normal;">
+                            @package.Package.Name
                         </td>
-                        <td style="text-align: center;">@package.Package.PackageVersion</td>
+                        <td style="text-align: center;">@package.Package.Version</td>
                     </tr>
                 }
             }
@@ -109,8 +109,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
-        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
-        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
 
         products = await context.ProductPackages
             .Where(pp => pp.ProductId == productId)
@@ -150,14 +150,14 @@ else
             var userAct = new UserActivity
             {
                 UserId = LoginService.UserId,
-                ActMessage = $"Selecionou o software: Nome: {selectedPackage.PackageName} | Versão: {selectedPackage.PackageVersion}",
+                ActMessage = $"Selecionou o software: Nome: {selectedPackage.Name} | Versão: {selectedPackage.Version}",
                 ActTimeStamp = DateTime.Now
             };
 
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{Uri.EscapeDataString(selectedPackage.PackageId)}");
+            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{Uri.EscapeDataString(selectedPackage.Id)}");
         }
         else
         {

@@ -63,7 +63,7 @@ else
             @foreach (var fleet in FilterService.SelectedFleets)
             {
                 <div class="grid-item" @onclick="() => SelectFleetName(fleet)">
-                    @fleet.FleetName
+                    @fleet.Name
                 </div>
             }
         </div>
@@ -119,7 +119,7 @@ else
             var userAct = new UserActivity
             {
                 UserId = LoginService.UserId,
-                ActMessage = $"Selecionou a frota: Nome: {selectedFleet.FleetName}",
+                ActMessage = $"Selecionou a frota: Nome: {selectedFleet.Name}",
                 ActTimeStamp = DateTime.Now
             };
 

@@ -24,12 +24,12 @@
             @foreach (var device in devices)
             {
                 <tr class="table-light">
-                    <td>@device.DeviceName</td>
+                    <td>@device.Name</td>
                     <td>
                         <div class="form-check d-flex justify-content-center">
-                            <input type="checkbox" class="largerCheckbox" id="toggle-@device.DeviceId"
+                            <input type="checkbox" class="largerCheckbox" id="toggle-@device.Id"
                                    @onchange="(e => ToggleProduct(e, device))"
-                                   checked="@selectedDevices.Any(d => d.DeviceId == device.DeviceId)" />
+                                   checked="@selectedDevices.Any(d => d.Id == device.Id)" />
                         </div>
                     </td>
                 </tr>
@@ -77,12 +77,12 @@
 
         if (isChecked)
         {
-            if (!selectedDevices.Any(d => d.DeviceId == device.DeviceId))
+            if (!selectedDevices.Any(d => d.Id == device.Id))
                 selectedDevices.Add(device);
         }
         else
         {
-            selectedDevices.RemoveAll(d => d.DeviceId == device.DeviceId);
+            selectedDevices.RemoveAll(d => d.Id == device.Id);
         }
     }
 

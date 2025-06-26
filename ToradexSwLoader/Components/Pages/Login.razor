@@ -101,7 +101,7 @@
 
         var loginLog = new LoginLog
             {
-                UserId = user.UserId,
+                UserId = user.Id,
                 Email = inputEmail,
                 LoginTimeStamp = DateTime.Now
             };
@@ -109,7 +109,7 @@
         context.LoginLogs.Add(loginLog);
         await context.SaveChangesAsync();
 
-        LoginService.SetLogin(user.UserId, user.UserName);
+        LoginService.SetLogin(user.Id, user.UserName);
 
         isLoading = false;
 

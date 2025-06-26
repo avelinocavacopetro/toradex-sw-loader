@@ -12,9 +12,9 @@
 @if (!isLoading)
 {
 	<h3 style="text-align: center;">Estado do Carregamento</h3>
-	<h5 style="text-align: center;">Dispositivo: @selectedDevice?.DeviceName</h5>
-	<h5 style="text-align: center;">Software: @selectedPackage?.PackageName </h5>
-	<h5 style="text-align: center;">Frota: @selectedFleet?.FleetName</h5>
+	<h5 style="text-align: center;">Dispositivo: @selectedDevice?.Name</h5>
+	<h5 style="text-align: center;">Software: @selectedPackage?.Name </h5>
+	<h5 style="text-align: center;">Frota: @selectedFleet?.Name</h5>
 }
 
 <br />
@@ -72,8 +72,8 @@
 	protected override async Task OnInitializedAsync()
 	{
 		using var context = DbContextFactory.CreateDbContext();
-		selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.DeviceId == deviceId);
-		selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.PackageId == packageId);
+		selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+		selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == packageId);
 		selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
 
 		isLoading = false;
