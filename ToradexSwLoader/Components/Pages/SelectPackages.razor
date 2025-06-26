@@ -157,7 +157,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{Uri.EscapeDataString(selectedPackage.Id)}");
+            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{productId}/{Uri.EscapeDataString(selectedPackage.Id)}");
         }
         else
         {

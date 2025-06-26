@@ -1,4 +1,4 @@
-﻿@page "/charging/{deviceId:int}/{packageId}/{fleetId}"
+﻿@page "/charging/{deviceId:int}/{productId:int}/{packageId}/{fleetId}"
 
 @inject NavigationManager UriHelper
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -58,6 +58,9 @@
 	[Parameter]
 	public int deviceId { get; set; }
 	private Device? selectedDevice = new Device();
+
+	[Parameter]
+	public int productId { get; set; }
 
 	[Parameter]
 	public string packageId { get; set; } = string.Empty;

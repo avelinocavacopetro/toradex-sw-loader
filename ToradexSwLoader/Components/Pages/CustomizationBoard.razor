@@ -1,9 +1,9 @@
-﻿@page "/customization/{deviceId:int}/{packageId}/{fleetId}"
+﻿@page "/customization/{deviceId:int}/{productId:int}/{packageId}/{fleetId}"
 
-@inject NavigationManager UriHelper
-@inject LoginService LoginService
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject NavigationManager UriHelper
+@inject LoginService LoginService
 @inject SweetAlertService Swal
 
 <PageTitle>Customizar Placa</PageTitle>
@@ -53,6 +53,9 @@
     [Parameter]
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
+
+    [Parameter]
+    public int productId { get; set; }
 
     [Parameter]
     public string packageId { get; set; } = string.Empty;
@@ -120,14 +123,34 @@
         {
             using var context = DbContextFactory.CreateDbContext();
             var userAct = new UserActivity
-            {
-                    UserId = LoginService.UserId,
-                    ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
-                    ActTimeStamp = DateTime.Now
-            };
+                {
+                        UserId = LoginService.UserId,
+                        ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
+                        ActTimeStamp = DateTime.Now
+                };
+
+            var finalProduct = new FinalProduct
+                {
+                    Name = finalBoard,
+                    Status = "UpdatePending",
+                    CreatedAt = DateTime.Now,
+                    DeviceId = deviceId,
+                    ProductId = productId,
+                    PackageId = packageId,
+                    FleetId = fleetId,
+                    UserId = LoginService.UserId
+                };
 
             context.UserActivities.Add(userAct);
+            context.FinalProducts.Add(finalProduct);
             await context.SaveChangesAsync();
+
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Produto Final criado com sucesso!",
+                Icon = SweetAlertIcon.Success,
+                ConfirmButtonColor = "#0B5120"
+            });
 
             UriHelper.NavigateTo("/home");
         }
