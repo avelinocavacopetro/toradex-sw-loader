@@ -37,14 +37,12 @@
     else
     {
         <div class="edit-form">
-            <label for="text" class="pb-4" style="font-size: 1.5rem;">Alterar nome da placa</label>
-            <input type="text" @bind="finalBoard" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;"/>
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Alterar tag</label>
+            <input type="text" @bind="editableTag" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
             <div>
                 <button class="btn btn-color mt-5 btn-lg btn-edit-custom" @onclick="SaveName">Salvar</button>
                 <button class="btn btn-danger mt-5 ms-5 btn-lg btn-edit-custom" @onclick="CancelEdit">Cancelar</button>
-
             </div>
-            
         </div>
     }
 </div>
@@ -56,6 +54,7 @@
 
     [Parameter]
     public int productId { get; set; }
+    private Product? selectedProduct = new Product();
 
     [Parameter]
     public string packageId { get; set; } = string.Empty;
@@ -67,43 +66,63 @@
 
     private bool isLoading = true;
     private string finalBoard = string.Empty;
+    private string editableTag = string.Empty;
+    private string notEditable = string.Empty;
     private bool isEditing = false;
-    private string originalFinalBoard = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine($"ID DO PACOTE RECEBIDO: {packageId}");
-
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
         selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == packageId);
         selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
 
         isLoading = false;
     }
 
     protected override void OnParametersSet()
     {
-        if (string.IsNullOrEmpty(finalBoard) && selectedDevice != null && selectedPackage != null && selectedFleet != null)
+        if (string.IsNullOrEmpty(finalBoard) && selectedDevice != null && selectedPackage != null && selectedFleet != null && selectedProduct != null)
         {
-            finalBoard = $"{selectedPackage.Version}_{selectedFleet.Name}";
+            notEditable = $"Petrotec_{selectedFleet.Name}_{selectedProduct.Name} ";
+            finalBoard = notEditable;
         }
     }
 
     private void ChangeName()
     {
-        originalFinalBoard = finalBoard;
         isEditing = true;
+
+        if (!string.IsNullOrEmpty(finalBoard) && !string.IsNullOrEmpty(notEditable) && finalBoard.StartsWith(notEditable))
+        {
+            var tag = finalBoard.Substring(notEditable.Length).Trim();
+
+            if (tag.StartsWith("(") && tag.EndsWith(")"))
+            {
+                editableTag = tag.Substring(1, tag.Length - 2);
+            }
+            else
+            {
+                editableTag = tag;
+            }
+        }
+        else
+        {
+            editableTag = string.Empty;
+        }
     }
+
 
     private void SaveName()
     {
         isEditing = false;
+        finalBoard = $"{notEditable} ({editableTag})".Trim();
     }
+
 
     private void CancelEdit()
     {
-        finalBoard = originalFinalBoard;
         isEditing = false;
     }
 
