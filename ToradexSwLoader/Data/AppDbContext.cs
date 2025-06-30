@@ -23,6 +23,8 @@ namespace ToradexSwLoader.Data
         public DbSet<LoginLog> LoginLogs { get; set; }
         public DbSet<DeviceProduct> DeviceProducts { get; set; }
         public DbSet<FinalProduct> FinalProducts { get; set; }
+        public DbSet<Stack> Stacks { get; set; }
+        public DbSet<ProductStack> ProductStacks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -68,6 +70,19 @@ namespace ToradexSwLoader.Data
                 .HasOne(dp => dp.Product)
                 .WithMany(p => p.DeviceProducts)
                 .HasForeignKey(dp => dp.ProductId);
+
+            modelBuilder.Entity<ProductStack>()
+                .HasKey(ps => new { ps.ProductId, ps.StackId });
+
+            modelBuilder.Entity<ProductStack>()
+                .HasOne(ps => ps.Product)
+                .WithMany(p => p.ProductStacks)
+                .HasForeignKey(ps => ps.ProductId);
+
+            modelBuilder.Entity<ProductStack>()
+                .HasOne(ps => ps.Stack)
+                .WithMany(s => s.ProductStacks)
+                .HasForeignKey(ps => ps.StackId);
 
             base.OnModelCreating(modelBuilder);
         }

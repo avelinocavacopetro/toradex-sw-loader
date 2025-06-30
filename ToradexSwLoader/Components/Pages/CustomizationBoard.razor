@@ -1,4 +1,4 @@
-﻿@page "/customization/{deviceId:int}/{productId:int}/{packageId}/{fleetId}"
+﻿@page "/customization/{deviceId:int}/{productId:int}/{stackId:int}/{packageId}/{fleetId}"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
@@ -17,7 +17,9 @@
 @if (!isLoading)
 {
     <h5 style="text-align: center;">Dispositivo: @selectedDevice?.Name</h5>
-    <h5 style="text-align: center;">Software: @selectedPackage?.Id</h5>
+    <h5 style="text-align: center;">Produto: @selectedProduct?.Name</h5>
+    <h5 style="text-align: center;">Stack: @selectedStack?.Name</h5>
+    <h5 style="text-align: center;">Software: @selectedPackage?.Name</h5>
     <h5 style="text-align: center;">Frota: @selectedFleet?.Name</h5>
 }
 
@@ -56,6 +58,11 @@
 
     [Parameter]
     public int productId { get; set; }
+    private Product? selectedProduct = new Product();
+
+    [Parameter]
+    public int stackId { get; set; }
+    private Stack? selectedStack = new Stack();
 
     [Parameter]
     public string packageId { get; set; } = string.Empty;
@@ -65,17 +72,17 @@
     public string fleetId { get; set; } = string.Empty;
     private Fleet? selectedFleet = new Fleet();
 
-    private bool isLoading = true;
-    private string finalBoard = string.Empty;
-    private bool isEditing = false;
     private string originalFinalBoard = string.Empty;
+    private string finalBoard = string.Empty;
+    private bool isLoading = true;
+    private bool isEditing = false;
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine($"ID DO PACOTE RECEBIDO: {packageId}");
-
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
         selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == packageId);
         selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
 
@@ -136,6 +143,7 @@
                     CreatedAt = DateTime.Now,
                     DeviceId = deviceId,
                     ProductId = productId,
+                    StackId = stackId,
                     PackageId = packageId,
                     FleetId = fleetId,
                     UserId = LoginService.UserId

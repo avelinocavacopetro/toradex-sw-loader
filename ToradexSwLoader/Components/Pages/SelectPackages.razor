@@ -1,4 +1,4 @@
-﻿@page "/packages/{deviceId:int}/{productId:int}"
+﻿@page "/packages/{deviceId:int}/{productId:int}/{stackId:int}"
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -39,6 +39,8 @@ else
 
     <h3 style="text-align: center;">Selecionar Software</h3>
     <h5 style="text-align: center;" class="pt-1">Dispositivo: @selectedDevice?.Name</h5>
+    <h5 style="text-align: center;" class="pt-1">Produto: @selectedProduct?.Name</h5>
+    <h5 style="text-align: center;" class="pt-1">Stack: @selectedStack?.Name</h5>
 
     <div class="d-flex justify-content-end pe-5">
         <div class="d-flex justify-content-between align-items-center gap-3">
@@ -94,14 +96,18 @@ else
     public int productId { get; set; }
     private Product? selectedProduct = new Product();
 
+    [Parameter]
+    public int stackId { get; set; }
+    private Stack? selectedStack = new Stack();
+
     private List<ProductPackage> paginatedPackages = new List<ProductPackage>();
-    private List<ProductPackage> products = new List<ProductPackage>();
+    private List<ProductPackage> productsPackages = new List<ProductPackage>();
     private Package? selectedPackage;
     private WindowDimension? dimension;
 
     private int actualPage = 1;
-    private int packagesPerPage = 5;
-    private int totalPages => (int)Math.Ceiling((double)products.Count / packagesPerPage);
+    private int packagesPerPage = 8;
+    private int totalPages => (int)Math.Ceiling((double)productsPackages.Count / packagesPerPage);
     private bool isLoading = true;
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
@@ -111,8 +117,9 @@ else
         using var context = DbContextFactory.CreateDbContext();
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
         selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
 
-        products = await context.ProductPackages
+        productsPackages = await context.ProductPackages
             .Where(pp => pp.ProductId == productId)
             .Include(pp => pp.Package)
             .ToListAsync();
@@ -123,8 +130,6 @@ else
 
         isLoading = false;
         StateHasChanged();
-
-        
     }
 
     private void OnDimensionsChanged(WindowDimension newDimension)
@@ -157,7 +162,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{productId}/{Uri.EscapeDataString(selectedPackage.Id)}");
+            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(selectedPackage.Id)}");
         }
         else
         {
@@ -177,7 +182,7 @@ else
 
     private void UpdatePage()
     {
-        paginatedPackages = products
+        paginatedPackages = productsPackages
                                  .Skip((actualPage - 1) * packagesPerPage)
                                  .Take(packagesPerPage)
                                  .ToList();

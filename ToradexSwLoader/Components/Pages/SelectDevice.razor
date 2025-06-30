@@ -35,7 +35,7 @@ else
     <br />
     <br />
 
-    @* <div class="d-flex justify-content-end pe-5">
+    <div class="d-flex justify-content-end pe-5">
         <div class="d-flex justify-content-between align-items-center gap-3">
             <span>@actualPage - @totalPages de @totalPages</span>
             <div class="d-flex gap-2">
@@ -50,7 +50,7 @@ else
                 </button>
             </div>
         </div>
-    </div> *@
+    </div>
 
     @if (FilterService.SelectedDevices.Count == 0)
     {
@@ -80,11 +80,11 @@ else
     private Device? selectedDevice;
     private WindowDimension? dimension;
 
-    private bool isLoading = true;
     private int actualPage = 1;
     private int devicesPerPage = 8;
     private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
     private int OnlineTime => FilterService.OnlineTime;
+    private bool isLoading = true;
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
 
@@ -130,7 +130,6 @@ else
         selectedDevice = device;
         await OnClick();
     }
-
 
     private async Task OnClick()
     {
