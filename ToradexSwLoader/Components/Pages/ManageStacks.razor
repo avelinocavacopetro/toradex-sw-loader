@@ -1,11 +1,11 @@
-﻿@page "/manageProducts"
+﻿@page "/manageStacks"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 
-<PageTitle>Gerir Produtos</PageTitle>
+<PageTitle>Gerir Stacks</PageTitle>
 
 @if (isLoading)
 {
@@ -22,29 +22,29 @@ else if (isAdding || isEditing)
 {
     <div class="center-edit">
         <div class="edit-form">
-            <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome do produto</label>
-            <input type="text" @bind="productName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome da Stack</label>
+            <input type="text" @bind="stackName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
 
             <br />
-            <h4>Selecionar Dispositivo(s):</h4>
+            <h4>Selecionar Produto(s):</h4>
 
             <table class="table mt-3 w-100">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th>Dispositivo</th>
+                        <th>Produto</th>
                         <th class="text-center">Selecionar</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var device in FilterService.SelectedDevices)
+                    @foreach (var product in FilterService.SelectedProducts)
                     {
                         <tr class="table-light">
-                            <td>@device.Name</td>
+                            <td>@product.Name</td>
                             <td>
                                 <div class="form-check d-flex justify-content-center">
-                                    <input type="checkbox" class="largerCheckbox" id="toggle-@device.Id"
-                                           @onchange="(e => ToggleDevice(e, device))"
-                                           checked="@selectedDevices.Any(d => d.Id == device.Id)" />
+                                    <input type="checkbox" class="largerCheckbox" id="toggle-@product.Id"
+                                           @onchange="(e => ToggleProduct(e, product))"
+                                           checked="@selectedProducts.Any(p => p.Id == product.Id)" />
                                 </div>
                             </td>
                         </tr>
@@ -54,7 +54,7 @@ else if (isAdding || isEditing)
 
             <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
                 <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
-                        @onclick="isAdding? SaveProduct : EditProduct">
+                        @onclick="isAdding? SaveStack : EditStack">
                     Salvar
                 </button>
                 <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
@@ -75,7 +75,7 @@ else
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="w-50">
-                        <input type="text" class="form-control" placeholder="Pesquisar produto pelo nome..."
+                        <input type="text" class="form-control" placeholder="Pesquisar stack pelo nome..."
                                @bind="searchTerm" @bind:event="oninput" />
                     </div>
 
@@ -98,37 +98,37 @@ else
                 <div class="pb-2 pt-4" style="text-align: right;">
                     <button class="btn btn-color btn-lg"
                             style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
-                            @onclick="AddProduct">
+                            @onclick="AddStack">
                         +
                     </button>
                 </div>
-            
+
                 <div class="pb-5">
                     <table class="table mt-3 w-100">
                         <thead style="background-color: #0c6527; color: white;">
                             <tr>
-                                <th>Nome do Produto</th>
+                                <th>Nome da Stack</th>
                                 <th class="text-center">Selecionar</th>
                                 <th></th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var product in PaginatedProducts)
+                            @foreach (var stack in PaginatedStacks)
                             {
                                 <tr class="table-light">
-                                    <td>@product.Name</td>
+                                    <td>@stack.Name</td>
                                     <td>
                                         <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" class="largerCheckbox" id="toggle-@product.Id"
-                                                   @onchange="(e => ToggleProduct(e, product))"
-                                                   checked="@selectedProducts.Any(p => p.Id == product.Id)" />
+                                            <input type="checkbox" class="largerCheckbox" id="toggle-@stack.Id"
+                                                   @onchange="(e => ToggleStack(e, stack))"
+                                                   checked="@selectedStacks.Any(s => s.Id == stack.Id)" />
                                         </div>
                                     </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm"
                                                 title="Editar"
-                                                @onclick="() => EditProduct(product.Id)"
+                                                @onclick="() => EditStack(stack.Id)"
                                                 style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                             <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                         </button>
@@ -136,7 +136,7 @@ else
                                     <td class="text-center">
                                         <button class="btn btn-danger btn-sm"
                                                 title="Desativar"
-                                                @onclick="() => DisableProduct(product.Id)"
+                                                @onclick="() => DisableStack(stack.Id)"
                                                 style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                             <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                         </button>
@@ -156,20 +156,20 @@ else
 }
 
 @code {
-    private List<Product> products = new List<Product>();
+    private List<Stack> stacks = new List<Stack>();
+    private List<Stack> selectedStacks = new List<Stack>();
     private List<Product> selectedProducts = new List<Product>();
-    private List<Device> selectedDevices = new List<Device>();
-    private List<Product> paginatedProducts = new List<Product>();
-    private Product? selectedProduct = new Product();
+    private List<Stack> paginatedStacks = new List<Stack>();
+    private Stack? selectedStack = new Stack();
     private WindowDimension dimension = new WindowDimension();
 
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
-    private string productName = string.Empty;
+    private string stackName = string.Empty;
     private int actualPage = 1;
-    private int productsPerPage = 8;
-    private int totalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
+    private int stacksPerPage = 8;
+    private int totalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
 
@@ -187,15 +187,15 @@ else
         }
     }
 
-    private IEnumerable<Product> FilteredProducts =>
+    private IEnumerable<Stack> FilteredStacks =>
     string.IsNullOrWhiteSpace(searchTerm)
-        ? products
-        : products.Where(p => p.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        ? stacks
+        : stacks.Where(s => s.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<Product> PaginatedProducts =>
-    FilteredProducts
-        .Skip((actualPage - 1) * productsPerPage)
-        .Take(productsPerPage);
+    private IEnumerable<Stack> PaginatedStacks =>
+    FilteredStacks
+        .Skip((actualPage - 1) * stacksPerPage)
+        .Take(stacksPerPage);
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
@@ -210,14 +210,98 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
-        products = await context.Products.ToListAsync();
+        stacks = await context.Stacks.ToListAsync();
 
-        selectedProducts = FilterService.SelectedProducts;
-        selectedDevices = new List<Device>(FilterService.SelectedDevices);
+        selectedStacks = FilterService.SelectedStacks;
+        selectedProducts = new List<Product>(FilterService.SelectedProducts);
 
         UpdatePage();
 
         isLoading = false;
+    }
+
+    private void ToggleStack(ChangeEventArgs e, Stack stack)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedStacks.Any(s => s.Id == stack.Id))
+                selectedStacks.Add(stack);
+        }
+        else
+        {
+            selectedStacks.RemoveAll(s => s.Id == stack.Id);
+        }
+    }
+
+    private void AddStack()
+    {
+        stackName = string.Empty;
+        selectedProducts.Clear();
+        selectedStack = null;
+        isAdding = true;
+        isEditing = false;
+    }
+
+    private async Task EditStack(int id)
+    {
+        isEditing = true;
+        isAdding = false;
+
+        using var context = DbContextFactory.CreateDbContext();
+        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == id);
+
+        if (selectedStack != null)
+        {
+            stackName = selectedStack.Name;
+
+            selectedProducts = await context.ProductStacks
+                .Where(ps => ps.StackId == id)
+                .Select(ps => ps.Product!)
+                .ToListAsync();
+        }
+    }
+
+    private async Task EditStack()
+    {
+        if (selectedStack == null) return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == selectedStack.Id);
+        if (stackDb == null) return;
+
+        stackDb.Name = stackName;
+
+        var oldProductStacks = context.ProductStacks.Where(ps => ps.StackId == stackDb.Id);
+        context.ProductStacks.RemoveRange(oldProductStacks);
+
+        foreach (var product in selectedProducts)
+        {
+            context.ProductStacks.Add(new ProductStack
+            {
+                ProductId = product.Id,
+                StackId = stackDb.Id
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        var localStack = stacks.FirstOrDefault(s => s.Id == stackDb.Id);
+        if (localStack != null)
+        {
+            localStack.Name = stackDb.Name;
+        }
+
+        CancelEdit();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Stack editada com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
     }
 
     private void ToggleProduct(ChangeEventArgs e, Product product)
@@ -235,97 +319,13 @@ else
         }
     }
 
-    private void AddProduct()
-    {
-        productName = string.Empty;
-        selectedDevices.Clear();
-        selectedProduct = null;
-        isAdding = true;
-        isEditing = false;
-    }
-
-    private async Task EditProduct(int id)
-    {
-        isEditing = true;
-        isAdding = false;
-
-        using var context = DbContextFactory.CreateDbContext();
-        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == id);
-
-        if (selectedProduct != null)
-        {
-            productName = selectedProduct.Name;
-
-            selectedDevices = await context.DeviceProducts
-                .Where(dp => dp.ProductId == id)
-                .Select(dp => dp.Device!)
-                .ToListAsync();
-        }
-    }
-
-    private async Task EditProduct()
-    {
-        if (selectedProduct == null) return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == selectedProduct.Id);
-        if (productDb == null) return;
-
-        productDb.Name = productName;
-
-        var oldDeviceProducts = context.DeviceProducts.Where(dp => dp.ProductId == productDb.Id);
-        context.DeviceProducts.RemoveRange(oldDeviceProducts);
-
-        foreach (var device in selectedDevices)
-        {
-            context.DeviceProducts.Add(new DeviceProduct
-            {
-                ProductId = productDb.Id,
-                DeviceId = device.Id
-            });
-        }
-
-        await context.SaveChangesAsync();
-
-        var localProduct = products.FirstOrDefault(p => p.Id == productDb.Id);
-        if (localProduct != null)
-        {
-            localProduct.Name = productDb.Name;
-        }
-
-        CancelEdit();
-
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = "Produto editado com sucesso!",
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void ToggleDevice(ChangeEventArgs e, Device device)
-    {
-        var isChecked = e.Value is bool b && b;
-
-        if (isChecked)
-        {
-            if (!selectedDevices.Any(d => d.Id == device.Id))
-                selectedDevices.Add(device);
-        }
-        else
-        {
-            selectedDevices.RemoveAll(d => d.Id == device.Id);
-        }
-    }
-
     private async Task ApplyFilter()
     {
-        if (selectedProducts.Count == 0)
+        if (selectedStacks.Count == 0)
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos um produto!",
+                Title = "Por favor selecione pelo menos uma stack!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -333,7 +333,7 @@ else
         }
         else
         {
-            await FilterService.ApplyProductsFilter(new List<Product>(selectedProducts));
+            await FilterService.ApplyStacksFilter(new List<Stack>(selectedStacks));
 
             await Swal.FireAsync(new SweetAlertOptions
             {
@@ -344,9 +344,9 @@ else
         }
     }
 
-    private async Task SaveProduct()
+    private async Task SaveStack()
     {
-        if (string.IsNullOrWhiteSpace(productName))
+        if (string.IsNullOrWhiteSpace(stackName))
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
@@ -359,35 +359,35 @@ else
 
         using var context = DbContextFactory.CreateDbContext();
 
-        bool exists = await context.Products.AnyAsync(p => p.Name.ToLower() == productName.Trim().ToLower());
+        bool exists = await context.Stacks.AnyAsync(s => s.Name.ToLower() == stackName.Trim().ToLower());
 
         if (exists)
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Este produto já existe!",
+                Title = "Esta stack já existe!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
         }
 
-        var newProduct = new Product
+        var newStack = new Stack
         {
-            Name = productName,
+            Name = stackName,
             Enabled = true
         };
 
-        context.Products.Add(newProduct);
+        context.Stacks.Add(newStack);
         await context.SaveChangesAsync();
 
-        products.Add(newProduct);
+        stacks.Add(newStack);
 
         CancelAdd();
 
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Produto adicionado com sucesso!",
+            Title = "Stack adicionada com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
@@ -396,45 +396,45 @@ else
     private void CancelAdd()
     {
         isAdding = false;
-        productName = string.Empty;
-        selectedDevices.Clear();
-        selectedProduct = null;
+        stackName = string.Empty;
+        selectedProducts.Clear();
+        selectedStack = null;
     }
 
     private void CancelEdit()
     {
         isEditing = false;
-        productName = string.Empty;
-        selectedDevices.Clear();
-        selectedProduct = null;
+        stackName = string.Empty;
+        selectedProducts.Clear();
+        selectedStack = null;
     }
 
-    private async Task DisableProduct(int productId)
+    private async Task DisableStack(int id)
     {
         var result = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Deseja desativar este produto?",
-                Icon = SweetAlertIcon.Warning,
-                ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
-                ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
-            });
+        {
+            Title = "Deseja desativar esta stack?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = "Cancelar"
+        });
 
         if (result.IsConfirmed)
         {
             isLoading = true;
 
             using var context = DbContextFactory.CreateDbContext();
-            var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+            var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == id);
 
-            if (productDb != null)
+            if (stackDb != null)
             {
-                productDb.Enabled = false;
+                stackDb.Enabled = false;
                 await context.SaveChangesAsync();
             }
 
-            products.RemoveAll(p => p.Id == productId);
+            stacks.RemoveAll(s => s.Id == id);
 
             isLoading = false;
             StateHasChanged();
@@ -443,9 +443,9 @@ else
 
     private void UpdatePage()
     {
-        paginatedProducts = FilteredProducts
-                                 .Skip((actualPage - 1) * productsPerPage)
-                                 .Take(productsPerPage)
+        paginatedStacks = FilteredStacks
+                                 .Skip((actualPage - 1) * stacksPerPage)
+                                 .Take(stacksPerPage)
                                  .ToList();
     }
 

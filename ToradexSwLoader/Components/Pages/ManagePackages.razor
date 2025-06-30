@@ -143,28 +143,29 @@
 }
 
 @code {
+    private Product? selectedProduct;
+    private Package? selectedPackage;
     private List<Package> packages = new();
     private HashSet<string> packageNames = new();
     private List<string> filteredVersions = new();
     private List<string> filteredVersionList = new();
     private List<string> filteredPackageNames = new();
     private List<ProductPackage> productsPackages = new List<ProductPackage>();
+
+    private string? oldPackageId;
     private string? selectedPackageName;
     private string? selectedPackageVersion;
     private string versionSearchTerm = "";
-    private bool showVersionSuggestions = false;
     private string searchTerm = "";
+    private bool showVersionSuggestions = false;
     private bool showSuggestions = false;
     private bool versionDisabled = true;
     private bool packageDisabled = true;
     private bool isAdding = false;
     private bool isEditing = false;
-    private Product? selectedProduct;
-    private Package? selectedPackage;
+    
     private int _selectedProductId;
-    private int editingProductId;
-    private string? oldPackageId;
-
+    private int editingProductId;    
     private int selectedProductId
     {
         get => _selectedProductId;
@@ -369,7 +370,6 @@
         StateHasChanged();
     }
 
-
     private void CancelAdd()
     {
         isAdding = false;
@@ -423,7 +423,6 @@
 
         versionDisabled = false;
     }
-
 
     private async Task HideSuggestions()
     {
@@ -486,5 +485,4 @@
         await Task.Delay(200);
         showVersionSuggestions = false;
     }
-
 }

@@ -9,8 +9,6 @@
 
 <PageTitle>Selecionar Produto</PageTitle>
 
-<WindowDimensions OnChange="OnDimensionsChanged" />
-
 @if (isLoading)
 {
     <div class="center">
@@ -32,6 +30,7 @@ else
     </a>
 
     <h3 class="text-center pb-5">Selecionar Produto</h3>
+    <h5 style="text-align: center;" class="pt-1">Dispositivo: @selectedDevice?.Name</h5>
 
     <div class="d-flex justify-content-end align-items-center gap-3 pag-bts">
         <span>@actualPage - @totalPages de @totalPages</span>
@@ -49,7 +48,7 @@ else
     </div>
 
     <div class="grid-container">
-        @foreach (var product in products)
+        @foreach (var product in paginatedProducts)
         {
             <div class="grid-item" @onclick="() => SelectProductName(product)">
                 @product.Name
@@ -68,10 +67,10 @@ else
     private List<Product> paginatedProducts = new List<Product>();
     private WindowDimension? dimension;
 
-    private bool isLoading = false;
     private int actualPage = 1;
-    private int productsPerPage = 14;
+    private int productsPerPage = 8;
     private int totalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
+    private bool isLoading = false;
     private bool CanGoNext => actualPage < totalPages;
     private bool CanGoPrev => actualPage > 1;
 
@@ -82,28 +81,6 @@ else
 
         UpdatePage();
         StateHasChanged();
-    }
-
-    private async Task SelectProductName(Product product)
-    {
-        using var context = DbContextFactory.CreateDbContext();
-
-        bool hasPackages = await context.ProductPackages
-            .AnyAsync(pp => pp.ProductId == product.Id);
-
-        if (!hasPackages)
-        {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Este produto não tem pacotes associados.",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
-
-        selectedProduct = product;
-        await OnClick();
     }
 
     protected override async Task OnInitializedAsync()
@@ -118,7 +95,40 @@ else
             .Distinct()
             .ToListAsync();
 
+        UpdatePage();
         isLoading = false;
+    }
+
+    private async Task SelectProductName(Product product)
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool hasStacks = await context.ProductStacks.AnyAsync(ps => ps.ProductId == product.Id);
+        if (!hasStacks)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este produto não tem stacks associadas.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        bool hasPackages = await context.ProductPackages.AnyAsync(pp => pp.ProductId == product.Id);
+        if (!hasPackages)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este produto não tem pacotes associados.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        selectedProduct = product;
+        await OnClick();
     }
 
     private async Task OnClick()
@@ -142,6 +152,9 @@ else
 
     private void UpdatePage()
     {
+
+        Console.WriteLine($"UpdatePage chamado - total: {products.Count}, per page: {productsPerPage}");
+
         paginatedProducts = products
                               .Skip((actualPage - 1) * productsPerPage)
                               .Take(productsPerPage)

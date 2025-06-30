@@ -30,6 +30,10 @@ namespace ToradexSwLoader.Models
         public string PackageId { get; set; } = string.Empty;
         public Package? Package { get; set; }
 
+        [ForeignKey("Stack")]
+        public int StackId { get; set; }
+        public Stack? Stack { get; set; }
+
         [ForeignKey("Fleet")]
         public string FleetId { get; set; } = string.Empty;
         public Fleet? Fleet { get; set; }
