@@ -53,7 +53,7 @@ else
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center gap-3">
-                        <span>@actualPage - @totalPages de @totalPages</span>
+                        <span>@actualPage - @TotalPages de @TotalPages</span>
                         <div class="d-flex gap-2">
                             <button class="btn custom-outline-button btn-lg"
                                     @onclick="PrevPage" disabled="@(!CanGoPrev)">
@@ -129,21 +129,23 @@ else
 }
 
 @code {
-    private List<Device>? devices = new List<Device>();
+    private List<Device> devices = new List<Device>();
     private List<Device> selectedDevices = new List<Device>();
     private List<Device> paginatedDevices = new List<Device>();
     private Device? selectedDevice = new Device();
     private WindowDimension dimension = new WindowDimension();
 
     private string deviceName = string.Empty;
+
     private int onlineTime = 1;
     private int actualPage = 1;
     private int devicesPerPage = 8;
-    private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
+
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
-    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private string _searchTerm = string.Empty;
@@ -260,16 +262,16 @@ else
 
     private async Task ApplyFilter()
     {
-        if (onlineTime < 1 || onlineTime > 5)
-        {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Por favor coloque um valor entre 1 a 5 minutos!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+        // if (onlineTime < 1 || onlineTime > 5)
+        // {
+        //     await Swal.FireAsync(new SweetAlertOptions
+        //     {
+        //         Title = "Por favor coloque um valor entre 1 a 5 minutos!",
+        //         Icon = SweetAlertIcon.Warning,
+        //         ConfirmButtonColor = "#0B5120"
+        //     });
+        //     return;
+        // }
 
         if (selectedDevices.Count == 0)
         {
@@ -397,7 +399,7 @@ else
 
     private void NextPage()
     {
-        if (actualPage < totalPages)
+        if (CanGoNext)
         {
             actualPage++;
             UpdatePage();
@@ -406,7 +408,7 @@ else
 
     private void PrevPage()
     {
-        if (actualPage > 1)
+        if (CanGoNext)
         {
             actualPage--;
             UpdatePage();

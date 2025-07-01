@@ -33,7 +33,7 @@ else
     <h5 style="text-align: center;" class="pt-1">Dispositivo: @selectedDevice?.Name</h5>
 
     <div class="d-flex justify-content-end align-items-center gap-3 pag-bts">
-        <span>@actualPage - @totalPages de @totalPages</span>
+        <span>@actualPage - @TotalPages de @TotalPages</span>
         <div class="d-flex gap-2">
             <button class="btn custom-outline-button btn-lg"
                     @onclick="PrevPage" disabled="@(!CanGoPrev)">
@@ -61,17 +61,18 @@ else
     [Parameter]
     public int deviceId { get; set; }
     private Device? selectedDevice = new Device();
-
-    private Product? selectedProduct;
+    
     private List<Product> products = new List<Product>();
     private List<Product> paginatedProducts = new List<Product>();
+    private Product? selectedProduct;
     private WindowDimension? dimension;
 
     private int actualPage = 1;
     private int productsPerPage = 8;
-    private int totalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
+
     private bool isLoading = false;
-    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private void OnDimensionsChanged(WindowDimension newDimension)
@@ -152,9 +153,6 @@ else
 
     private void UpdatePage()
     {
-
-        Console.WriteLine($"UpdatePage chamado - total: {products.Count}, per page: {productsPerPage}");
-
         paginatedProducts = products
                               .Skip((actualPage - 1) * productsPerPage)
                               .Take(productsPerPage)
@@ -163,7 +161,7 @@ else
 
     private void NextPage()
     {
-        if (actualPage < totalPages)
+        if (CanGoNext)
         {
             actualPage++;
             UpdatePage();
@@ -172,7 +170,7 @@ else
 
     private void PrevPage()
     {
-        if (actualPage > 1)
+        if (CanGoPrev)
         {
             actualPage--;
             UpdatePage();

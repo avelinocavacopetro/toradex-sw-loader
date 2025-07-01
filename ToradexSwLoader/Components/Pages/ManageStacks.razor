@@ -80,7 +80,7 @@ else
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center gap-3">
-                        <span>@actualPage - @totalPages de @totalPages</span>
+                        <span>@actualPage - @TotalPages de @TotalPages</span>
                         <div class="d-flex gap-2">
                             <button class="btn custom-outline-button btn-lg"
                                     @onclick="PrevPage" disabled="@(!CanGoPrev)">
@@ -163,14 +163,16 @@ else
     private Stack? selectedStack = new Stack();
     private WindowDimension dimension = new WindowDimension();
 
+    private string stackName = string.Empty;
+
+    private int actualPage = 1;
+    private int stacksPerPage = 8;
+    private int TotalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
+
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
-    private string stackName = string.Empty;
-    private int actualPage = 1;
-    private int stacksPerPage = 8;
-    private int totalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
-    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private string _searchTerm = string.Empty;
@@ -451,7 +453,7 @@ else
 
     private void NextPage()
     {
-        if (actualPage < totalPages)
+        if (CanGoNext)
         {
             actualPage++;
             UpdatePage();
@@ -460,7 +462,7 @@ else
 
     private void PrevPage()
     {
-        if (actualPage > 1)
+        if (CanGoPrev)
         {
             actualPage--;
             UpdatePage();

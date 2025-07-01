@@ -76,7 +76,7 @@ else
         </div>
 
         <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @totalPages de @totalPages</span>
+            <span>@actualPage - @TotalPages de @TotalPages</span>
             <div class="d-flex gap-2">
                 <button class="btn custom-outline-button btn-lg"
                         @onclick="PrevPage" disabled="@(!CanGoPrev)">
@@ -133,11 +133,12 @@ else
     private List<DetailedDevice> paginetdDevices = new List<DetailedDevice>();
     private WindowDimension? dimension;
 
-    private bool isLoading = true;
     private int actualPage = 1;
     private int devicesPerPage = 4;
-    private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
-    private bool CanGoNext => actualPage < totalPages;
+    private int TotalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
+
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private void OnDimensionsChanged(WindowDimension newDimension)
@@ -175,7 +176,7 @@ else
 
     private void NextPage()
     {
-        if (actualPage < totalPages)
+        if (CanGoNext)
         {
             actualPage++;
             UpdatePage();
@@ -184,7 +185,7 @@ else
 
     private void PrevPage()
     {
-        if (actualPage > 1)
+        if (CanGoPrev)
         {
             actualPage--;
             UpdatePage();

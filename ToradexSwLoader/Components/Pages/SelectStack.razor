@@ -2,8 +2,8 @@
 
 <PageTitle>Selecionar Stack</PageTitle>
 
-@inject NavigationManager UriHelper
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject NavigationManager UriHelper
 @inject LoginService LoginService
 
 @if (isLoading)
@@ -31,7 +31,7 @@ else
     <h5 style="text-align: center;" class="pt-1">Produto: @selectedProduct?.Name</h5>
 
     <div class="d-flex justify-content-end align-items-center gap-3 pag-bts">
-        <span>@actualPage - @totalPages de @totalPages</span>
+        <span>@actualPage - @TotalPages de @TotalPages</span>
         <div class="d-flex gap-2">
             <button class="btn custom-outline-button btn-lg"
                     @onclick="PrevPage" disabled="@(!CanGoPrev)">
@@ -64,16 +64,17 @@ else
     public int productId { get; set; }
     private Product? selectedProduct = new Product();
 
-    private Stack? selectedStack;
     private List<Stack> stacks = new List<Stack>();
     private List<Stack> paginatedStacks = new List<Stack>();
+    private Stack? selectedStack;
     private WindowDimension? dimension;
 
     private int actualPage = 1;
     private int stacksPerPage = 8;
-    private int totalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
+
     private bool isLoading = false;
-    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private void OnDimensionsChanged(WindowDimension newDimension)
@@ -139,7 +140,7 @@ else
 
     private void NextPage()
     {
-        if (actualPage < totalPages)
+        if (CanGoNext)
         {
             actualPage++;
             UpdatePage();
@@ -148,7 +149,7 @@ else
 
     private void PrevPage()
     {
-        if (actualPage > 1)
+        if (CanGoPrev)
         {
             actualPage--;
             UpdatePage();

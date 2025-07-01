@@ -37,7 +37,7 @@ else
 
     <div class="d-flex justify-content-end pe-5">
         <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @totalPages de @totalPages</span>
+            <span>@actualPage - @TotalPages de @TotalPages</span>
             <div class="d-flex gap-2">
                 <button class="btn custom-outline-button btn-lg"
                         @onclick="PrevPage" disabled="@(!CanGoPrev)">
@@ -74,24 +74,24 @@ else
 }
 
 @code {
-    private List<Device> totalDevices = new List<Device>();
-    private List<Device> devices = new List<Device>();
+    private List<Device> allDevices = new List<Device>();
     private List<Device> paginatedDevices = new List<Device>();
     private Device? selectedDevice;
     private WindowDimension? dimension;
 
     private int actualPage = 1;
     private int devicesPerPage = 8;
-    private int totalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)allDevices.Count / devicesPerPage);
     private int OnlineTime => FilterService.OnlineTime;
+
     private bool isLoading = true;
-    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
         dimension = newDimension;
-        devicesPerPage = dimension.Width <= 1024 ? 8 : devices.Count;
+        devicesPerPage = dimension.Width <= 1024 ? 8 : allDevices.Count;
 
         UpdatePage();
         StateHasChanged();
@@ -101,8 +101,7 @@ else
     {
         await FilterService.LoadFilterAsync();
 
-        totalDevices = FilterService.SelectedDevices;
-        devices = new List<Device>(totalDevices);
+        allDevices = FilterService.SelectedDevices.ToList();
         UpdatePage();
 
         isLoading = false;
@@ -113,8 +112,7 @@ else
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        bool hasProducts = await context.DeviceProducts
-            .AnyAsync(dp => dp.DeviceId == device.Id);
+        bool hasProducts = await context.DeviceProducts.AnyAsync(dp => dp.DeviceId == device.Id);
 
         if (!hasProducts)
         {
@@ -163,16 +161,15 @@ else
 
     private void UpdatePage()
     {
-        paginatedDevices = totalDevices
+        paginatedDevices = allDevices
                                  .Skip((actualPage - 1) * devicesPerPage)
                                  .Take(devicesPerPage)
                                  .ToList();
-        devices = totalDevices.ToList();
     }
 
     private void NextPage()
     {
-        if (actualPage < totalPages)
+        if (CanGoNext)
         {
             actualPage++;
             UpdatePage();
@@ -181,7 +178,7 @@ else
 
     private void PrevPage()
     {
-        if (actualPage > 1)
+        if (CanGoPrev)
         {
             actualPage--;
             UpdatePage();
