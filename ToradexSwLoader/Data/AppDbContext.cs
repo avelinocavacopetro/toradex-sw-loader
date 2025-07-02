@@ -24,6 +24,7 @@ namespace ToradexSwLoader.Data
         public DbSet<DeviceProduct> DeviceProducts { get; set; }
         public DbSet<FinalProduct> FinalProducts { get; set; }
         public DbSet<Stack> Stacks { get; set; }
+        public DbSet<Pattern> Patterns { get; set; }
         public DbSet<ProductStack> ProductStacks { get; set; }
         public DbSet<Pattern> Patterns { get; set; }
 
