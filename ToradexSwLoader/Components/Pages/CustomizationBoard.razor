@@ -29,14 +29,40 @@ else
         <i class="bi bi-arrow-left fs-1"></i>
     </a>
 
-    <h3 class="text-center pb-5">Placa Final</h3>
+    <h3 class="text-center pb-4">Placa Final</h3>
 
-    <h5 style="text-align: center;">Dispositivo: @selectedDevice?.Name</h5>
-    <h5 style="text-align: center;">Produto: @selectedProduct?.Name</h5>
-    <h5 style="text-align: center;">Stack: @selectedStack?.Name</h5>
-    <h5 style="text-align: center;">Software: @selectedPackage?.Name</h5>
-    <h5 style="text-align: center;">Frota: @selectedFleet?.Name</h5>
-    <h5 style="text-align: center;">Placa: @selectedBoard?.DeviceName</h5>           
+    <div style="display:flex; justify-content:center;">
+        <div class="text-center">
+            <table class="summary w-75" style="border-collapse: collapse;">
+                <tr>
+                    <th style="background-color: #0c6527; color: white; padding: 12px;">Dispositivo</th>
+                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedDevice?.Name</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #0c6527; color: white; padding: 12px;">Produto</th>
+                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedProduct?.Name</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #0c6527; color: white; padding: 12px;">Stack</th>
+                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedStack?.Name</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #0c6527; color: white; padding: 12px;">Software</th>
+                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedPackage?.Name</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #0c6527; color: white; padding: 12px;">Frota</th>
+                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedFleet?.Name</td>
+                </tr>
+                <tr>
+                    <th style="background-color: #0c6527; color: white; padding: 12px;">Placa</th>
+                    <td style="padding: 12px;">@selectedBoard?.DeviceName</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
 
     <div class="center-customization">
     @if (!isEditing)
