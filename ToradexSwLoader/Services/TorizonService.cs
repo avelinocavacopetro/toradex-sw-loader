@@ -65,6 +65,21 @@ namespace ToradexSwLoader.Services
 
             return null;
         }
+        public async Task<T?> GetItemAsync<T>(string url)
+        {
+            var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                return default;
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            return JsonSerializer.Deserialize<T>(json, options);
+        }
 
         public async Task ChangeSecretAndSave(string newSecret)
         {

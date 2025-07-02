@@ -141,7 +141,8 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/customization/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
+            UriHelper.NavigateTo($"/selectBoard/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
+            
         }
     }
 

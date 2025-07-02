@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ToradexSwLoader.Models
 {
-    [Table("DetailedDevice")]
+    //[Table("DetailedDevice")]
     public class DetailedDevice
     {
         [Key]
