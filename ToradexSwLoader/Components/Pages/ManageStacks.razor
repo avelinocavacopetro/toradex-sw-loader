@@ -229,9 +229,24 @@ else
 
         using var context = DbContextFactory.CreateDbContext();
         stacks = await context.Stacks
-               .Include(s => s.ProductStacks)
-                   .ThenInclude(ps => ps.Product)
-               .ToListAsync();
+            .Include(s => s.ProductStacks)
+                .ThenInclude(p => p.Product)
+            .Select(s => new Stack
+            {
+                Id = s.Id,
+                Name = s.Name,
+                ProductStacks = s.ProductStacks.Select(ps => new ProductStack
+                {
+                    ProductId = ps.ProductId,
+                    StackId = ps.StackId,
+                    Product = new Product
+                    {
+                        Id = ps.Product.Id,
+                        Name = ps.Product.Name
+                    }
+                }).ToList()
+            })
+            .ToListAsync();
 
         selectedStacks = FilterService.SelectedStacks;
         selectedProducts = new List<Product>(FilterService.SelectedProducts);

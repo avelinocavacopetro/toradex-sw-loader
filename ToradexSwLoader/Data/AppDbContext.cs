@@ -26,7 +26,6 @@ namespace ToradexSwLoader.Data
         public DbSet<Stack> Stacks { get; set; }
         public DbSet<Pattern> Patterns { get; set; }
         public DbSet<ProductStack> ProductStacks { get; set; }
-        public DbSet<Pattern> Patterns { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
