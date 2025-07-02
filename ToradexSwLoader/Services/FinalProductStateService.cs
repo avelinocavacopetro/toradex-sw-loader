@@ -1,4 +1,5 @@
 ﻿using ToradexSwLoader.Models;
+using System.Timers;
 
 namespace ToradexSwLoader.Services
 {
@@ -10,6 +11,21 @@ namespace ToradexSwLoader.Services
         public DateTime LastUpdate => _lastUpdate;
 
         public event Action? OnChange;
+
+        private readonly System.Timers.Timer _refreshTimer;
+
+        public FinalProductStateService()
+        {
+            _lastUpdate = DateTime.Now;
+
+            _refreshTimer = new System.Timers.Timer(10_000);
+            _refreshTimer.Elapsed += (sender, e) =>
+            {
+                _lastUpdate = DateTime.Now;
+                OnChange?.Invoke();
+            };
+            _refreshTimer.Start();
+        }
 
         public void SetFinalProducts(List<FinalProduct> newList)
         {
@@ -31,6 +47,12 @@ namespace ToradexSwLoader.Services
                     return false;
             }
             return true;
+        }
+
+        public void Dispose()
+        {
+            _refreshTimer?.Stop();
+            _refreshTimer?.Dispose();
         }
     }
 }
