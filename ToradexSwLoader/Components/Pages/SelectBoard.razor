@@ -9,12 +9,6 @@
 
 <PageTitle>Selecionar Placa</PageTitle>
 
-<a href="" onclick="history.back()" class="text-black">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
-
-<h3 class="text-center">Placas Disponíveis</h3>
-
 @if (isLoading)
 {
     <div class="center">
@@ -28,6 +22,19 @@
 } 
 else
 {
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
+
+    <h3 class="text-center pb-5">Placas Disponíveis</h3>
+
+    <br />
+    <br />
+    <br />
+
     <div class="d-flex justify-content-end pe-5">
         <div class="d-flex justify-content-between align-items-center gap-3">
             <span>@actualPage - @TotalPages de @TotalPages</span>
@@ -59,7 +66,7 @@ else
             {
                 <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
                     <td title="@board.DeviceUuid" style="word-break: break-word; white-space: normal;">
-                        @board.DeviceUuid
+                        @board.DeviceId
                     </td>
                     <td title="@board.DeviceName" style="word-break: break-word; white-space: normal;">
                         @board.DeviceName
@@ -67,7 +74,7 @@ else
 
                     <td>@board.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
                     <td style="text-align: center;">
-                        <span class="status-box">
+                        <span class="status-box @(GetStatusClass(board.DeviceStatus))">
                             @board.DeviceStatus
                         </span>
                     </td>
@@ -98,6 +105,7 @@ else
     public string fleetId { get; set; } = string.Empty;
 
     private List<DetailedDevice> boards = new List<DetailedDevice>();
+    private List<DetailedDevice> allBoards = new List<DetailedDevice>();
     private List<DetailedDevice> paginatedBoards = new List<DetailedDevice>();
     private List<Pattern> patterns = new List<Pattern>();
     private DetailedDevice selectedBoard = new DetailedDevice();
@@ -115,19 +123,20 @@ else
         using var context = DbContextFactory.CreateDbContext();
         patterns = await context.Patterns.ToListAsync();
 
-        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
-
-        foreach(var pattern in patterns)
-        {
-            devicesUrl += $"&nameContains={pattern.NameContains}";
-        }
-
         bool authOk = await TorizonService.AuthenticateAsync();
         if (authOk)
         {
-            var apiDevices = await TorizonService.GetItemsAsync<DetailedDevice>(devicesUrl) ?? new List<DetailedDevice>();
+            foreach (var pattern in patterns)
+            {
+                var url = $"https://app.torizon.io/api/v2beta/devices?limit=200&offset=0&nameContains={Uri.EscapeDataString(pattern.NameContains)}";
+                var partialBoards = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+                allBoards.AddRange(partialBoards);
+            }
 
-            boards = new List<DetailedDevice>(apiDevices);
+            boards = allBoards
+                        .GroupBy(d => d.DeviceUuid)
+                        .Select(g => g.First())
+                        .ToList();
 
             isLoading = false;
         }
@@ -198,5 +207,16 @@ else
             actualPage--;
             UpdatePage();
         }
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "uptodate" => "status-uptodate",
+            "error" => "status-error",
+            "updatepending" => "status-updatepending",
+            _ => "status-default"
+        };
     }
 }

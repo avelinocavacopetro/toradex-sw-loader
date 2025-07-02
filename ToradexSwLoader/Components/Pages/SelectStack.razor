@@ -5,6 +5,7 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject NavigationManager UriHelper
 @inject LoginService LoginService
+@inject SweetAlertService Swal
 
 @if (isLoading)
 {
@@ -106,6 +107,18 @@ else
     private async Task SelectStackName(Stack stack)
     {
         using var context = DbContextFactory.CreateDbContext();
+
+        bool hasPackages = await context.StackPackages.AnyAsync(sp => sp.StackId == stack.Id);
+        if (!hasPackages)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Esta stack não tem pacotes associados.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
 
         selectedStack = stack;
         await OnClick();

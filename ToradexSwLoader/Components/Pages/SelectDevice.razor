@@ -27,7 +27,10 @@
 }
 else
 {
-    <a href="/home" class="text-black">
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
         <i class="bi bi-arrow-left fs-1"></i>
     </a>
 

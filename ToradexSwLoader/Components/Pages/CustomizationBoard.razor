@@ -9,12 +9,6 @@
 
 <PageTitle>Customizar Placa</PageTitle>
 
-<a href="" onclick="history.back()" class="text-black">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
-
-<h3 class="text-center">Placa Final</h3>
-
 @if (isLoading)
 {
     <div class="center">
@@ -28,12 +22,21 @@
 } 
 else
 {
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
+
+    <h3 class="text-center pb-5">Placa Final</h3>
+
     <h5 style="text-align: center;">Dispositivo: @selectedDevice?.Name</h5>
     <h5 style="text-align: center;">Produto: @selectedProduct?.Name</h5>
     <h5 style="text-align: center;">Stack: @selectedStack?.Name</h5>
     <h5 style="text-align: center;">Software: @selectedPackage?.Name</h5>
     <h5 style="text-align: center;">Frota: @selectedFleet?.Name</h5>
-    <h5 style="text-align: center;">Placa: @selectedBoard?.DeviceName</h5>
+    <h5 style="text-align: center;">Placa: @selectedBoard?.DeviceName</h5>           
 
     <div class="center-customization">
     @if (!isEditing)

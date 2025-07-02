@@ -119,6 +119,21 @@ namespace ToradexSwLoader.Services
             }
         }
 
+        public async Task<string?> GetDeviceStatusAsync(string url)
+        {
+            var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                return null;
 
+            var json = await response.Content.ReadAsStringAsync();
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("deviceStatus", out var statusElement))
+                return statusElement.GetString();
+
+            return null;
+        }
     }
 }
