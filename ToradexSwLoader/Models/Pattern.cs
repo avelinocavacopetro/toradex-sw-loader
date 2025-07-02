@@ -11,5 +11,6 @@ namespace ToradexSwLoader.Models
 
         [Required]
         public string NameContains { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
     }
 }

@@ -180,19 +180,13 @@ else
     private WindowDimension dimension = new WindowDimension();
     
     private string productName = string.Empty;
-
     private int actualPage = 1;
-    private int productsPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
-
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
-    private string productName = string.Empty;
-    private int actualPage = 1;
     private int productsPerPage = 5;
-    private int totalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
-    private bool CanGoNext => actualPage < totalPages;
+    private int TotalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private string _searchTerm = string.Empty;
@@ -235,7 +229,23 @@ else
         products = await context.Products
             .Include(p => p.DeviceProducts)
                 .ThenInclude(dp => dp.Device)
+            .Select(p => new Product
+            {
+                Id = p.Id,
+                Name = p.Name,
+                DeviceProducts = p.DeviceProducts.Select(dp => new DeviceProduct
+                {
+                    DeviceId = dp.DeviceId,
+                    ProductId = dp.ProductId,
+                    Device = new Device
+                    {
+                        Id = dp.Device.Id,
+                        Name = dp.Device.Name
+                    }
+                }).ToList()
+            })
             .ToListAsync();
+
 
         selectedProducts = FilterService.SelectedProducts;
         selectedDevices = new List<Device>(FilterService.SelectedDevices);

@@ -34,7 +34,11 @@ else
                     <tr>
                         <td>@finalProduct.Name</td>
                         <td class="text-center">@finalProduct.CreatedAt</td>
-                        <td class="text-center">@finalProduct.Status</td>
+                        <td style="text-align: center;">
+                            <span class="status-box @(GetStatusClass(finalProduct.Status))">
+                                @finalProduct.Status
+                            </span>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -61,5 +65,16 @@ else
             .ToListAsync();
 
         isLoading = false;
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "uptodate" => "status-uptodate",
+            "error" => "status-error",
+            "updatepending" => "status-updatepending",
+            _ => "status-default"
+        };
     }
 }

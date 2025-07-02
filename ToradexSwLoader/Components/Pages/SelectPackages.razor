@@ -101,13 +101,13 @@ else
     private Stack? selectedStack = new Stack();
 
     private List<StackPackage> paginatedPackages = new List<StackPackage>();
-    private List<StackPackage> productsPackages = new List<StackPackage>();
+    private List<StackPackage> stacksPackages = new List<StackPackage>();
     private Package? selectedPackage;
     private WindowDimension? dimension;
 
     private int actualPage = 1;
     private int packagesPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)productsPackages.Count / packagesPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
 
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
@@ -120,8 +120,8 @@ else
         selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
 
-        productsPackages = await context.StackPackages
-            .Where(pp => pp.StackId == productId)
+        stacksPackages = await context.StackPackages
+            .Where(pp => pp.StackId == stackId)
             .Include(pp => pp.Package)
             .ToListAsync();
 
@@ -183,7 +183,7 @@ else
 
     private void UpdatePage()
     {
-        paginatedPackages = productsPackages
+        paginatedPackages = stacksPackages
                                  .Skip((actualPage - 1) * packagesPerPage)
                                  .Take(packagesPerPage)
                                  .ToList();

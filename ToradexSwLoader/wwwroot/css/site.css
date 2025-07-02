@@ -89,7 +89,7 @@ input.largerCheckbox {
 }
 
 .status-updatepending {
-    color: #0092ff;
+    color: #FFA500; 
 }
 
 .status-error {
@@ -101,7 +101,7 @@ input.largerCheckbox {
 }
 
 .status-outdated {
-    color: #FFA500;
+    color: #0092ff;
 }
 
 .status-default {
