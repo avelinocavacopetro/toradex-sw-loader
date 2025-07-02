@@ -2,12 +2,12 @@
 
 namespace ToradexSwLoader.Models
 {
-    [Table("ProductPackage")]
-    public class ProductPackage
+    [Table("StackPackage")]
+    public class StackPackage
     {
-        [ForeignKey("Product")]
-        public int ProductId { get; set; }
-        public Product? Product { get; set; }
+        [ForeignKey("Stack")]
+        public int StackId { get; set; }
+        public Stack? Stack { get; set; }
 
         [ForeignKey("Package")]
         public string PackageId { get; set; }

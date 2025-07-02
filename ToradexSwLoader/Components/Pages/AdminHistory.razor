@@ -84,8 +84,8 @@ else
 @code {
     private List<FinalProduct> finalProducts = new List<FinalProduct>();
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
-    private DateTime? startDate = null;
-    private DateTime? endDate = null;
+    private DateTime? startDate = DateTime.Today.AddDays(-30);
+    private DateTime? endDate = DateTime.Today;
 
     private string today = DateTime.Today.ToString("yyyy-MM-dd");
 
