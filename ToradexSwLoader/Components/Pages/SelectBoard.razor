@@ -5,6 +5,7 @@
 @inject NavigationManager UriHelper
 @inject LoginService LoginService
 @inject TorizonService TorizonService
+@inject FilterService FilterService
 @inject SweetAlertService Swal
 
 <PageTitle>Selecionar Placa</PageTitle>
@@ -126,7 +127,7 @@ else
         bool authOk = await TorizonService.AuthenticateAsync();
         if (authOk)
         {
-            foreach (var pattern in patterns)
+            foreach (var pattern in FilterService.SelectedPatterns)
             {
                 var url = $"https://app.torizon.io/api/v2beta/devices?limit=200&offset=0&nameContains={Uri.EscapeDataString(pattern.NameContains)}";
                 var partialBoards = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
