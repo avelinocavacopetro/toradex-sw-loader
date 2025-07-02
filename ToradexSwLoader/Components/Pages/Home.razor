@@ -1,6 +1,7 @@
 ﻿@page "/home"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject FinalProductStateService ProductState
 
 <PageTitle>Página Inicial</PageTitle>
 
@@ -44,27 +45,37 @@ else
             </tbody>
         </table>
     </div>
+
+    <div class="text-center fixed-bottom pb-3 mt-3 text-muted" style="margin-left: 20vw;">
+        Última atualização: @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
 }
 
 @code {
-    private List<FinalProduct> finalProducts = new List<FinalProduct>();
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
+    private IReadOnlyList<FinalProduct> finalProducts = new List<FinalProduct>();
 
     bool isLoading = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        finalProducts = await context.FinalProducts
-            .Include(fp => fp.Device)
-            .Include(fp => fp.Product)
-            .Include(fp => fp.Package)
-            .Include(fp => fp.Fleet)
-            .Include(fp => fp.UserPetrotec)
-            .OrderByDescending(fp => fp.CreatedAt)
-            .ToListAsync();
-
+        finalProducts = ProductState.FinalProducts;
+        ProductState.OnChange += OnProductsChanged;
         isLoading = false;
+    }
+
+    private void OnProductsChanged()
+    {
+        InvokeAsync(() =>
+        {
+            finalProducts = ProductState.FinalProducts;
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        ProductState.OnChange -= OnProductsChanged;
     }
 
     private string GetStatusClass(string status)

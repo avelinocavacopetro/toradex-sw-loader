@@ -1,10 +1,11 @@
 ﻿@using Microsoft.EntityFrameworkCore
 @using ToradexSwLoader.Data
 @using ToradexSwLoader.Services
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 @inject LoginService LoginService
-@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject FinalProductStateService ProductState
 
 <div class="page">
 
@@ -91,11 +92,20 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private void UpdateTime(object? sender, System.Timers.ElapsedEventArgs e)
+    private async void UpdateTime(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        InvokeAsync(() =>
+        await InvokeAsync(async () =>
         {
             currentTime = DateTime.Now.ToString("HH:mm:ss");
+
+            using var context = DbContextFactory.CreateDbContext();
+            var latest = await context.FinalProducts
+                .Include(fp => fp.UserPetrotec)
+                .OrderByDescending(fp => fp.CreatedAt)
+                .ToListAsync();
+
+            ProductState.SetFinalProducts(latest);
+
             StateHasChanged();
         });
     }

@@ -3,6 +3,7 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject LoginService LoginService
 @inject TorizonService TorizonService
+@inject FinalProductStateService ProductState
 
 <PageTitle>Histórico de Carregamentos</PageTitle>
 
@@ -84,13 +85,15 @@ else
             </tbody>
         </table>
     </div>
+
+    <div class="text-center fixed-bottom pb-3 mt-3 text-muted">
+        Última atualização: @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
 }
 
 @code {
     private List<FinalProduct> finalProducts = new List<FinalProduct>();
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
-
-    private System.Threading.Timer? refreshTimer;
 
     private string today = DateTime.Today.ToString("yyyy-MM-dd");
 
@@ -159,63 +162,31 @@ else
         }
     }
 
+    protected override void OnInitialized()
+    {
+        ProductState.OnChange += OnProductStateChanged;
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        await LoadFinalProductsAsync();
-
-        refreshTimer = new System.Threading.Timer(async _ =>
-        {
-            await InvokeAsync(async () =>
-            {
-                await RefreshStatusesAsync();
-                UpdatePage();
-                StateHasChanged();
-            });
-        }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(30));
-    }
-
-    private async Task LoadFinalProductsAsync()
-    {
         using var context = DbContextFactory.CreateDbContext();
         finalProducts = await context.FinalProducts
             .Include(fp => fp.UserPetrotec)
             .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
 
-        UpdatePage();
         isLoading = false;
+        UpdatePage();
     }
 
-    private async Task RefreshStatusesAsync()
+    private void OnProductStateChanged()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (!authOk) return;
-
-        foreach (var fp in finalProducts)
-        {
-            var url = $"https://app.torizon.io/api/v2beta/devices/{fp.DeviceUuid}";
-            string? atualStatus = await TorizonService.GetDeviceStatusAsync(url);
-
-            if (!string.IsNullOrEmpty(atualStatus) && fp.Status != atualStatus)
-            {
-                fp.Status = atualStatus;
-                context.Update(fp);
-            }
-        }
-
-        await context.SaveChangesAsync();
-
-        finalProducts = await context.FinalProducts
-            .Include(fp => fp.UserPetrotec)
-            .OrderByDescending(fp => fp.CreatedAt)
-            .ToListAsync();
+        InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        refreshTimer?.Dispose();
+        ProductState.OnChange -= OnProductStateChanged;
     }
 
     private string GetStatusClass(string status)

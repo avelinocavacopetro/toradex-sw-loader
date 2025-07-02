@@ -23,6 +23,8 @@ builder.Services.AddScoped<FleetService>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<WindowService>();
 builder.Services.AddScoped<FilterService>();
+builder.Services.AddSingleton<FinalProductStateService>();
+builder.Services.AddHostedService<DeviceStatusUpdaterService>();
 builder.Services.AddSweetAlert2();
 
 var app = builder.Build();
