@@ -203,7 +203,7 @@ td, th {
     justify-content: center;
     align-items: center;
     text-align: center;
-    min-height: 40vh;
+    min-height: 30vh;
 }
 
 .center-edit {
