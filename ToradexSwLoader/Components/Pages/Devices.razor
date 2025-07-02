@@ -151,8 +151,6 @@ else
     {
         var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
 
-        await DeviceService.ImportDevicesFromApiAsync(devicesUrl);
-
         bool authOk = await TorizonService.AuthenticateAsync();
         if (authOk)
         {
