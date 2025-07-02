@@ -36,7 +36,7 @@ else
             <input type="date" class="form-control w-25" @bind="startDate" max="@today"/>
 
             <label>Fim</label>
-            <input type="date" class="form-control w-25" @bind="endDate" max="@today" />
+            <input type="date" class="form-control w-25" @bind="endDate" max="@today"/>
         </div>
 
 
@@ -73,7 +73,11 @@ else
                         <td>@finalProduct.Name</td>
                         <td class="text-center">@finalProduct.CreatedAt</td>
                         <td class="text-center">@finalProduct.UserPetrotec?.UserName</td>
-                        <td class="text-center">@finalProduct.Status</td>
+                        <td style="text-align: center;">
+                            <span class="status-box @(GetStatusClass(finalProduct.Status))">
+                                @finalProduct.Status
+                            </span>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -84,8 +88,6 @@ else
 @code {
     private List<FinalProduct> finalProducts = new List<FinalProduct>();
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
-    private DateTime? startDate = DateTime.Today.AddDays(-30);
-    private DateTime? endDate = DateTime.Today;
 
     private string today = DateTime.Today.ToString("yyyy-MM-dd");
 
@@ -96,12 +98,43 @@ else
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
-    
+    private DateTime? _startDate = DateTime.Now.AddDays(-30);
+    private DateTime? startDate
+    {
+        get => _startDate;
+        set
+        {
+            if (_startDate != value)
+            {
+                _startDate = value;
+                actualPage = 1;
+                UpdatePage();
+            }
+        }
+    }
+
+    private DateTime? _endDate = DateTime.Now;
+    private DateTime? endDate
+    {
+        get => _endDate;
+        set
+        {
+            if (_endDate != value)
+            {
+                _endDate = value;
+                actualPage = 1;
+                UpdatePage();
+            }
+        }
+    }
+
     private IEnumerable<FinalProduct> FilteredPages =>
     finalProducts
-        .Where(fp => (string.IsNullOrWhiteSpace(searchTerm)) &&
-                     (!startDate.HasValue || fp.CreatedAt.Date >= startDate.Value.Date) &&
-                     (!endDate.HasValue || fp.CreatedAt.Date <= endDate.Value.Date));
+        .Where(fp =>
+            (string.IsNullOrWhiteSpace(searchTerm) || fp.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (!startDate.HasValue || fp.CreatedAt.Date >= startDate.Value.Date) &&
+            (!endDate.HasValue || fp.CreatedAt.Date <= endDate.Value.Date)
+        );
 
     private IEnumerable<FinalProduct> PaginatedActivities =>
     FilteredPages
@@ -118,6 +151,7 @@ else
             {
                 _searchTerm = value;
                 actualPage = 1;
+                UpdatePage();
             }
         }
     }
@@ -139,12 +173,29 @@ else
         UpdatePage();
     }
 
+    private string GetStatusClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "uptodate" => "status-uptodate",
+            "error" => "status-error",
+            "updatepending" => "status-updatepending",
+            _ => "status-default"
+        };
+    }
+
+    private void OnFilterChanged(ChangeEventArgs e)
+    {
+        actualPage = 1;
+        UpdatePage();
+    }
+
     private void UpdatePage()
     {
-        paginatedFinalProducts = finalProducts
-                                 .Skip((actualPage - 1) * finalProductsPerPage)
-                                 .Take(finalProductsPerPage)
-                                 .ToList();
+        paginatedFinalProducts = FilteredPages
+            .Skip((actualPage - 1) * finalProductsPerPage)
+            .Take(finalProductsPerPage)
+            .ToList();
     }
 
     private void NextPage()

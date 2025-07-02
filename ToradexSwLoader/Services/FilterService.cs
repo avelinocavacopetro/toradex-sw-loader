@@ -18,6 +18,7 @@ namespace ToradexSwLoader.Services
         public List<Product> SelectedProducts { get; private set; } = new List<Product>();
         public List<Device> SelectedDevices { get; private set; } = new List<Device>();
         public List<Stack> SelectedStacks { get; private set; } = new List<Stack>();
+        public List<Pattern> SelectedPatterns { get; private set; } = new List<Pattern>();
 
         public FilterService(IDbContextFactory<AppDbContext> contextFactory)
         {
@@ -48,6 +49,9 @@ namespace ToradexSwLoader.Services
                 SelectedStacks = string.IsNullOrWhiteSpace(filter.SelectedStacksJson)
                                  ? new List<Stack>()
                                  : JsonSerializer.Deserialize<List<Stack>>(filter.SelectedStacksJson) ?? new List<Stack>();
+                SelectedPatterns = string.IsNullOrWhiteSpace(filter.SelectedPatternsJson)
+                                 ? new List<Pattern>()
+                                 : JsonSerializer.Deserialize<List<Pattern>>(filter.SelectedPatternsJson) ?? new List<Pattern>();
             }
         }
         
@@ -68,6 +72,7 @@ namespace ToradexSwLoader.Services
             filter.SelectedProductsJson = JsonSerializer.Serialize(SelectedProducts);
             filter.SelectedDevicesJson = JsonSerializer.Serialize(SelectedDevices);
             filter.SelectedStacksJson = JsonSerializer.Serialize(SelectedStacks);
+            filter.SelectedPatternsJson = JsonSerializer.Serialize(SelectedPatterns);
             filter.LastUpdated = DateTime.Now;
 
             await context.SaveChangesAsync();
@@ -102,6 +107,11 @@ namespace ToradexSwLoader.Services
         public async Task ApplyStacksFilter(List<Stack> stacksNames)
         {
             SelectedStacks = stacksNames;
+            await SaveFilterAsync();
+        }
+        public async Task ApplyPatternsFilter(List<Pattern> patternsNames)
+        {
+            SelectedPatterns = patternsNames;
             await SaveFilterAsync();
         }
     }

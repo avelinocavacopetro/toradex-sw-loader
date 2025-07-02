@@ -6,13 +6,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<PageTitle>Gerir Segredo</PageTitle>
+<PageTitle>Definições</PageTitle>
 
-<h2 class="pb-5">Alterar Segredo</h2>
+<h2 class="pb-5">Definições</h2>
 
 <div class="col-md-4 pt-5">
     <EditForm Model="@this" OnValidSubmit="ConfirmAndSubmit">
-        <label for="NewSecret" class="form-label mb-2 custom-lbl">Novo Segredo</label>
+        <label for="NewSecret" class="form-label mb-2 custom-lbl">Alterar Segredo</label>
         <InputText type="password" @bind-Value="NewSecret" placeholder="Valor" class="form-control w-75 custom-field" />
     </EditForm>
 </div>
