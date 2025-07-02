@@ -116,18 +116,6 @@ else
             return;
         }
 
-        bool hasPackages = await context.StackPackages.AnyAsync(pp => pp.StackId == product.Id);
-        if (!hasPackages)
-        {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Este produto não tem pacotes associados.",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
-
         selectedProduct = product;
         await OnClick();
     }

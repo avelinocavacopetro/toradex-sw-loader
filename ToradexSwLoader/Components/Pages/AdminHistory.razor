@@ -2,6 +2,7 @@
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject LoginService LoginService
+@inject TorizonService TorizonService
 
 <PageTitle>Histórico de Carregamentos</PageTitle>
 
@@ -87,6 +88,8 @@ else
     private DateTime? startDate = DateTime.Today.AddDays(-30);
     private DateTime? endDate = DateTime.Today;
 
+    private System.Threading.Timer? refreshTimer;
+
     private string today = DateTime.Today.ToString("yyyy-MM-dd");
 
     private int actualPage = 1;
@@ -124,19 +127,61 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadFinalProductsAsync();
+
+        refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await RefreshStatusesAsync();
+                UpdatePage();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(30));
+    }
+
+    private async Task LoadFinalProductsAsync()
+    {
         using var context = DbContextFactory.CreateDbContext();
         finalProducts = await context.FinalProducts
-            .Include(fp => fp.Device)
-            .Include(fp => fp.Product)
-            .Include(fp => fp.Package)
-            .Include(fp => fp.Fleet)
             .Include(fp => fp.UserPetrotec)
             .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
 
-        isLoading = false;
-
         UpdatePage();
+        isLoading = false;
+    }
+
+    private async Task RefreshStatusesAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool authOk = await TorizonService.AuthenticateAsync();
+        if (!authOk) return;
+
+        foreach (var fp in finalProducts)
+        {
+            var url = $"https://app.torizon.io/api/v2beta/devices/{fp.DeviceUuid}";
+            string? atualStatus = await TorizonService.GetDeviceStatusAsync(url);
+
+            if (!string.IsNullOrEmpty(atualStatus) && fp.Status != atualStatus)
+            {
+                fp.Status = atualStatus;
+                context.Update(fp);
+            }
+        }
+
+        await context.SaveChangesAsync();
+
+        finalProducts = await context.FinalProducts
+            .Include(fp => fp.UserPetrotec)
+            .OrderByDescending(fp => fp.CreatedAt)
+            .ToListAsync();
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
     }
 
     private void UpdatePage()

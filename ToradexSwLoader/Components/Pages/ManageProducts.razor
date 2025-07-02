@@ -178,7 +178,7 @@ else
     private List<Product> paginatedProducts = new List<Product>();
     private Product? selectedProduct = new Product();
     private WindowDimension dimension = new WindowDimension();
-    
+
     private string productName = string.Empty;
 
     private int actualPage = 1;
@@ -188,11 +188,7 @@ else
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
-    private string productName = string.Empty;
-    private int actualPage = 1;
-    private int productsPerPage = 5;
-    private int totalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
-    private bool CanGoNext => actualPage < totalPages;
+    private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
     private string _searchTerm = string.Empty;
