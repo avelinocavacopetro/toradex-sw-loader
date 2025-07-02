@@ -14,5 +14,6 @@ namespace ToradexSwLoader.Models
         public bool Enabled { get; set; }
 
         public ICollection<ProductStack> ProductStacks { get; set; } = new List<ProductStack>();
+        public ICollection<StackPackage> StackPackages { get; set; } = new List<StackPackage>();
     }
 }

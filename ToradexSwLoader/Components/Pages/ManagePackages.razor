@@ -11,11 +11,11 @@
     <div class="center-edit">
         <div class="edit-form">
             <label for="packageName" class="pt-4" style="font-size: 18px; font-weight: bold; width: 50%;">Produto</label>
-            <select id="packageName" class="form-select w-50" @bind="selectedProductId">
+            <select id="packageName" class="form-select w-50" @bind="selectedStackId">
                 <option>Selecione um pacote</option>
-                @foreach (var products in FilterService.SelectedProducts)
+                @foreach (var stacks in FilterService.SelectedStacks)
                 {
-                    <option value="@products.Id">@products.Name</option>
+                    <option value="@stacks.Id">@stacks.Name</option>
                 }
             </select>
             <div class="w-50">
@@ -71,7 +71,7 @@
             </div>
             <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
                 <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
-                        @onclick="isAdding? SaveProduct : EditProduct">
+                        @onclick="isAdding? SaveStack : EditStack">
                     Salvar
                 </button>
                 <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
@@ -82,7 +82,6 @@
         </div>
     </div>
 } else{
-    <div class="center-customization">
         <div class="container-fluid">
 
             <h3 style="text-align: left;">Configurar pacotes a visualizar</h3>
@@ -90,7 +89,7 @@
             <div class="pb-2" style="text-align: right;">
                 <button class="btn btn-color btn-lg"
                         style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
-                        @onclick="AddProduct">
+                        @onclick="AddStack">
                     +
                 </button>
             </div>
@@ -100,26 +99,26 @@
                 <table class="table mt-3 w-100">
                     <thead style="background-color: #0c6527; color: white;">
                         <tr>
-                            <th>Equipamento</th>
-                            <th class="text-center">Pacote</th>
-                            <th class="text-center">Versão</th>
+                            <th>Stack</th>
+                            <th>Pacote</th>
+                            <th>Versão</th>
                             <th></th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var productpackage in productsPackages)
+                        @foreach (var stackpackage in stacksPackages)
                         {
-                            if (productpackage?.Product != null && productpackage?.Package != null)
+                        if (stackpackage?.Stack != null && stackpackage?.Package != null)
                             {
                                 <tr class="table-light">
-                                <td>@productpackage.Product.Name</td>
-                                <td>@productpackage.Package.Name</td>
-                                <td>@productpackage.Package.Version</td>
+                                <td>@stackpackage.Stack.Name</td>
+                                <td>@stackpackage.Package.Name</td>
+                                <td>@stackpackage.Package.Version</td>
                                 <td class="text-center">
                                     <button class="btn btn-sm"
                                             title="Editar"
-                                            @onclick="() => EditProduct(productpackage.ProductId, productpackage.PackageId)"
+                                            @onclick="() => EditStack(stackpackage.StackId, stackpackage.PackageId)"
                                             style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                         <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                     </button>
@@ -127,7 +126,7 @@
                                 <td class="text-center">
                                     <button class="btn btn-danger btn-sm"
                                             title="Desativar"
-                                            @onclick="() => RemoveProduct(productpackage.ProductId, productpackage.PackageId)"
+                                            @onclick="() => RemoveStack(stackpackage.StackId, stackpackage.PackageId)"
                                             style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                         <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                     </button>
@@ -139,18 +138,18 @@
                 </table>
             </div>
         </div>
-    </div>
 }
 
 @code {
+    private Stack? selectedStack;
+    private Package? selectedPackage;
+    private List<Package> packages = new();
     private HashSet<string> packageNames = new();
     private List<Package> packages = new();
     private List<string> filteredVersions = new();
     private List<string> filteredVersionList = new();
     private List<string> filteredPackageNames = new();
-    private List<ProductPackage> productsPackages = new List<ProductPackage>();
-    private Product? selectedProduct;
-    private Package? selectedPackage;
+    private List<StackPackage> stacksPackages = new List<StackPackage>();
 
     private string? oldPackageId;
     private string? selectedPackageName;
@@ -165,14 +164,14 @@
     private bool isAdding = false;
     private bool isEditing = false;
     
-    private int _selectedProductId;
-    private int editingProductId;    
-    private int selectedProductId
+    private int _selectedStackId;
+    private int editingStackId;
+    private int selectedStackId
     {
-        get => _selectedProductId;
+        get => _selectedStackId;
         set
         {
-            _selectedProductId = value;
+            _selectedStackId = value;
             packageDisabled = value == 0;
         }
     }
@@ -185,8 +184,8 @@
                                 .ThenInclude(ph => ph.Hardware)
                                 .ToListAsync();
 
-        productsPackages = await context.ProductPackages
-       .Include(pp => pp.Product)
+        stacksPackages = await context.StackPackages
+       .Include(pp => pp.Stack)
        .Include(pp => pp.Package)
        .ToListAsync();
 
@@ -201,7 +200,7 @@
         await FilterService.LoadFilterAsync();
     }
 
-    private async Task RemoveProduct(int productId, string packageId)
+    private async Task RemoveStack(int stackId, string packageId)
     {
         var result = await Swal.FireAsync(new SweetAlertOptions
             {
@@ -216,12 +215,12 @@
         if (result.IsConfirmed)
         {
             using var context = DbContextFactory.CreateDbContext();
-            var toRemoveDb = await context.ProductPackages.FirstOrDefaultAsync(p => p.ProductId == productId & p.PackageId == packageId);
+            var toRemoveDb = await context.StackPackages.FirstOrDefaultAsync(p => p.StackId == stackId & p.PackageId == packageId);
 
             if (toRemoveDb == null) return;
-            context.ProductPackages.Remove(toRemoveDb);
+            context.StackPackages.Remove(toRemoveDb);
 
-            productsPackages.RemoveAll(p => p.ProductId == productId & p.PackageId == packageId);
+            stacksPackages.RemoveAll(p => p.StackId == stackId & p.PackageId == packageId);
 
             await context.SaveChangesAsync();
 
@@ -232,21 +231,21 @@
     private void CancelEdit()
     {
         isEditing = false;
-        selectedProductId = 0;
+        selectedStackId = 0;
         searchTerm = "";
         versionSearchTerm = "";
         versionDisabled = true;
     }
 
-    private async Task EditProduct(int productId, string packageId)
+    private async Task EditStack(int stackId, string packageId)
     {
         isEditing = true;
         isAdding = false;
 
-        editingProductId = productId;
+        editingStackId = stackId;
         oldPackageId = packageId;
 
-        selectedProductId = productId;
+        selectedStackId = stackId;
 
         var selectedPackageEntity = packages.FirstOrDefault(p => p.Id == packageId);
         selectedPackage = selectedPackageEntity;
@@ -256,20 +255,20 @@
 
     }
 
-    private async Task EditProduct()
+    private async Task EditStack()
     {
         if (selectedPackage is null || string.IsNullOrEmpty(oldPackageId))
             return;
 
         using var context = DbContextFactory.CreateDbContext();
 
-        var oldEntry = await context.ProductPackages
-            .FirstOrDefaultAsync(pp => pp.ProductId == editingProductId && pp.PackageId == oldPackageId);
+        var oldEntry = await context.StackPackages
+            .FirstOrDefaultAsync(pp => pp.StackId == editingStackId && pp.PackageId == oldPackageId);
 
         if (oldEntry is not null)
-            context.ProductPackages.Remove(oldEntry);
+            context.StackPackages.Remove(oldEntry);
 
-        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.Id);
+        bool exists = await context.StackPackages.AnyAsync(pp => pp.StackId == selectedStackId & pp.PackageId == selectedPackage.Id);
 
         if (exists)
         {
@@ -282,32 +281,32 @@
             return;
         }
 
-        var newEntry = new ProductPackage
+        var newEntry = new StackPackage
         {
-        ProductId = editingProductId,
+            StackId = editingStackId,
             PackageId = selectedPackage.Id
         };
 
-        context.ProductPackages.Add(newEntry);
+        context.StackPackages.Add(newEntry);
         await context.SaveChangesAsync();
 
-        productsPackages.RemoveAll(pp => pp.ProductId == editingProductId && pp.PackageId == oldPackageId);
-        var fullProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == editingProductId);
+        stacksPackages.RemoveAll(pp => pp.StackId == editingStackId && pp.PackageId == oldPackageId);
+        var fullStack = await context.Stacks.FirstOrDefaultAsync(p => p.Id == editingStackId);
         var fullPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == selectedPackage.Id);
 
-        productsPackages.Add(new ProductPackage
+        stacksPackages.Add(new StackPackage
         {
-        ProductId = editingProductId,
+            StackId = editingStackId,
             PackageId = selectedPackage.Id,
-        Product = fullProduct!,
+            Stack = fullStack!,
         Package = fullPackage!
         });
 
         isEditing = false;
-        editingProductId = 0;
+        editingStackId = 0;
         oldPackageId = null;
         selectedPackage = null;
-        selectedProductId = 0;
+        selectedStackId = 0;
         searchTerm = "";
         versionSearchTerm = "";
         versionDisabled = true;
@@ -322,16 +321,16 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task SaveProduct()
+    private async Task SaveStack()
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        selectedProduct = FilterService.SelectedProducts.FirstOrDefault(p => p.Id == selectedProductId);
+        selectedStack = FilterService.SelectedStacks.FirstOrDefault(p => p.Id == selectedStackId);
 
-        if (selectedProduct is null || selectedPackage is null)
+        if (selectedStack is null || selectedPackage is null)
             return;
 
-        bool exists = await context.ProductPackages.AnyAsync(pp => pp.ProductId == selectedProductId & pp.PackageId == selectedPackage.Id);
+        bool exists = await context.StackPackages.AnyAsync(pp => pp.StackId == selectedStackId & pp.PackageId == selectedPackage.Id);
 
         if (exists)
         {
@@ -344,17 +343,17 @@
             return;
         }
 
-        var newProductPackage = new ProductPackage
+        var newStackPackage = new StackPackage
         {
-            ProductId = selectedProduct.Id,
+            StackId = selectedStack.Id,
             PackageId = selectedPackage.Id,
         };
 
-        context.ProductPackages.Add(newProductPackage);
+        context.StackPackages.Add(newStackPackage);
         await context.SaveChangesAsync();
 
-        productsPackages = await context.ProductPackages
-            .Include(pp => pp.Product)
+        stacksPackages = await context.StackPackages
+            .Include(pp => pp.Stack)
             .Include(pp => pp.Package)
             .ToListAsync();
 
@@ -374,16 +373,16 @@
     private void CancelAdd()
     {
         isAdding = false;
-        selectedProductId = 0;
+        selectedStackId = 0;
         searchTerm = "";
         versionSearchTerm = "";
         versionDisabled = true;
     }
 
-    private void AddProduct()
+    private void AddStack()
     {
         searchTerm = "";
-        selectedProductId = 0;
+        selectedStackId = 0;
         isAdding = true;
         isEditing = false;
     }

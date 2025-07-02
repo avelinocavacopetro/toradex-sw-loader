@@ -100,8 +100,8 @@ else
     public int stackId { get; set; }
     private Stack? selectedStack = new Stack();
 
-    private List<ProductPackage> paginatedPackages = new List<ProductPackage>();
-    private List<ProductPackage> productsPackages = new List<ProductPackage>();
+    private List<StackPackage> paginatedPackages = new List<StackPackage>();
+    private List<StackPackage> productsPackages = new List<StackPackage>();
     private Package? selectedPackage;
     private WindowDimension? dimension;
 
@@ -120,8 +120,8 @@ else
         selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
         selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
 
-        productsPackages = await context.ProductPackages
-            .Where(pp => pp.ProductId == productId)
+        productsPackages = await context.StackPackages
+            .Where(pp => pp.StackId == productId)
             .Include(pp => pp.Package)
             .ToListAsync();
 

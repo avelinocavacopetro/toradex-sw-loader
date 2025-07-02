@@ -116,7 +116,7 @@ else
             return;
         }
 
-        bool hasPackages = await context.ProductPackages.AnyAsync(pp => pp.ProductId == product.Id);
+        bool hasPackages = await context.StackPackages.AnyAsync(pp => pp.StackId == product.Id);
         if (!hasPackages)
         {
             await Swal.FireAsync(new SweetAlertOptions

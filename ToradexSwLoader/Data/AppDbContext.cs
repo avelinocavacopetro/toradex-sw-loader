@@ -17,7 +17,7 @@ namespace ToradexSwLoader.Data
         public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<UserPetrotec> Users { get; set; }
-        public DbSet<ProductPackage> ProductPackages { get; set; }
+        public DbSet<StackPackage> StackPackages { get; set; }
         public DbSet<PackageHardware> PackageHardwares { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; } 
         public DbSet<LoginLog> LoginLogs { get; set; }
@@ -45,17 +45,17 @@ namespace ToradexSwLoader.Data
                 .HasIndex(h => h.Name)
                 .IsUnique();
 
-            modelBuilder.Entity<ProductPackage>()
-                .HasKey(pp => new { pp.ProductId, pp.PackageId });
+            modelBuilder.Entity<StackPackage>()
+                .HasKey(pp => new { pp.StackId, pp.PackageId });
 
-            modelBuilder.Entity<ProductPackage>()
-                .HasOne(pp => pp.Product)
-                .WithMany(p => p.ProductPackages)
-                .HasForeignKey(pp => pp.ProductId);
+            modelBuilder.Entity<StackPackage>()
+                .HasOne(pp => pp.Stack)
+                .WithMany(p => p.StackPackages)
+                .HasForeignKey(pp => pp.StackId);
 
-            modelBuilder.Entity<ProductPackage>()
+            modelBuilder.Entity<StackPackage>()
                 .HasOne(pp => pp.Package)
-                .WithMany(p => p.ProductPackages)
+                .WithMany(p => p.StackPackages)
                 .HasForeignKey(pp => pp.PackageId);
                 
             modelBuilder.Entity<DeviceProduct>()

@@ -33,6 +33,6 @@ namespace ToradexSwLoader.Models
             .Select(ph => ph.Hardware.Name)
             .ToList() ?? new List<string>();
 
-        public ICollection<ProductPackage> ProductPackages { get; set; } = new List<ProductPackage>();
+        public ICollection<StackPackage> StackPackages { get; set; } = new List<StackPackage>();
     }
 }

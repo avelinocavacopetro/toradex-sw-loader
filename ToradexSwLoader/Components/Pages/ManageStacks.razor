@@ -108,7 +108,8 @@ else
                         <thead style="background-color: #0c6527; color: white;">
                             <tr>
                                 <th>Nome da Stack</th>
-                                <th class="text-center">Selecionar</th>
+                                <th>Produtos associados</th>
+                                <th class="text-center">Ativo</th>
                                 <th></th>
                                 <th></th>
                             </tr>
@@ -118,6 +119,21 @@ else
                             {
                                 <tr class="table-light">
                                     <td>@stack.Name</td>
+                                    <td>
+                                        @if (stack.ProductStacks?.Any() == true)
+                                        {
+                                            <ul class="mb-0 ps-3">
+                                                @foreach (var ps in stack.ProductStacks)
+                                                {
+                                                    <li>@ps.Product?.Name</li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted" style="font-size:18px;">Sem produtos</span>
+                                        }
+                                    </td>
                                     <td>
                                         <div class="form-check d-flex justify-content-center">
                                             <input type="checkbox" class="largerCheckbox" id="toggle-@stack.Id"
@@ -212,7 +228,10 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
-        stacks = await context.Stacks.ToListAsync();
+        stacks = await context.Stacks
+               .Include(s => s.ProductStacks)
+                   .ThenInclude(ps => ps.Product)
+               .ToListAsync();
 
         selectedStacks = FilterService.SelectedStacks;
         selectedProducts = new List<Product>(FilterService.SelectedProducts);
@@ -294,9 +313,20 @@ else
         if (localStack != null)
         {
             localStack.Name = stackDb.Name;
+
+            localStack.ProductStacks = selectedProducts.Select(p => new ProductStack
+            {
+                StackId = stackDb.Id,
+                ProductId = p.Id,
+                Product = p
+            }).ToList();
         }
 
+        UpdatePage();
+
         CancelEdit();
+
+        StateHasChanged();
 
         await Swal.FireAsync(new SweetAlertOptions
         {
@@ -383,7 +413,33 @@ else
         context.Stacks.Add(newStack);
         await context.SaveChangesAsync();
 
+        foreach (var product in selectedProducts)
+        {
+            context.ProductStacks.Add(new ProductStack
+            {
+                StackId = newStack.Id,
+                ProductId = product.Id
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        newStack.ProductStacks = selectedProducts.Select(p => new ProductStack
+        {
+            StackId = newStack.Id,
+            ProductId = p.Id,
+            Product = p
+        }).ToList();
+
+
         stacks.Add(newStack);
+
+        newStack.ProductStacks = selectedProducts.Select(p => new ProductStack
+        {
+            Product = p,
+            StackId = newStack.Id,
+            ProductId = p.Id
+        }).ToList();
 
         CancelAdd();
 
