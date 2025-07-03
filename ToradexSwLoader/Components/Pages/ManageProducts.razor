@@ -119,13 +119,13 @@ else
                             {
                                 <tr class="table-light">
                                     <td>@product.Name</td>
-                                    <td>
+                                    <td class="align-middle">
                                         @if (product.DeviceProducts?.Any() == true)
                                         {
                                             <ul class="mb-0 ps-3">
                                                 @foreach (var dp in product.DeviceProducts)
                                                 {
-                                                    <li>@dp.Device?.Name</li>
+                                                    <li style="list-style-type: none;">@dp.Device?.Name</li>
                                                 }
                                             </ul>
                                         }

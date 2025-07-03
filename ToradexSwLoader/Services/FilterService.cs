@@ -12,6 +12,7 @@ namespace ToradexSwLoader.Services
         public event Action? OnFilterChanged;
 
         public int OnlineTime { get; set; }
+        public int RefreshTime { get; set; }
         public string? SelectedPackage { get; set; }
         public string? Version { get; set; }
         public List<Fleet> SelectedFleets { get; private set; } = new List<Fleet>();
@@ -32,6 +33,7 @@ namespace ToradexSwLoader.Services
             if(filter != null)
             {
                 OnlineTime = filter.OnlineTime;
+                RefreshTime = filter.RefreshTime;
                 SelectedPackage = filter.SelectedPackage;
                 Version = filter.Version;
 
@@ -66,6 +68,7 @@ namespace ToradexSwLoader.Services
             }
 
             filter.OnlineTime = OnlineTime;
+            filter.RefreshTime = RefreshTime;
             filter.SelectedPackage = SelectedPackage;
             filter.Version = Version;
             filter.SelectedFleetsJson = JsonSerializer.Serialize(SelectedFleets);
@@ -112,6 +115,12 @@ namespace ToradexSwLoader.Services
         public async Task ApplyPatternsFilter(List<Pattern> patternsNames)
         {
             SelectedPatterns = patternsNames;
+            await SaveFilterAsync();
+        }
+
+        public async Task ApplyTimeFilter(int newTime)
+        {
+            RefreshTime = newTime;
             await SaveFilterAsync();
         }
     }

@@ -107,7 +107,7 @@ else
     private List<DetailedDevice> allBoards = new List<DetailedDevice>();
     private List<DetailedDevice> paginatedBoards = new List<DetailedDevice>();
     private List<Pattern> patterns = new List<Pattern>();
-    private DetailedDevice selectedBoard = new DetailedDevice();
+    private DetailedDevice? selectedBoard = new DetailedDevice();
 
     private int actualPage = 1;
     private int boardsPerPage = 8;
@@ -157,7 +157,7 @@ else
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        if (selectedBoard != null)
+        if (selectedBoard != null && !string.IsNullOrEmpty(selectedBoard.DeviceUuid))
         {
             var userAct = new UserActivity
             {

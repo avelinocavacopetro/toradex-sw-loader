@@ -9,22 +9,40 @@ namespace ToradexSwLoader.Services
         public IReadOnlyList<FinalProduct> FinalProducts => _finalProducts;
         private DateTime _lastUpdate;
         public DateTime LastUpdate => _lastUpdate;
+        private readonly IServiceProvider _serviceProvider;
 
         public event Action? OnChange;
 
         private readonly System.Timers.Timer _refreshTimer;
 
-        public FinalProductStateService()
+        public FinalProductStateService(IServiceProvider serviceProvider)
         {
+            _serviceProvider = serviceProvider;
             _lastUpdate = DateTime.Now;
 
-            _refreshTimer = new System.Timers.Timer(10_000);
+            var initialInterval = GetValidInterval(GetRefreshTimeFromScopedFilter());
+
+            _refreshTimer = new System.Timers.Timer(initialInterval);
             _refreshTimer.Elapsed += (sender, e) =>
             {
                 _lastUpdate = DateTime.Now;
                 OnChange?.Invoke();
             };
             _refreshTimer.Start();
+        }
+
+        private int GetRefreshTimeFromScopedFilter()
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var filterService = scope.ServiceProvider.GetRequiredService<FilterService>();
+            return filterService.RefreshTime;
+        }
+
+        private double GetValidInterval(int refreshTimeSeconds)
+        {
+            if (refreshTimeSeconds < 10 || refreshTimeSeconds > 60)
+                return 10_000;
+            return refreshTimeSeconds * 1000;
         }
 
         public void SetFinalProducts(List<FinalProduct> newList)
