@@ -3,6 +3,7 @@
 @inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject SweetAlertService Swal
+@inject FilterService FilterService
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -10,59 +11,49 @@
 
 <h2 class="pb-5">Definições</h2>
 
-<div class="col-md-4 pt-5">
-    <EditForm Model="@this" OnValidSubmit="ConfirmAndSubmit">
-        <label for="NewSecret" class="form-label mb-2 custom-lbl">Alterar Segredo</label>
-        <InputText type="password" @bind-Value="NewSecret" placeholder="Valor" class="form-control w-75 custom-field" />
-    </EditForm>
+<div class="row mb-3">
+    <div class="col-auto">
+        <label for="refreshTime" class="fw-bold fs-5">
+            Tempo de atualização de dados (máx. 60 seg.)
+        </label>
+        <input id="refreshTime" @bind="refreshTime" type="number" min="10" max="60" class="form-control mt-2" />
+    </div>
 </div>
 
 <div class="text-center fixed-bottom pb-5">
     <button type="submit" class="btn btn-color" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>Alterar</button>
 </div>
 
-<style>
-    .custom-field{
-        height: 4vh;
-        font-size: 18px;
-    }
-
-    .custom-lbl, .btn-color{
-        font-size: 20px;
-    }
-
-</style>
-
 @code {
-    private string NewSecret = string.Empty;
+    private int refreshTime = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterService.LoadFilterAsync();
+
+        refreshTime = FilterService.RefreshTime;
+    }
 
     private async Task ConfirmAndSubmit()
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        if (refreshTime < 10 || refreshTime > 60)
         {
-            Title = "Tem a certeza?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Sim, alterar!",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            await TorizonService.ChangeSecretAndSave(NewSecret);
-
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Segredo alterado com sucesso!",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120",
+                Title = "Por favor coloque um valor entre 10 a 60 segundos!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
             });
+            return;
         }
-    }
 
-    public class JSResult
-    {
-        public bool IsConfirmed { get; set; }
+        await FilterService.ApplyTimeFilter(refreshTime);
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Filtros aplicados com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
     }
 }

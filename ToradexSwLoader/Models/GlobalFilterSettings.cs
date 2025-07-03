@@ -11,6 +11,7 @@ namespace ToradexSwLoader.Models
 
         public string? SelectedDevice { get; set; }
         public int OnlineTime { get; set; }
+        public int RefreshTime { get; set; }
 
         public string? SelectedPackage { get; set; }
         public string? Version { get; set; }
