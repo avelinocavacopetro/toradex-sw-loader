@@ -115,6 +115,8 @@ else
     public string boardUuid { get; set; } = string.Empty;
     private DetailedDevice? selectedBoard = new DetailedDevice();
 
+    private Package? packageUri = new Package();
+
     private string originalFinalBoard = string.Empty;
     private string finalBoard = string.Empty;
     private string editableTag = string.Empty;
@@ -190,71 +192,93 @@ else
     private async Task ConfirmAndSubmit()
     {
         var result = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Deseja continuar?",
-                Icon = SweetAlertIcon.Warning,
-                ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
-                ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
-            });
+        {
+            Title = "Deseja continuar?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = "Cancelar"
+        });
 
         if (result.IsConfirmed)
         {
             using var context = DbContextFactory.CreateDbContext();
             var userAct = new UserActivity
-                {
-                        UserId = LoginService.UserId,
-                        ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
-                        ActTimeStamp = DateTime.Now
-                };
-
-            var finalProduct = new FinalProduct
-                {
-                    DeviceUuid = selectedBoard.DeviceUuid,
-                    Name = finalBoard,
-                    Status = "UpdatePending",
-                    CreatedAt = DateTime.Now,
-                    DeviceId = deviceId,
-                    ProductId = productId,
-                    StackId = stackId,
-                    PackageId = packageId,
-                    FleetId = fleetId,
-                    UserId = LoginService.UserId
-                };
-
-            context.UserActivities.Add(userAct);
-            context.FinalProducts.Add(finalProduct);
-            await context.SaveChangesAsync();
-
-            var update = new
             {
-                packageIds = new List<string> { finalProduct.PackageId.ToString() },
-                devices = new List<string> { finalProduct.DeviceUuid.ToString() },
-                fleets = new List<string> { finalProduct.FleetId.ToString() }
+                UserId = LoginService.UserId,
+                ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
+                ActTimeStamp = DateTime.Now
             };
 
-            // var response = await Http.PostAsJsonAsync("/updates", update);
-
-            // if (response.IsSuccessStatusCode)
-            // {
-            //     Console.WriteLine("Update enviado com sucesso!");
-            // }
-            // else
-            // {
-            //     Console.WriteLine("Erro ao enviar update.");
-            // }
-
-            await Swal.FireAsync(new SweetAlertOptions
+            var finalProduct = new FinalProduct
             {
-                Title = "Produto Final criado com sucesso!",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120"
-            });
+                DeviceUuid = selectedBoard.DeviceUuid,
+                Name = finalBoard,
+                Status = "UpdatePending",
+                CreatedAt = DateTime.Now,
+                DeviceId = deviceId,
+                ProductId = productId,
+                StackId = stackId,
+                PackageId = packageId,
+                FleetId = fleetId,
+                UserId = LoginService.UserId
+            };
 
-            UriHelper.NavigateTo("/home");
+            var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == finalProduct.PackageId);
+
+            var deviceDto = new DeviceDTO
+            {
+                PackageIds = new List<string> { finalProduct.PackageId.ToString() },
+                Custom = new Dictionary<string, PackageUri>
+            {
+                {
+                    finalProduct.PackageId,
+                    new PackageUri
+                    {
+                        Uri = packageUri?.Uri
+                    }
+                }
+            },
+                Devices = new List<string> { finalProduct.DeviceUuid.ToString() },
+                Fleets = new List<string> { finalProduct.FleetId.ToString() }
+            };
+
+            var response = await TorizonService.SendUpdateAsync(deviceDto);
+
+            if (response.IsSuccessStatusCode)
+            {
+                context.UserActivities.Add(userAct);
+                context.FinalProducts.Add(finalProduct);
+                await context.SaveChangesAsync();
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Produto final criado com sucesso!",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonColor = "#0B5120"
+                });
+
+                UriHelper.NavigateTo("/home");
+            }
+            else
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Erro ao criar produto",
+                    Icon = SweetAlertIcon.Warning,
+                    Text = $"{response.StatusCode}",
+                    ConfirmButtonColor = "#0B5120"
+                });
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
+                Console.WriteLine($"Conteúdo do erro: {errorContent}");
+            }
         }
     }
+
+
 
     public class JSResult
     {
