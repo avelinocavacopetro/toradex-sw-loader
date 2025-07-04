@@ -23,6 +23,9 @@ namespace ToradexSwLoader.Models
         [JsonPropertyName("version")]
         public string Version { get; set; } = string.Empty;
 
+        [MaxLength(300)]
+        public string? Uri { get; set; } = string.Empty;
+
         [NotMapped]
         public List<string> HardwareIds { get; set; } = new List<string>();
 

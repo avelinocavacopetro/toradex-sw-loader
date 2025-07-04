@@ -65,27 +65,64 @@ else
     <div class="center-customization">
     @if (!isEditing)
     {
-        <h4 class="custom-h4 text-center px-5">
-            @finalBoard
-            <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
-        </h4>
+            <div style="display:flex; justify-content:center;">
+                <div class="text-center">
+                    <table class="summary w-75" style="border-collapse: collapse;">
+                        <tr>
+                            <th style="background-color: #0c6527; color: white; padding: 12px;">Dispositivo</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedDevice?.Name</td>
+                        </tr>
+                        <tr>
+                            <th style="background-color: #0c6527; color: white; padding: 12px;">Produto</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedProduct?.Name</td>
+                        </tr>
+                        <tr>
+                            <th style="background-color: #0c6527; color: white; padding: 12px;">Stack</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedStack?.Name</td>
+                        </tr>
+                        <tr>
+                            <th style="background-color: #0c6527; color: white; padding: 12px;">Software</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedPackage?.Name</td>
+                        </tr>
+                        <tr>
+                            <th style="background-color: #0c6527; color: white; padding: 12px;">Frota</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedFleet?.Name</td>
+                        </tr>
+                        <tr>
+                            <th style="background-color: #0c6527; color: white; padding: 12px;">Placa</th>
+                            <td style="padding: 12px;">@selectedBoard?.DeviceName</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
 
         <div class="text-center fixed-bottom pb-5">
             <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
         </div>
+            <div class="center-customization">
+                <h4 class="custom-h4 text-center px-5">
+                    @finalBoard
+                    <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
+                </h4>
+
+                <div class="text-center fixed-bottom pb-5">
+                    <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
+                </div>
+            </div>
     }
     else
     {
-        <div class="edit-form">
-            <label for="text" class="pb-4" style="font-size: 1.5rem;">Alterar tag</label>
-            <input type="text" @bind="editableTag" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
-            <div>
-                <button class="btn btn-color mt-5 btn-lg btn-edit-custom" @onclick="SaveName">Salvar</button>
-                <button class="btn btn-danger mt-5 ms-5 btn-lg btn-edit-custom" @onclick="CancelEdit">Cancelar</button>
+        <div class="center-customization" style="min-height:60vh;">
+            <div class="edit-form">
+                <label for="text" class="pb-4" style="font-size: 1.5rem;">Alterar tag</label>
+                <input type="text" @bind="editableTag" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+                <div>
+                    <button class="btn btn-color mt-5 btn-lg btn-edit-custom" @onclick="SaveName">Salvar</button>
+                    <button class="btn btn-danger mt-5 ms-5 btn-lg btn-edit-custom" @onclick="CancelEdit">Cancelar</button>
+                </div>
             </div>
         </div>
     }
-</div>
 }
 
 @code {
@@ -112,6 +149,8 @@ else
     [Parameter]
     public string boardUuid { get; set; } = string.Empty;
     private DetailedDevice? selectedBoard = new DetailedDevice();
+
+    private Package? packageUri = new Package();
 
     private string originalFinalBoard = string.Empty;
     private string finalBoard = string.Empty;
@@ -199,53 +238,93 @@ else
         }
 
         var result = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Deseja continuar?",
-                Icon = SweetAlertIcon.Warning,
-                ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
-                ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
-            });
+        {
+            Title = "Deseja continuar?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = "Cancelar"
+        });
 
         if (result.IsConfirmed)
         {
             using var context = DbContextFactory.CreateDbContext();
             var userAct = new UserActivity
-                {
-                        UserId = LoginService.UserId,
-                        ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
-                        ActTimeStamp = DateTime.Now
-                };
+            {
+                UserId = LoginService.UserId,
+                ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
+                ActTimeStamp = DateTime.Now
+            };
 
             var finalProduct = new FinalProduct
-                {
-                    DeviceUuid = selectedBoard.DeviceUuid,
-                    Name = finalBoard,
-                    Status = "UpdatePending",
-                    CreatedAt = DateTime.Now,
-                    DeviceId = deviceId,
-                    ProductId = productId,
-                    StackId = stackId,
-                    PackageId = packageId,
-                    FleetId = fleetId,
-                    UserId = LoginService.UserId
-                };
-
-            context.UserActivities.Add(userAct);
-            context.FinalProducts.Add(finalProduct);
-            await context.SaveChangesAsync();
-
-            await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Produto Final criado com sucesso!",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120"
-            });
+                DeviceUuid = selectedBoard.DeviceUuid,
+                Name = finalBoard,
+                Status = "UpdatePending",
+                CreatedAt = DateTime.Now,
+                DeviceId = deviceId,
+                ProductId = productId,
+                StackId = stackId,
+                PackageId = packageId,
+                FleetId = fleetId,
+                UserId = LoginService.UserId
+            };
 
-            UriHelper.NavigateTo("/home");
+            var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == finalProduct.PackageId);
+
+            var deviceDto = new DeviceDTO
+            {
+                PackageIds = new List<string> { finalProduct.PackageId.ToString() },
+                Custom = new Dictionary<string, PackageUri>
+            {
+                {
+                    finalProduct.PackageId,
+                    new PackageUri
+                    {
+                        Uri = packageUri?.Uri
+                    }
+                }
+            },
+                Devices = new List<string> { finalProduct.DeviceUuid.ToString() },
+                Fleets = new List<string> { finalProduct.FleetId.ToString() }
+            };
+
+            var response = await TorizonService.SendUpdateAsync(deviceDto);
+
+            if (response.IsSuccessStatusCode)
+            {
+                context.UserActivities.Add(userAct);
+                context.FinalProducts.Add(finalProduct);
+                await context.SaveChangesAsync();
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Produto final criado com sucesso!",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonColor = "#0B5120"
+                });
+
+                UriHelper.NavigateTo("/home");
+            }
+            else
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Erro ao criar produto",
+                    Icon = SweetAlertIcon.Warning,
+                    Text = $"{response.StatusCode}",
+                    ConfirmButtonColor = "#0B5120"
+                });
+
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
+                Console.WriteLine($"Conteúdo do erro: {errorContent}");
+            }
         }
     }
+
+
 
     public class JSResult
     {

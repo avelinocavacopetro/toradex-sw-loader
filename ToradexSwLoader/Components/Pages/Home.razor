@@ -71,6 +71,7 @@ else
     {
         isLoading = true;
         await LoadProductsFromDb();
+
         isLoading = false;
 
         ProductState.OnChange += async () =>

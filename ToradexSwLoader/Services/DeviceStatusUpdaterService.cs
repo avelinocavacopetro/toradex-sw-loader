@@ -25,6 +25,12 @@ namespace ToradexSwLoader.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var filterService = scope.ServiceProvider.GetRequiredService<FilterService>();
+                await filterService.LoadFilterAsync();
+            }
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -36,9 +42,30 @@ namespace ToradexSwLoader.Services
                     _logger.LogError(ex, "Erro ao atualizar estados dos dispositivos.");
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                int delaySeconds;
+
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var filterService = scope.ServiceProvider.GetRequiredService<FilterService>();
+                    delaySeconds = filterService.RefreshTime;
+                }
+
+                if (delaySeconds < 10 || delaySeconds > 60)
+                {
+                    delaySeconds = 10;
+                }
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds), stoppingToken);
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
             }
         }
+
 
         private async Task UpdateDeviceStatusesAsync()
         {

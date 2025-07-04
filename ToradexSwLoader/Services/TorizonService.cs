@@ -135,5 +135,11 @@ namespace ToradexSwLoader.Services
 
             return null;
         }
+
+        public async Task<HttpResponseMessage> SendUpdateAsync(DeviceDTO deviceDto)
+        {
+            return await _httpClient.PostAsJsonAsync("https://app.torizon.io/api/v2beta/updates", deviceDto);
+        }
+
     }
 }
