@@ -46,7 +46,6 @@ namespace ToradexSwLoader.Services
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var finalProducts = await dbContext.FinalProducts
-                .Where(fp => fp.Status == "UpdatePending")
                 .ToListAsync();
 
             if (!await _torizonService.AuthenticateAsync())
@@ -54,6 +53,8 @@ namespace ToradexSwLoader.Services
                 _logger.LogWarning("Falha na autenticação Torizon.");
                 return;
             }
+
+            bool anyUpdated = false;
 
             foreach (var fp in finalProducts)
             {
@@ -65,10 +66,18 @@ namespace ToradexSwLoader.Services
                     fp.Status = statusAtual;
                     _logger.LogInformation($"Status atualizado: {fp.DeviceUuid} => {statusAtual}");
                     dbContext.Update(fp);
+                    anyUpdated = true;
                 }
             }
 
-            await dbContext.SaveChangesAsync();
+            if (anyUpdated)
+            {
+                await dbContext.SaveChangesAsync();
+
+                var stateService = scope.ServiceProvider.GetRequiredService<FinalProductStateService>();
+                stateService.NotifyChanged();
+            }
         }
+
     }
 }

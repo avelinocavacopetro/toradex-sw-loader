@@ -62,8 +62,6 @@ else
         </div>
     </div>
 
-
-
     <div class="center-customization">
     @if (!isEditing)
     {
@@ -75,7 +73,6 @@ else
         <div class="text-center fixed-bottom pb-5">
             <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
         </div>
-
     }
     else
     {
@@ -190,6 +187,17 @@ else
 
     private async Task ConfirmAndSubmit()
     {
+        if (!string.IsNullOrEmpty(finalBoard) && finalBoard.Length > 100)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#d33"
+            });
+            return;
+        }
+
         var result = await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Deseja continuar?",

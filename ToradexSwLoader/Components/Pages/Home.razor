@@ -2,6 +2,7 @@
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FinalProductStateService ProductState
+@inject SweetAlertService Swal
 
 <PageTitle>Página Inicial</PageTitle>
 
@@ -27,18 +28,26 @@ else
                     <th>Placa</th>
                     <th class="text-center">Hora</th>
                     <th class="text-center">Estado</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var finalProduct in finalProducts)
                 {
                     <tr>
-                        <td>@finalProduct.Name</td>
-                        <td class="text-center">@finalProduct.CreatedAt</td>
+                        <td style="vertical-align: middle;">@finalProduct.Name</td>
+                        <td class="text-center" style="vertical-align: middle;">@finalProduct.CreatedAt</td>
                         <td style="text-align: center;">
-                            <span class="status-box @(GetStatusClass(finalProduct.Status))">
-                                @finalProduct.Status
-                            </span>
+                            @GetStatusIcon(finalProduct.Status!)
+                        </td>
+                        <td class="text-center" style="vertical-align: middle;">
+                            @if (finalProduct.Status?.Equals("UpdatePending", StringComparison.OrdinalIgnoreCase) == true)
+                            {
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="@(() => AbortOperation(finalProduct))">
+                                    <i class="bi bi-x-circle"></i> Abortar
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
@@ -54,15 +63,41 @@ else
 @code {
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
     private IReadOnlyList<FinalProduct> finalProducts = new List<FinalProduct>();
+    // private List<FinalProduct> finalProducts = new List<FinalProduct>();
 
     bool isLoading = true;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        finalProducts = ProductState.FinalProducts;
-        ProductState.OnChange += OnProductsChanged;
+        isLoading = true;
+        await LoadProductsFromDb();
         isLoading = false;
+
+        ProductState.OnChange += async () =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadProductsFromDb();
+                StateHasChanged();
+            });
+        };
     }
+
+    private async Task LoadProductsFromDb()
+    {
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        finalProducts = await context.FinalProducts
+            .OrderByDescending(fp => fp.CreatedAt)
+            .ToListAsync();
+    }
+
+
+    // protected override void OnInitialized()
+    // {
+    //     finalProducts = ProductState.FinalProducts;
+    //     ProductState.OnChange += OnProductsChanged;
+    //     isLoading = false;
+    // }
 
     private void OnProductsChanged()
     {
@@ -78,14 +113,60 @@ else
         ProductState.OnChange -= OnProductsChanged;
     }
 
-    private string GetStatusClass(string status)
+    private async Task AbortOperation(FinalProduct productToRemove)
     {
-        return status.ToLower() switch
+        var result = await Swal.FireAsync(new SweetAlertOptions
         {
-            "uptodate" => "status-uptodate",
-            "error" => "status-error",
-            "updatepending" => "status-updatepending",
-            _ => "status-default"
+            Title = "Deseja abortar?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = "Cancelar"
+        });
+
+        if(result.IsConfirmed)
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+
+            int deletedId = productToRemove.Id;
+
+            context.FinalProducts.Remove(productToRemove);
+            await context.SaveChangesAsync();
+
+            string updateIdsSql = @"
+                UPDATE FinalProduct
+                SET Id = Id - 1
+                WHERE Id > {0};
+            ";
+
+            await context.Database.ExecuteSqlRawAsync(updateIdsSql, deletedId);
+
+            var maxId = await context.FinalProducts.MaxAsync(fp => (int?)fp.Id) ?? 0;
+            var nextAutoIncrement = maxId + 1;
+
+            string alterAutoIncrementSql = $"ALTER TABLE FinalProduct AUTO_INCREMENT = {nextAutoIncrement};";
+
+            await context.Database.ExecuteSqlRawAsync(alterAutoIncrementSql);
+
+            ProductState.Remove(productToRemove);
+
+            // finalProducts.Remove(productToRemove);
+        }
+    }
+
+    private MarkupString GetStatusIcon(string status)
+    {
+        var iconHtml = status.ToLower() switch
+        {
+            "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
+            "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
+            "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
+            "outdated" => "<i class='bi bi-exclamation-circle text-warning fs-4'></i>",
+            _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
         };
+
+
+        return new MarkupString(iconHtml);
     }
 }

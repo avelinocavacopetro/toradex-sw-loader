@@ -18,7 +18,7 @@ namespace ToradexSwLoader.Services
         {
             _lastUpdate = DateTime.Now;
 
-            _refreshTimer = new System.Timers.Timer(10_000);
+            _refreshTimer = new System.Timers.Timer(30_000);
             _refreshTimer.Elapsed += (sender, e) =>
             {
                 _lastUpdate = DateTime.Now;
@@ -32,6 +32,17 @@ namespace ToradexSwLoader.Services
             if (!AreListsEqual(_finalProducts, newList))
             {
                 _finalProducts = newList;
+                _lastUpdate = DateTime.Now;
+                OnChange?.Invoke();
+            }
+        }
+
+        public void Remove(FinalProduct productToRemove)
+        {
+            var item = _finalProducts.FirstOrDefault(p => p.Id == productToRemove.Id);
+            if (item != null)
+            {
+                _finalProducts.Remove(item);
                 _lastUpdate = DateTime.Now;
                 OnChange?.Invoke();
             }
@@ -53,6 +64,12 @@ namespace ToradexSwLoader.Services
         {
             _refreshTimer?.Stop();
             _refreshTimer?.Dispose();
+        }
+
+        public void NotifyChanged()
+        {
+            _lastUpdate = DateTime.Now;
+            OnChange?.Invoke();
         }
     }
 }
