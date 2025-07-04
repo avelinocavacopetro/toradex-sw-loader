@@ -3,6 +3,7 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FinalProductStateService ProductState
 @inject SweetAlertService Swal
+@inject TorizonService TorizonService
 
 <PageTitle>Página Inicial</PageTitle>
 
@@ -63,7 +64,6 @@ else
 @code {
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
     private IReadOnlyList<FinalProduct> finalProducts = new List<FinalProduct>();
-    // private List<FinalProduct> finalProducts = new List<FinalProduct>();
 
     bool isLoading = true;
 
@@ -91,14 +91,6 @@ else
             .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
     }
-
-
-    // protected override void OnInitialized()
-    // {
-    //     finalProducts = ProductState.FinalProducts;
-    //     ProductState.OnChange += OnProductsChanged;
-    //     isLoading = false;
-    // }
 
     private void OnProductsChanged()
     {
@@ -130,29 +122,49 @@ else
         {
             using var context = await DbContextFactory.CreateDbContextAsync();
 
-            int deletedId = productToRemove.Id;
+            // int deletedId = productToRemove.Id;
 
-            context.FinalProducts.Remove(productToRemove);
-            await context.SaveChangesAsync();
+            // context.FinalProducts.Remove(productToRemove);
+            // await context.SaveChangesAsync();
 
-            string updateIdsSql = @"
-                UPDATE FinalProduct
-                SET Id = Id - 1
-                WHERE Id > {0};
-            ";
+            // string updateIdsSql = @"
+            //     UPDATE FinalProduct
+            //     SET Id = Id - 1
+            //     WHERE Id > {0};
+            // ";
 
-            await context.Database.ExecuteSqlRawAsync(updateIdsSql, deletedId);
+            // await context.Database.ExecuteSqlRawAsync(updateIdsSql, deletedId);
 
-            var maxId = await context.FinalProducts.MaxAsync(fp => (int?)fp.Id) ?? 0;
-            var nextAutoIncrement = maxId + 1;
+            // var maxId = await context.FinalProducts.MaxAsync(fp => (int?)fp.Id) ?? 0;
+            // var nextAutoIncrement = maxId + 1;
 
-            string alterAutoIncrementSql = $"ALTER TABLE FinalProduct AUTO_INCREMENT = {nextAutoIncrement};";
+            // string alterAutoIncrementSql = $"ALTER TABLE FinalProduct AUTO_INCREMENT = {nextAutoIncrement};";
 
-            await context.Database.ExecuteSqlRawAsync(alterAutoIncrementSql);
+            // await context.Database.ExecuteSqlRawAsync(alterAutoIncrementSql);
 
-            ProductState.Remove(productToRemove);
+            bool authOk = await TorizonService.AuthenticateAsync();
+            if (authOk)
+            {
+                var response = await TorizonService.SendCancelAsync(new List<string> { productToRemove.DeviceUuid });
 
-            // finalProducts.Remove(productToRemove);
+                string content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Produto abortado com sucesso",
+                        Icon = SweetAlertIcon.Success,
+                        ConfirmButtonColor = "#0B5120",
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("Não foi possível abortar. Verifica a resposta.");
+                }
+            }
+
+            // ProductState.Remove(productToRemove);
         }
     }
 
@@ -166,7 +178,6 @@ else
             "outdated" => "<i class='bi bi-exclamation-circle text-warning fs-4'></i>",
             _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
         };
-
 
         return new MarkupString(iconHtml);
     }

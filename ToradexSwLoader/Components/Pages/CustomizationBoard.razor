@@ -30,85 +30,49 @@ else
     </a>
 
     <h3 class="text-center pb-4">Placa Final</h3>
-
-    <div style="display:flex; justify-content:center;">
-        <div class="text-center">
-            <table class="summary w-75" style="border-collapse: collapse;">
-                <tr>
-                    <th style="background-color: #0c6527; color: white; padding: 12px;">Dispositivo</th>
-                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedDevice?.Name</td>
-                </tr>
-                <tr>
-                    <th style="background-color: #0c6527; color: white; padding: 12px;">Produto</th>
-                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedProduct?.Name</td>
-                </tr>
-                <tr>
-                    <th style="background-color: #0c6527; color: white; padding: 12px;">Stack</th>
-                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedStack?.Name</td>
-                </tr>
-                <tr>
-                    <th style="background-color: #0c6527; color: white; padding: 12px;">Software</th>
-                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedPackage?.Name</td>
-                </tr>
-                <tr>
-                    <th style="background-color: #0c6527; color: white; padding: 12px;">Frota</th>
-                    <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedFleet?.Name</td>
-                </tr>
-                <tr>
-                    <th style="background-color: #0c6527; color: white; padding: 12px;">Placa</th>
-                    <td style="padding: 12px;">@selectedBoard?.DeviceName</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
-    <div class="center-customization">
     @if (!isEditing)
     {
-            <div style="display:flex; justify-content:center;">
-                <div class="text-center">
-                    <table class="summary w-75" style="border-collapse: collapse;">
-                        <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Dispositivo</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedDevice?.Name</td>
-                        </tr>
-                        <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Produto</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedProduct?.Name</td>
-                        </tr>
-                        <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Stack</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedStack?.Name</td>
-                        </tr>
-                        <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Software</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedPackage?.Name</td>
-                        </tr>
-                        <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Frota</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedFleet?.Name</td>
-                        </tr>
-                        <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Placa</th>
-                            <td style="padding: 12px;">@selectedBoard?.DeviceName</td>
-                        </tr>
-                    </table>
-                </div>
+        <div style="display:flex; justify-content:center;">
+            <div class="text-center">
+                <table class="summary w-75" style="border-collapse: collapse;">
+                    <tr>
+                        <th style="background-color: #0c6527; color: white; padding: 12px;">Dispositivo</th>
+                        <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedDevice?.Name</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: #0c6527; color: white; padding: 12px;">Produto</th>
+                        <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedProduct?.Name</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: #0c6527; color: white; padding: 12px;">Stack</th>
+                        <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedStack?.Name</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: #0c6527; color: white; padding: 12px;">Software</th>
+                        <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedPackage?.Name @selectedPackage?.Version</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: #0c6527; color: white; padding: 12px;">Frota</th>
+                        <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedFleet?.Name</td>
+                    </tr>
+                    <tr>
+                        <th style="background-color: #0c6527; color: white; padding: 12px;">Placa</th>
+                        <td style="padding: 12px;">@selectedBoard?.DeviceName</td>
+                    </tr>
+                </table>
             </div>
-
-        <div class="text-center fixed-bottom pb-5">
-            <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
         </div>
-            <div class="center-customization">
-                <h4 class="custom-h4 text-center px-5">
-                    @finalBoard
-                    <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
-                </h4>
 
-                <div class="text-center fixed-bottom pb-5">
-                    <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
-                </div>
+        <div class="center-customization">
+            <h4 class="custom-h4 text-center px-5">
+                @finalBoard
+                <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
+            </h4>
+
+            <div class="text-center fixed-bottom pb-5">
+                <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
             </div>
+        </div>
     }
     else
     {
