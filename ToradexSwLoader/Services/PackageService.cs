@@ -39,6 +39,7 @@ namespace ToradexSwLoader.Services
                         Id = package.Id,
                         Name = package.Name,
                         Version = package.Version,
+                        Uri = package.Uri,
                         PackageHardwares = new List<PackageHardware>()
                     };
 

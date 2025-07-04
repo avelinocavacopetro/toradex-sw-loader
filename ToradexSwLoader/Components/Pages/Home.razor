@@ -2,6 +2,7 @@
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FinalProductStateService ProductState
+@inject PackageService PackageService
 
 <PageTitle>Página Inicial</PageTitle>
 
@@ -59,6 +60,10 @@ else
 
     protected override void OnInitialized()
     {
+        // var link = "https://app.torizon.io/api/v2beta/packages?limit=1000&packageSource=targets.json";
+
+        // await PackageService.ImportPackagesFromApiAsync(link);
+
         finalProducts = ProductState.FinalProducts;
         ProductState.OnChange += OnProductsChanged;
         isLoading = false;

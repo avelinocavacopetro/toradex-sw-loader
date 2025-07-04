@@ -73,7 +73,6 @@ namespace ToradexSwLoader.Services
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var finalProducts = await dbContext.FinalProducts
-                .Where(fp => fp.Status == "UpdatePending")
                 .ToListAsync();
 
             if (!await _torizonService.AuthenticateAsync())
