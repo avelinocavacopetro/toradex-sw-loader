@@ -81,6 +81,8 @@ namespace ToradexSwLoader.Services
                 return;
             }
 
+            bool anyUpdated = false;
+
             foreach (var fp in finalProducts)
             {
                 var url = $"https://app.torizon.io/api/v2beta/devices/{fp.DeviceUuid}";
@@ -91,10 +93,18 @@ namespace ToradexSwLoader.Services
                     fp.Status = statusAtual;
                     _logger.LogInformation($"Status atualizado: {fp.DeviceUuid} => {statusAtual}");
                     dbContext.Update(fp);
+                    anyUpdated = true;
                 }
             }
 
-            await dbContext.SaveChangesAsync();
+            if (anyUpdated)
+            {
+                await dbContext.SaveChangesAsync();
+
+                var stateService = scope.ServiceProvider.GetRequiredService<FinalProductStateService>();
+                stateService.NotifyChanged();
+            }
         }
+
     }
 }

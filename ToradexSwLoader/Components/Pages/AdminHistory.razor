@@ -72,13 +72,11 @@ else
                 @foreach (var finalProduct in paginatedFinalProducts)
                 {
                     <tr>
-                        <td>@finalProduct.Name</td>
-                        <td class="text-center">@finalProduct.CreatedAt</td>
-                        <td class="text-center">@finalProduct.UserPetrotec?.UserName</td>
+                        <td style="vertical-align: middle;">@finalProduct.Name</td>
+                        <td class="text-center" style="vertical-align: middle;">@finalProduct.CreatedAt</td>
+                        <td class="text-center" style="vertical-align: middle;">@finalProduct.UserPetrotec?.UserName</td>
                         <td style="text-align: center;">
-                            <span class="status-box @(GetStatusClass(finalProduct.Status))">
-                                @finalProduct.Status
-                            </span>
+                            @GetStatusIcon(finalProduct.Status)
                         </td>
                     </tr>
                 }
@@ -189,15 +187,17 @@ else
         ProductState.OnChange -= OnProductStateChanged;
     }
 
-    private string GetStatusClass(string status)
+    private MarkupString GetStatusIcon(string status)
     {
-        return status.ToLower() switch
+        var iconHtml = status.ToLower() switch
         {
-            "uptodate" => "status-uptodate",
-            "error" => "status-error",
-            "updatepending" => "status-updatepending",
-            _ => "status-default"
+            "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
+            "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
+            "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
+            _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
         };
+
+        return new MarkupString(iconHtml);
     }
 
     private void OnFilterChanged(ChangeEventArgs e)

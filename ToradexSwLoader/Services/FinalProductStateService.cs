@@ -23,6 +23,7 @@ namespace ToradexSwLoader.Services
             var initialInterval = GetValidInterval(GetRefreshTimeFromScopedFilter());
 
             _refreshTimer = new System.Timers.Timer(initialInterval);
+
             _refreshTimer.Elapsed += (sender, e) =>
             {
                 _lastUpdate = DateTime.Now;
@@ -55,6 +56,17 @@ namespace ToradexSwLoader.Services
             }
         }
 
+        public void Remove(FinalProduct productToRemove)
+        {
+            var item = _finalProducts.FirstOrDefault(p => p.Id == productToRemove.Id);
+            if (item != null)
+            {
+                _finalProducts.Remove(item);
+                _lastUpdate = DateTime.Now;
+                OnChange?.Invoke();
+            }
+        }
+
         private bool AreListsEqual(List<FinalProduct> oldList, List<FinalProduct> newList)
         {
             if (oldList.Count != newList.Count) return false;
@@ -71,6 +83,12 @@ namespace ToradexSwLoader.Services
         {
             _refreshTimer?.Stop();
             _refreshTimer?.Dispose();
+        }
+
+        public void NotifyChanged()
+        {
+            _lastUpdate = DateTime.Now;
+            OnChange?.Invoke();
         }
     }
 }

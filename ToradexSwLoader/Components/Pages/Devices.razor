@@ -106,20 +106,23 @@ else
             @foreach (var device in paginetdDevices)
             {
                 <tr>
-                    <td title="@device.DeviceId" style="word-break: break-word; white-space: normal;">
+                    <td title="@device.DeviceId" style="word-break: break-word; white-space: normal; vertical-align: middle;">
                         @device.DeviceId
                     </td>
-                    <td title="@device.DeviceName" style="word-break: break-word; white-space: normal;">
+                    <td title="@device.DeviceName" style="word-break: break-word; white-space: normal; vertical-align: middle;">
                         @device.DeviceName
                     </td>
 
-                    <td style="text-align: center;">@(device.Hibernated ? "Sim" : "Não")</td>
-                    <td style="text-align: center;">@(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)</td>
-                    <td>@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td style="text-align: center;">
+                    <td style="text-align: center; vertical-align: middle;">@(device.Hibernated ? "Sim" : "Não")</td>
+                    <td style="text-align: center; vertical-align: middle;">@(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)</td>
+                    <td style="vertical-align: middle;">@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    @* <td style="text-align: center;">
                         <span class="status-box @(GetStatusClass(device.DeviceStatus))">
                             @device.DeviceStatus
                         </span>
+                    </td> *@
+                    <td style="text-align: center;">
+                        @GetStatusIcon(device.DeviceStatus!)
                     </td>
                 </tr>
             }
@@ -190,17 +193,30 @@ else
         }
     }
 
-    private string GetStatusClass(string status)
+    // private string GetStatusClass(string status)
+    // {
+    //     return status.ToLower() switch
+    //     {
+    //         "uptodate" => "status-uptodate",
+    //         "error" => "status-error",
+    //         "notseen" => "status-notseen",
+    //         "outdated" => "status-outdated",
+    //         "updatepending" => "status-updatepending",
+    //         _ => "status-default"
+    //     };
+    // }
+
+    private MarkupString GetStatusIcon(string status)
     {
-        return status.ToLower() switch
+        var iconHtml = status.ToLower() switch
         {
-            "uptodate" => "status-uptodate",
-            "error" => "status-error",
-            "notseen" => "status-notseen",
-            "outdated" => "status-outdated",
-            "updatepending" => "status-updatepending",
-            _ => "status-default"
+            "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
+            "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
+            "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
+            _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
         };
+
+        return new MarkupString(iconHtml);
     }
 
     private void OnOrderChanged(ChangeEventArgs e, string orderByField)
