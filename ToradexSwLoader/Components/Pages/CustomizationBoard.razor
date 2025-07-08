@@ -251,7 +251,6 @@ else
                 }
             },
                 Devices = new List<string> { finalProduct.DeviceUuid.ToString() },
-                Fleets = new List<string> { finalProduct.FleetId.ToString() }
             };
 
             var response = await TorizonService.SendUpdateAsync(deviceDto);
