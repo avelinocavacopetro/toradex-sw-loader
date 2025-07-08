@@ -85,7 +85,7 @@ else
 
     private int actualPage = 1;
     private int fleetsPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)fleets.Count / fleetsPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
 
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;

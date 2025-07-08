@@ -185,7 +185,7 @@ else
     private bool isAdding = false;
     private bool isEditing = false;
     private int productsPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)FilteredProducts.Count() / productsPerPage);
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 

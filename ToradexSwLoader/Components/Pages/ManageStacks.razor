@@ -183,7 +183,7 @@ else
 
     private int actualPage = 1;
     private int stacksPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)FilteredStacks.Count() / stacksPerPage);
 
     private bool isLoading = true;
     private bool isAdding = false;
