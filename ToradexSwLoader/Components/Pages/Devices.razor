@@ -26,9 +26,19 @@ else
         <i class="bi bi-arrow-left fs-1"></i>
     </a>
 
-    <div class="mt-4">
-        <span style="font-size: 20px; font-weight: bold;">Filtrar por:</span>
+    <br />
+    <br />
+
+    <div class="w-50">
+        <input type="text" class="form-control" placeholder="Pesquisar dispositivo pelo nome..."
+               @bind="searchTerm" @bind:event="oninput" />
     </div>
+
+    <br />
+
+    @* <div class="mt-4">
+        <span style="font-size: 20px; font-weight: bold;">Filtrar por:</span>
+    </div> *@
 
     <div class="d-flex justify-content-between align-items-center mt-2">
         <div class="d-flex gap-4">
@@ -103,7 +113,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var device in paginetdDevices)
+            @foreach (var device in PaginatedDevices)
             {
                 <tr>
                     <td title="@device.DeviceId" style="word-break: break-word; white-space: normal; vertical-align: middle;">
@@ -116,11 +126,6 @@ else
                     <td style="text-align: center; vertical-align: middle;">@(device.Hibernated ? "Sim" : "Não")</td>
                     <td style="text-align: center; vertical-align: middle;">@(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)</td>
                     <td style="vertical-align: middle;">@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                    @* <td style="text-align: center;">
-                        <span class="status-box @(GetStatusClass(device.DeviceStatus))">
-                            @device.DeviceStatus
-                        </span>
-                    </td> *@
                     <td style="text-align: center;">
                         @GetStatusIcon(device.DeviceStatus!)
                     </td>
@@ -133,16 +138,40 @@ else
 @code {
     private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
     private List<DetailedDevice> devices = new List<DetailedDevice>();
-    private List<DetailedDevice> paginetdDevices = new List<DetailedDevice>();
+    private List<DetailedDevice> paginatedDevices = new List<DetailedDevice>();
     private WindowDimension? dimension;
 
     private int actualPage = 1;
     private int devicesPerPage = 4;
-    private int TotalPages => (int)Math.Ceiling((double)devices.Count / devicesPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)FilteredDevices.Count() / devicesPerPage);
 
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
+
+    private IEnumerable<DetailedDevice> FilteredDevices =>
+    string.IsNullOrWhiteSpace(searchTerm)
+        ? devices
+        : devices.Where(d => d.DeviceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<DetailedDevice> PaginatedDevices =>
+    FilteredDevices
+        .Skip((actualPage - 1) * devicesPerPage)
+        .Take(devicesPerPage);
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
@@ -170,7 +199,7 @@ else
 
     private void UpdatePage()
     {
-        paginetdDevices = devices.Skip((actualPage - 1) * devicesPerPage)
+        paginatedDevices = devices.Skip((actualPage - 1) * devicesPerPage)
                                  .Take(devicesPerPage)
                                  .ToList();
     }
@@ -192,19 +221,6 @@ else
             UpdatePage();
         }
     }
-
-    // private string GetStatusClass(string status)
-    // {
-    //     return status.ToLower() switch
-    //     {
-    //         "uptodate" => "status-uptodate",
-    //         "error" => "status-error",
-    //         "notseen" => "status-notseen",
-    //         "outdated" => "status-outdated",
-    //         "updatepending" => "status-updatepending",
-    //         _ => "status-default"
-    //     };
-    // }
 
     private MarkupString GetStatusIcon(string status)
     {
