@@ -45,5 +45,7 @@ namespace ToradexSwLoader.Models
         [ForeignKey("UserPetrotec")]
         public int UserId { get; set; }
         public UserPetrotec? UserPetrotec { get; set; }
+
+        public bool Enabled { get; set; }
     }
 }

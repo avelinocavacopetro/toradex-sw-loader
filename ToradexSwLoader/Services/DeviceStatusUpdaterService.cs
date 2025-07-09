@@ -66,13 +66,13 @@ namespace ToradexSwLoader.Services
             }
         }
 
-
         private async Task UpdateDeviceStatusesAsync()
         {
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             var finalProducts = await dbContext.FinalProducts
+                .Where(p => p.Enabled)
                 .ToListAsync();
 
             if (!await _torizonService.AuthenticateAsync())

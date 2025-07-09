@@ -225,14 +225,15 @@ else
             {
                 DeviceUuid = selectedBoard.DeviceUuid,
                 Name = finalBoard,
-                Status = "UpdatePending",
+                Status = selectedBoard.DeviceStatus,
                 CreatedAt = DateTime.Now,
                 DeviceId = deviceId,
                 ProductId = productId,
                 StackId = stackId,
                 PackageId = packageId,
                 FleetId = fleetId,
-                UserId = LoginService.UserId
+                UserId = LoginService.UserId,
+                Enabled = true
             };
 
             var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == finalProduct.PackageId);
