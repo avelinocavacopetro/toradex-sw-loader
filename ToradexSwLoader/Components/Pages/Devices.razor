@@ -36,10 +36,6 @@ else
 
     <br />
 
-    @* <div class="mt-4">
-        <span style="font-size: 20px; font-weight: bold;">Filtrar por:</span>
-    </div> *@
-
     <div class="d-flex justify-content-between align-items-center mt-2">
         <div class="d-flex gap-4">
 
@@ -78,7 +74,7 @@ else
                     <option value="error">Error</option>
                     <option value="notseen">NotSeen</option>
                     <option value="updatepending">UpdatePending</option>
-                    <option value="updatescheduled">UpdateSchedule</option>
+                    <option value="updatescheduled">UpdateScheduled</option>
                     <option value="outdated">Outdated</option>
                 </select>
             </div>
@@ -102,7 +98,7 @@ else
     </div>
 
     <table class="table custom-table mt-5">
-        <thead>
+        <thead style="background-color: #0c6527; color: white;">
             <tr>
                 <th>ID</th>
                 <th>Nome</th>
@@ -229,6 +225,9 @@ else
             "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
             "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
             "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
+            "notseen" => "<i class='bi bi-eye-slash text-muted fs-4'></i>",
+            "outdated" => "<i class='bi bi-exclamation-circle text-danger fs-4'></i>",
+            "updatescheduled" => "<i class='bi bi-calendar-check text-primary fs-4'></i>",
             _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
         };
 
@@ -280,7 +279,7 @@ else
                     "error" => originalDevices.Where(d => d.DeviceStatus == "Error").ToList(),
                     "notseen" => originalDevices.Where(d => d.DeviceStatus == "NotSeen").ToList(),
                     "updatepending" => originalDevices.Where(d => d.DeviceStatus == "UpdatePending").ToList(),
-                    "updateschedule" => originalDevices.Where(d => d.DeviceStatus == "UpdateSchedule").ToList(),
+                    "updatescheduled" => originalDevices.Where(d => d.DeviceStatus == "UpdateScheduled").ToList(),
                     "outdated" => originalDevices.Where(d => d.DeviceStatus == "Outdated").ToList(),
                     "all" => originalDevices.ToList(),
                     _ => devices

@@ -42,7 +42,7 @@ else
                             @GetStatusIcon(finalProduct.Status!)
                         </td>
                         <td class="text-center" style="vertical-align: middle;">
-                            @if (finalProduct.Status?.Equals("UpdatePending", StringComparison.OrdinalIgnoreCase) == true)
+                            @if (finalProduct.Status?.Equals("Outdated", StringComparison.OrdinalIgnoreCase) == true)
                             {
                                 <button class="btn btn-danger btn-sm"
                                         @onclick="@(() => AbortOperation(finalProduct))">
@@ -88,6 +88,7 @@ else
     {
         using var context = await DbContextFactory.CreateDbContextAsync();
         finalProducts = await context.FinalProducts
+            .Where(p => p.Enabled)
             .OrderByDescending(fp => fp.CreatedAt)
             .ToListAsync();
     }
@@ -122,26 +123,6 @@ else
         {
             using var context = await DbContextFactory.CreateDbContextAsync();
 
-            // int deletedId = productToRemove.Id;
-
-            // context.FinalProducts.Remove(productToRemove);
-            // await context.SaveChangesAsync();
-
-            // string updateIdsSql = @"
-            //     UPDATE FinalProduct
-            //     SET Id = Id - 1
-            //     WHERE Id > {0};
-            // ";
-
-            // await context.Database.ExecuteSqlRawAsync(updateIdsSql, deletedId);
-
-            // var maxId = await context.FinalProducts.MaxAsync(fp => (int?)fp.Id) ?? 0;
-            // var nextAutoIncrement = maxId + 1;
-
-            // string alterAutoIncrementSql = $"ALTER TABLE FinalProduct AUTO_INCREMENT = {nextAutoIncrement};";
-
-            // await context.Database.ExecuteSqlRawAsync(alterAutoIncrementSql);
-
             bool authOk = await TorizonService.AuthenticateAsync();
             if (authOk)
             {
@@ -157,14 +138,23 @@ else
                         Icon = SweetAlertIcon.Success,
                         ConfirmButtonColor = "#0B5120",
                     });
+
+                    var productDb = await context.FinalProducts.FirstOrDefaultAsync(p => p.Id == productToRemove.Id);
+                    if (productDb != null)
+                    {
+                        productDb.Enabled = false;
+                        await context.SaveChangesAsync();
+
+                        finalProducts = finalProducts.Where(fp => fp.Id != productToRemove.Id).ToList();
+
+                        StateHasChanged();
+                    }
                 }
                 else
                 {
                     Console.WriteLine("Não foi possível abortar. Verifica a resposta.");
                 }
             }
-
-            // ProductState.Remove(productToRemove);
         }
     }
 
