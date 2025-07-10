@@ -28,8 +28,6 @@ namespace ToradexSwLoader.Services
             foreach (var package in packages)
             {
                 var packageDb = await context.Packages
-                    .Include(p => p.PackageHardwares)
-                    .ThenInclude(ph => ph.Hardware)
                     .FirstOrDefaultAsync(p => p.Id == package.Id);
 
                 if (packageDb == null)
@@ -39,8 +37,7 @@ namespace ToradexSwLoader.Services
                         Id = package.Id,
                         Name = package.Name,
                         Version = package.Version,
-                        Uri = package.Uri,
-                        PackageHardwares = new List<PackageHardware>()
+                        Uri = package.Uri
                     };
 
                     context.Packages.Add(packageDb);
@@ -49,34 +46,8 @@ namespace ToradexSwLoader.Services
                 {
                     packageDb.Name = package.Name;
                     packageDb.Version = package.Version;
-
-                    context.PackageHardwares.RemoveRange(packageDb.PackageHardwares);
-                    packageDb.PackageHardwares.Clear();
                 }
 
-                foreach (var hwId in package.HardwareIds)
-                {
-                    var hardware = await context.Hardwares
-                        .FirstOrDefaultAsync(h => h.Name == hwId);
-
-                    if (hardware == null)
-                    {
-                        hardware = new Hardware
-                        {
-                            Name = hwId
-                        };
-                        context.Hardwares.Add(hardware);
-                        await context.SaveChangesAsync();
-                    }
-
-                    var packageHardware = new PackageHardware
-                    {
-                        Package = packageDb,
-                        Hardware = hardware
-                    };
-
-                    packageDb.PackageHardwares.Add(packageHardware);
-                }
                 await context.SaveChangesAsync();
             }
 

@@ -178,10 +178,7 @@
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
-        packages = await context.Packages
-                                .Include(p => p.PackageHardwares)
-                                .ThenInclude(ph => ph.Hardware)
-                                .ToListAsync();
+        packages = await context.Packages.ToListAsync();
 
         stacksPackages = await context.StackPackages
        .Include(pp => pp.Stack)

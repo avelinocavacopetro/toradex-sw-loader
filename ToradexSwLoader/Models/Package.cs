@@ -26,16 +26,6 @@ namespace ToradexSwLoader.Models
         [MaxLength(300)]
         public string? Uri { get; set; } = string.Empty;
 
-        [NotMapped]
-        public List<string> HardwareIds { get; set; } = new List<string>();
-
-        public List<PackageHardware> PackageHardwares { get; set; } = new List<PackageHardware>();
-
-        [NotMapped]
-        public List<string> HardwareNames => PackageHardwares?
-            .Select(ph => ph.Hardware.Name)
-            .ToList() ?? new List<string>();
-
         public ICollection<StackPackage> StackPackages { get; set; } = new List<StackPackage>();
     }
 }
