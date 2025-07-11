@@ -1,0 +1,169 @@
+﻿@page "/selectStack/{deviceId:int}/{productId:int}"
+
+<PageTitle>Selecionar Stack</PageTitle>
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject NavigationManager UriHelper
+@inject LoginService LoginService
+@inject SweetAlertService Swal
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
+
+    <h3 class="text-center pb-5">Selecionar Stack</h3>
+
+    <div class="d-flex justify-content-end align-items-center gap-3 pag-bts">
+        <span>@actualPage - @TotalPages de @TotalPages</span>
+        <div class="d-flex gap-2">
+            <button class="btn custom-outline-button btn-lg"
+                    @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                &lt;
+            </button>
+
+            <button class="btn custom-outline-button btn-lg"
+                    @onclick="NextPage" disabled="@(!CanGoNext)">
+                &gt;
+            </button>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        @foreach (var stack in paginatedStacks)
+        {
+            <div class="grid-item" @onclick="() => SelectStackName(stack)">
+                @stack.Name
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int deviceId { get; set; }
+    private Device? selectedDevice = new Device();
+
+    [Parameter]
+    public int productId { get; set; }
+    private Product? selectedProduct = new Product();
+
+    private List<Stack> stacks = new List<Stack>();
+    private List<Stack> paginatedStacks = new List<Stack>();
+    private Stack? selectedStack;
+    private WindowDimension? dimension;
+
+    private int actualPage = 1;
+    private int stacksPerPage = 8;
+    private int TotalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
+
+    private bool isLoading = false;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+        stacksPerPage = dimension.Width <= 1024 ? 8 : stacks.Count;
+
+        UpdatePage();
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+
+        stacks = await context.ProductStacks
+            .Where(dp => dp.ProductId == productId)
+            .Select(dp => dp.Stack!)
+            .Where(p => p.Enabled)
+            .Distinct()
+            .ToListAsync();
+
+        UpdatePage();
+        isLoading = false;
+    }
+
+    private async Task SelectStackName(Stack stack)
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool hasPackages = await context.StackPackages.AnyAsync(sp => sp.StackId == stack.Id);
+        if (!hasPackages)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Esta stack não tem pacotes associados.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        selectedStack = stack;
+        await OnClick();
+    }
+
+    private async Task OnClick()
+    {
+        if (selectedStack != null)
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var userAct = new UserActivity
+            {
+                UserId = LoginService.UserId,
+                ActMessage = $"Selecionou a Stack: Nome: {selectedStack.Name}",
+                ActTimeStamp = DateTime.Now
+            };
+
+            context.UserActivities.Add(userAct);
+            await context.SaveChangesAsync();
+
+            UriHelper.NavigateTo($"/packages/{deviceId}/{productId}/{selectedStack.Id}");
+        }
+    }
+
+    private void UpdatePage()
+    {
+        paginatedStacks = stacks
+                              .Skip((actualPage - 1) * stacksPerPage)
+                              .Take(stacksPerPage)
+                              .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+}

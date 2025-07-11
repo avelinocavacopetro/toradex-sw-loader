@@ -1,0 +1,193 @@
+﻿@page "/selectdevices"
+
+@rendermode InteractiveServer
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject TorizonService TorizonService
+@inject DeviceService DeviceService
+@inject LoginService LoginService
+@inject FilterService FilterService 
+@inject NavigationManager UriHelper
+@inject SweetAlertService Swal
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<PageTitle>Selecionar Equipamento</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
+
+    <h3 class="text-center pb-5">Selecionar Equipamento</h3>
+
+    <div class="d-flex justify-content-end pe-5">
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>@actualPage - @TotalPages de @TotalPages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextPage" disabled="@(!CanGoNext)">
+                    &gt;
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (FilterService.SelectedDevices.Count == 0)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height:50vh;">
+            <div class="alert alert-dark text-center w-75" role="alert">
+                Não existem equipamentos disponíveis.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="grid-container">
+            @foreach (var device in FilterService.SelectedDevices)
+            {
+                <div class="grid-item" @onclick="() => ChooseDevice(device)">
+                    @device.Name
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private List<Device> allDevices = new List<Device>();
+    private List<Device> paginatedDevices = new List<Device>();
+    private Device? selectedDevice;
+    private WindowDimension? dimension;
+
+    private int actualPage = 1;
+    private int devicesPerPage = 8;
+    private int TotalPages => (int)Math.Ceiling((double)allDevices.Count / devicesPerPage);
+    private int OnlineTime => FilterService.OnlineTime;
+
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+        devicesPerPage = dimension.Width <= 1024 ? 8 : allDevices.Count;
+
+        UpdatePage();
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterService.LoadFilterAsync();
+
+        allDevices = FilterService.SelectedDevices.ToList();
+        UpdatePage();
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ChooseDevice(Device device)
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool hasProducts = await context.DeviceProducts.AnyAsync(dp => dp.DeviceId == device.Id);
+
+        if (!hasProducts)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este dispositivo não tem produtos associados.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        selectedDevice = device;
+        await OnClick();
+    }
+
+    private async Task OnClick()
+    {
+        if (selectedDevice != null)
+        {
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Selecionou o dispositivo: Nome: {selectedDevice.Name}",
+                    ActTimeStamp = DateTime.Now
+                };
+
+            context.UserActivities.Add(userAct);
+            await context.SaveChangesAsync();
+
+            UriHelper.NavigateTo($"/selectProduct/{selectedDevice.Id}");
+        }
+        else
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Selecione um dispositivo!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120",
+            });
+        }
+    }
+
+    private void UpdatePage()
+    {
+        paginatedDevices = allDevices
+                                 .Skip((actualPage - 1) * devicesPerPage)
+                                 .Take(devicesPerPage)
+                                 .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+
+    public void Dispose()
+    {
+        FilterService.OnFilterChanged -= UpdatePage;
+    }
+}

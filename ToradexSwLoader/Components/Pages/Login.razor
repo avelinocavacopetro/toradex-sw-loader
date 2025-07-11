@@ -1,0 +1,126 @@
+﻿@page "/"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject NavigationManager UriHelper
+@inject LoginService LoginService
+
+<PageTitle>Log in</PageTitle>
+
+<br />
+<br />
+<br />
+<br />
+
+<div class="d-flex justify-content-center align-items-center">
+    <img class="" style="height: 25vh;" src="images/PetrotecGroup_01.jpg" />
+</div>
+
+<br />
+<br />
+<br />
+<br />
+
+<div class="d-flex justify-content-center full-height pb-2">
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show w-25" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+</div>
+
+
+<div class="d-flex justify-content-center align-items-center full-height">
+    <div class="col-md-4">
+        <section>
+            <div class="form-floating mb-3">
+                <input type="email" class="form-control custom-input" @bind="inputEmail" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                <label for="email" class="form-label">Email</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control custom-input" @bind="inputPassword" autocomplete="current-password" aria-required="true" placeholder="password" />
+                <label for="password" class="form-label">Password</label>
+            </div>
+            <br />
+            <div>
+                <a class="w-100 btn btn-custom btn-lg btn-primary" @onclick="RegisterLogin">Log in</a>
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+
+    .btn-custom{
+        background-color: #0B5120;
+        color: white;
+    }
+
+    .btn-custom:hover {
+            background-color: #073816;
+        color: white;
+    }
+</style>
+
+@code {
+    private string inputEmail = string.Empty;
+    private string inputPassword = string.Empty;
+    private string? errorMessage = string.Empty;
+
+    private bool isLoading = true;
+
+    private async Task RegisterLogin()
+    {
+        if (string.IsNullOrWhiteSpace(inputEmail))
+        {
+            errorMessage = "O campo Email não pode estar vazio";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(inputPassword))
+        {
+            errorMessage = "O campo Password não pode estar vazio";
+            return;
+        }
+
+        if (!inputEmail.EndsWith("@petrotec.com"))
+        {
+            errorMessage = "O email inserido não é petrotec.com";
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == inputEmail);
+
+        if (user == null)
+        {
+            errorMessage = "Email ou password inválidos";
+            return;
+        }
+
+        var loginLog = new LoginLog
+            {
+                UserId = user.Id,
+                Email = inputEmail,
+                LoginTimeStamp = DateTime.Now
+            };
+
+        context.LoginLogs.Add(loginLog);
+        await context.SaveChangesAsync();
+
+        LoginService.SetLogin(user.Id, user.UserName);
+
+        isLoading = false;
+
+        EnterLogin();
+    }
+
+    private void EnterLogin()
+    {
+        if (!isLoading)
+        {
+            UriHelper.NavigateTo($"/home");
+        }
+    }
+}

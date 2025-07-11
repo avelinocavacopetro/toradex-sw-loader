@@ -1,23 +1,130 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.EntityFrameworkCore
+@using ToradexSwLoader.Data
+@using ToradexSwLoader.Services
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject LoginService LoginService
+@inject FinalProductStateService ProductState
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+
+    @if (IsCurrentPage(new[] { "/home", "/manageDevices", "/manageProducts", "/manageStacks", "/managePackages", "/manageFleets",
+        "/manageSecret", "/managePatterns" }))
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
+    else
+    {
+        <div></div>
+    }
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+        @if (IsCurrentPage(new[] { "/" }))
+        {
+            <article class="content px-4">  
+                @Body
+            </article>
+        } else{
+             <div class="top-row px-4 d-flex justify-content-between">
+                <span>@username</span>
+                <span>@currentTime</span>
+                @if (IsCurrentPage(new[] { "/home" }))
+                {
+                    <a href="" class="logout" target="">Terminar Sessão</a>
+                }
+             </div>
+            <article class="content px-4">
+                @Body
+            </article>
+        }
     </main>
 </div>
 
-<div id="blazor-error-ui">
+<div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
 </div>
+
+<style>
+    .logout, .logout:hover {
+        text-decoration: none !important;
+        color: white;
+    }
+
+    span, .logout, .nav-link{
+        font-size: 20px;
+    }
+
+    .top-row {
+        color:white;
+    }
+</style>
+
+
+@code {
+    private string? currentTime;
+    private System.Timers.Timer? timer;
+
+    private string? username;
+
+    protected override Task OnInitializedAsync()
+    {
+        currentTime = DateTime.Now.ToString("HH:mm:ss");
+
+        timer = new System.Timers.Timer(1000);
+        timer.Elapsed += UpdateTime;
+        timer.AutoReset = true;
+        timer.Enabled = true;
+
+        username = LoginService.Username;
+        LoginService.OnLoginChanged += OnLoginChanged;
+
+        return Task.CompletedTask;
+    }
+
+    private void OnLoginChanged()
+    {
+        username = LoginService.Username;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async void UpdateTime(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(async () =>
+        {
+            currentTime = DateTime.Now.ToString("HH:mm:ss");
+
+            using var context = DbContextFactory.CreateDbContext();
+            var latest = await context.FinalProducts
+                .Include(fp => fp.UserPetrotec)
+                .OrderByDescending(fp => fp.CreatedAt)
+                .ToListAsync();
+
+            ProductState.SetFinalProducts(latest);
+
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+        LoginService.OnLoginChanged -= OnLoginChanged;
+    }
+
+    private bool IsCurrentPage(IEnumerable<string> pages)
+    {
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        relativePath = "/" + relativePath.TrimStart('/');
+
+        if (string.IsNullOrEmpty(relativePath) && pages.Contains("/"))
+            return true;
+
+        return pages.Contains(relativePath, StringComparer.OrdinalIgnoreCase);
+    }
+
+}

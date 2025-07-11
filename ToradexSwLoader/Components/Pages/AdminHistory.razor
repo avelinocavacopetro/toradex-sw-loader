@@ -1,0 +1,237 @@
+﻿@page "/adminHistory"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject LoginService LoginService
+@inject TorizonService TorizonService
+@inject FinalProductStateService ProductState
+
+<PageTitle>Histórico de Carregamentos</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <h3 class="text-center">Histórico de Carregamentos</h3>
+
+    <a href="#"
+       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+       class="text-black"
+       style="cursor: @(isLoading ? "default" : "pointer");">
+        <i class="bi bi-arrow-left fs-1"></i>
+    </a>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="d-flex gap-3 align-items-center w-50">
+            <input type="text" class="form-control" placeholder="Pesquisar placa pelo nome..."
+                   @bind="searchTerm" @bind:event="oninput" />
+
+            <label>Início</label>
+            <input type="date" class="form-control w-25" @bind="startDate" max="@today"/>
+
+            <label>Fim</label>
+            <input type="date" class="form-control w-25" @bind="endDate" max="@today"/>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>@actualPage - @TotalPages de @TotalPages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextPage" disabled="@(!CanGoNext)">
+                    &gt;
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center align-items-center">
+        <table class="table mt-5 w-100">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th>Placa</th>
+                    <th class="text-center">Data</th>
+                    <th class="text-center">Colaborador</th>
+                    <th class="text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var finalProduct in paginatedFinalProducts)
+                {
+                    <tr>
+                        <td style="vertical-align: middle;">@finalProduct.Name</td>
+                        <td class="text-center" style="vertical-align: middle;">@finalProduct.CreatedAt</td>
+                        <td class="text-center" style="vertical-align: middle;">@finalProduct.UserPetrotec?.UserName</td>
+                        <td style="text-align: center;">
+                            @GetStatusIcon(finalProduct.Status)
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-center fixed-bottom pb-3 mt-3 text-muted">
+        Última atualização: @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
+    </div>
+}
+
+@code {
+    private List<FinalProduct> finalProducts = new List<FinalProduct>();
+    private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
+
+    private string today = DateTime.Today.ToString("yyyy-MM-dd");
+
+    private int actualPage = 1;
+    private int finalProductsPerPage = 7;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredPages.Count() / finalProductsPerPage);
+
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+    private DateTime? _startDate = DateTime.Now.AddDays(-30);
+    private DateTime? startDate
+    {
+        get => _startDate;
+        set
+        {
+            if (_startDate != value)
+            {
+                _startDate = value;
+                actualPage = 1;
+                UpdatePage();
+            }
+        }
+    }
+
+    private DateTime? _endDate = DateTime.Now;
+    private DateTime? endDate
+    {
+        get => _endDate;
+        set
+        {
+            if (_endDate != value)
+            {
+                _endDate = value;
+                actualPage = 1;
+                UpdatePage();
+            }
+        }
+    }
+
+    private IEnumerable<FinalProduct> FilteredPages =>
+    finalProducts
+        .Where(fp =>
+            (string.IsNullOrWhiteSpace(searchTerm) || fp.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (!startDate.HasValue || fp.CreatedAt.Date >= startDate.Value.Date) &&
+            (!endDate.HasValue || fp.CreatedAt.Date <= endDate.Value.Date)
+        );
+
+    private IEnumerable<FinalProduct> PaginatedActivities =>
+    FilteredPages
+        .Skip((actualPage - 1) * finalProductsPerPage)
+        .Take(finalProductsPerPage);
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+                UpdatePage();
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        ProductState.OnChange += OnProductStateChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        finalProducts = await context.FinalProducts
+            .Where(p => p.Enabled)
+            .Include(fp => fp.UserPetrotec)
+            .OrderByDescending(fp => fp.CreatedAt)
+            .ToListAsync();
+
+        isLoading = false;
+        UpdatePage();
+    }
+
+    private void OnProductStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ProductState.OnChange -= OnProductStateChanged;
+    }
+
+    private MarkupString GetStatusIcon(string status)
+    {
+        var iconHtml = status.ToLower() switch
+        {
+            "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
+            "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
+            "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
+            "notseen" => "<i class='bi bi-eye-slash text-muted fs-4'></i>",         
+            "outdated" => "<i class='bi bi-exclamation-circle text-danger fs-4'></i>", 
+            "updatescheduled" => "<i class='bi bi-calendar-check text-primary fs-4'></i>", 
+            _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
+        };
+
+        return new MarkupString(iconHtml);
+    }
+
+    private void OnFilterChanged(ChangeEventArgs e)
+    {
+        actualPage = 1;
+        UpdatePage();
+    }
+
+    private void UpdatePage()
+    {
+        paginatedFinalProducts = FilteredPages
+            .Skip((actualPage - 1) * finalProductsPerPage)
+            .Take(finalProductsPerPage)
+            .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+}

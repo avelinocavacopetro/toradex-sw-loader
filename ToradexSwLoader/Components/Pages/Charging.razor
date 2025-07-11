@@ -1,0 +1,90 @@
+﻿@page "/charging/{deviceId:int}/{productId:int}/{packageId}/{fleetId}"
+
+@inject NavigationManager UriHelper
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+
+<PageTitle>Carregamento</PageTitle>
+
+<a href="" onclick="history.back()" class="text-black">
+	<i class="bi bi-arrow-left fs-1"></i>
+</a>
+
+@if (!isLoading)
+{
+	<h3 style="text-align: center;">Estado do Carregamento</h3>
+	<h5 style="text-align: center;">Dispositivo: @selectedDevice?.Name</h5>
+	<h5 style="text-align: center;">Software: @selectedPackage?.Name </h5>
+	<h5 style="text-align: center;">Frota: @selectedFleet?.Name</h5>
+}
+
+<br />
+<br />
+<br />
+
+<div class="center-bar">
+	<div class="w-50 pt-5" id="app">
+		<h2 class="pb-3" style="text-align: center;">A carregar...</h2>
+
+		<div class="progress mt-2 mb-3" style="height: 2em;">
+			<div id="progressbar" class="progress-bar progress-bar-striped progress-bar-animated"
+				 style="width: 50%; background-color: #0B5120;"></div>
+		</div>
+
+		<div>
+			<span id="progressLabel" class="text-muted">A instalar software</span>
+		</div>
+
+		<div class="text-center fixed-bottom pb-5">
+			<a class="btn btn-custom btn-lg" @onclick="OnClick">OK</a>
+		</div>
+	</div>
+</div>
+
+<style>
+	.btn-custom {
+		background-color: #0B5120;
+		color: white;
+		width: 20vw;
+		font-size: 1.5rem;
+	}
+
+	.btn-custom:hover {
+		background-color: #073816;
+		color: white;
+	}
+</style>
+
+@code {
+	[Parameter]
+	public int deviceId { get; set; }
+	private Device? selectedDevice = new Device();
+
+	[Parameter]
+	public int productId { get; set; }
+
+	[Parameter]
+	public string packageId { get; set; } = string.Empty;
+	private Package? selectedPackage = new Package();
+
+	[Parameter]
+	public string fleetId { get; set; } = string.Empty;
+	private Fleet? selectedFleet = new Fleet();
+
+	private bool isLoading = true;
+
+	protected override async Task OnInitializedAsync()
+	{
+		using var context = DbContextFactory.CreateDbContext();
+		selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+		selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == packageId);
+		selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
+
+		isLoading = false;
+	}
+
+	private Task OnClick()
+	{
+		UriHelper.NavigateTo($"/customization/{deviceId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(fleetId)}");
+		return Task.CompletedTask;
+	}
+}
