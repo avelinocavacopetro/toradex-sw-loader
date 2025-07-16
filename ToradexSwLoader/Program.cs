@@ -11,9 +11,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContextFactory<AppDbContext>(options => 
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)
-));
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+    options.UseMySQL(connectionString)
+);
 
 // Configurar serviços a serem utilizados
 builder.Services.AddHttpClient<TorizonService>();
@@ -39,7 +39,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+app.MapStaticAssets();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
