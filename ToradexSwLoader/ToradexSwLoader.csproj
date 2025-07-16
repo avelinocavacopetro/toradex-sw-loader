@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 	<EnableScopedCss>true</EnableScopedCss>
@@ -9,11 +9,21 @@
 
   <ItemGroup>
     <PackageReference Include="CurrieTechnologies.Razor.SweetAlert2" Version="5.6.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Analyzers" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Forms" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
+    <PackageReference Include="MySql.EntityFrameworkCore" Version="9.0.3" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.7" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="9.0.7" />
+    <PackageReference Include="System.Security.Permissions" Version="9.0.7" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.7" />
+    <PackageReference Include="System.Windows.Extensions" Version="9.0.7" />
   </ItemGroup>
 
 </Project>
