@@ -227,8 +227,9 @@ else
 
         using var context = DbContextFactory.CreateDbContext();
         products = await context.Products
+            .Where(p => p.Enabled)
             .Include(p => p.DeviceProducts)
-                .ThenInclude(dp => dp.Device)
+            .ThenInclude(dp => dp.Device)
             .Select(p => new Product
             {
                 Id = p.Id,

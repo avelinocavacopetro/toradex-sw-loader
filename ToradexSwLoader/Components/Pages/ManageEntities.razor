@@ -1,11 +1,11 @@
-﻿@page "/manageStacks"
+﻿@page "/manageEntities"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 
-<PageTitle>Gerir Stacks</PageTitle>
+<PageTitle>Gerir Entidades</PageTitle>
 
 @if (isLoading)
 {
@@ -22,29 +22,37 @@ else if (isAdding || isEditing)
 {
     <div class="center-edit">
         <div class="edit-form">
-            <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome da Stack</label>
-            <input type="text" @bind="stackName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome da Entidade</label>
+            <input type="text" @bind="entityName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Observações</label>
+            <textarea @bind="observations"
+                      class="form-control w-100 mx-auto"
+                      style="font-size: 1.2rem; text-align: center;"
+                      rows="2"
+                      placeholder="Insira uma observação...">
+            </textarea>
 
             <br />
-            <h4>Selecionar Produto(s):</h4>
+            <h4>Selecionar Frota(s):</h4>
 
             <table class="table mt-3 w-100">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th>Produto</th>
+                        <th>Frota</th>
                         <th class="text-center">Selecionar</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var product in FilterService.SelectedProducts)
+                    @foreach (var fleet in FilterService.SelectedFleets)
                     {
                         <tr class="table-light">
-                            <td>@product.Name</td>
+                            <td>@fleet.Name</td>
                             <td>
                                 <div class="form-check d-flex justify-content-center">
-                                    <input type="checkbox" class="largerCheckbox" id="toggle-@product.Id"
-                                           @onchange="(e => ToggleProduct(e, product))"
-                                           checked="@selectedProducts.Any(p => p.Id == product.Id)" />
+                                    <input type="checkbox" class="largerCheckbox" id="toggle-@fleet.Id"
+                                           @onchange="(e => ToggleFleet(e, fleet))"
+                                           checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
                                 </div>
                             </td>
                         </tr>
@@ -54,7 +62,7 @@ else if (isAdding || isEditing)
 
             <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
                 <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
-                        @onclick="isAdding? SaveStack : EditStack">
+                        @onclick="isAdding? SaveEntity : EditEntity">
                     Salvar
                 </button>
                 <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
@@ -75,7 +83,7 @@ else
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="w-50">
-                        <input type="text" class="form-control" placeholder="Pesquisar stack pelo nome..."
+                        <input type="text" class="form-control" placeholder="Pesquisar entidade pelo nome..."
                                @bind="searchTerm" @bind:event="oninput" />
                     </div>
 
@@ -98,7 +106,7 @@ else
                 <div class="pb-2 pt-4" style="text-align: right;">
                     <button class="btn btn-color btn-lg"
                             style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
-                            @onclick="AddStack">
+                            @onclick="AddEntity">
                         +
                     </button>
                 </div>
@@ -107,44 +115,44 @@ else
                     <table class="table mt-3 w-100">
                         <thead style="background-color: #0c6527; color: white;">
                             <tr>
-                                <th>Nome da Stack</th>
-                                <th>Produtos associados</th>
+                                <th>Nome da Entidade</th>
+                                <th>Frotas associadas</th>
                                 <th class="text-center">Ativo</th>
                                 <th></th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var stack in PaginatedStacks)
+                            @foreach (var entity in PaginatedEntities)
                             {
                                 <tr class="table-light">
-                                    <td>@stack.Name</td>
+                                    <td>@entity.Name</td>
                                     <td class="align-middle">
-                                        @if (stack.ProductStacks?.Any() == true)
+                                        @if (entity.EntityFleets?.Any() == true)
                                         {
                                             <ul class="mb-0 ps-3">
-                                                @foreach (var ps in stack.ProductStacks)
+                                                @foreach (var ef in entity.EntityFleets)
                                                 {
-                                                    <li style="list-style-type: none;">@ps.Product?.Name</li>
+                                                    <li style="list-style-type: none;">@ef.Fleet?.Name</li>
                                                 }
                                             </ul>
                                         }
                                         else
                                         {
-                                            <span class="text-muted" style="font-size:18px;">Sem produtos</span>
+                                            <span class="text-muted" style="font-size:18px;">Sem Frotas</span>
                                         }
                                     </td>
                                     <td>
                                         <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" class="largerCheckbox" id="toggle-@stack.Id"
-                                                   @onchange="(e => ToggleStack(e, stack))"
-                                                   checked="@selectedStacks.Any(s => s.Id == stack.Id)" />
+                                            <input type="checkbox" class="largerCheckbox" id="toggle-@entity.Id"
+                                                   @onchange="(e => ToggleEntity(e, entity))"
+                                                   checked="@selectedEntities.Any(e => e.Id == entity.Id)" />
                                         </div>
                                     </td>
                                     <td class="text-center">
                                         <button class="btn btn-sm"
                                                 title="Editar"
-                                                @onclick="() => EditStack(stack.Id)"
+                                                @onclick="() => EditEntity(entity.Id)"
                                                 style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                             <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                         </button>
@@ -152,7 +160,7 @@ else
                                     <td class="text-center">
                                         <button class="btn btn-danger btn-sm"
                                                 title="Desativar"
-                                                @onclick="() => DisableStack(stack.Id)"
+                                                @onclick="() => DisableEntity(entity.Id)"
                                                 style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
                                             <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                         </button>
@@ -172,18 +180,19 @@ else
 }
 
 @code {
-    private List<Stack> stacks = new List<Stack>();
-    private List<Stack> selectedStacks = new List<Stack>();
-    private List<Product> selectedProducts = new List<Product>();
-    private List<Stack> paginatedStacks = new List<Stack>();
-    private Stack? selectedStack = new Stack();
+    private List<Entity> entities = new List<Entity>();
+    private List<Entity> selectedEntities = new List<Entity>();
+    private List<Fleet> selectedFleets = new List<Fleet>();
+    private List<Entity> paginatedEntities = new List<Entity>();
+    private Entity? selectedEntity = new Entity();
     private WindowDimension dimension = new WindowDimension();
 
-    private string stackName = string.Empty;
+    private string entityName = string.Empty;
+    private string observations = string.Empty;
 
     private int actualPage = 1;
-    private int stacksPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredStacks.Count() / stacksPerPage);
+    private int entitiesPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredEntities.Count() / entitiesPerPage);
 
     private bool isLoading = true;
     private bool isAdding = false;
@@ -205,15 +214,15 @@ else
         }
     }
 
-    private IEnumerable<Stack> FilteredStacks =>
+    private IEnumerable<Entity> FilteredEntities =>
     string.IsNullOrWhiteSpace(searchTerm)
-        ? stacks
-        : stacks.Where(s => s.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        ? entities
+        : entities.Where(e => e.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<Stack> PaginatedStacks =>
-    FilteredStacks
-        .Skip((actualPage - 1) * stacksPerPage)
-        .Take(stacksPerPage);
+    private IEnumerable<Entity> PaginatedEntities =>
+    FilteredEntities
+        .Skip((actualPage - 1) * entitiesPerPage)
+        .Take(entitiesPerPage);
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
@@ -228,113 +237,119 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
-        stacks = await context.Stacks
-            .Where(s => s.Enabled)
-            .Include(s => s.ProductStacks)
-            .ThenInclude(p => p.Product)
-            .Select(s => new Stack
+        entities = await context.Entities
+            .Where(e => e.Enabled)
+            .Include(e => e.EntityFleets)
+            .ThenInclude(f => f.Fleet)
+            .Select(e => new Entity
             {
-                Id = s.Id,
-                Name = s.Name,
-                ProductStacks = s.ProductStacks.Select(ps => new ProductStack
+                Id = e.Id,
+                Name = e.Name,
+                EntityFleets = e.EntityFleets.Select(ef => new EntityFleet
                 {
-                    ProductId = ps.ProductId,
-                    StackId = ps.StackId,
-                    Product = new Product
+                    EntityId = ef.EntityId,
+                    FleetId = ef.FleetId,
+                    Fleet = new Fleet
                     {
-                        Id = ps.Product.Id,
-                        Name = ps.Product.Name
+                        Id = ef.Fleet.Id,
+                        Name = ef.Fleet.Name,
+                        CreatedAt = ef.Fleet.CreatedAt,
+                        FleetType = ef.Fleet.FleetType,
+                        Expression = ef.Fleet.Expression
                     }
                 }).ToList()
             })
             .ToListAsync();
 
-        selectedStacks = FilterService.SelectedStacks;
-        selectedProducts = new List<Product>(FilterService.SelectedProducts);
+        selectedEntities = FilterService.SelectedEntities;
+        selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
 
         UpdatePage();
 
         isLoading = false;
     }
 
-    private void ToggleStack(ChangeEventArgs e, Stack stack)
+    private void ToggleEntity(ChangeEventArgs e, Entity entity)
     {
         var isChecked = e.Value is bool b && b;
 
         if (isChecked)
         {
-            if (!selectedStacks.Any(s => s.Id == stack.Id))
-                selectedStacks.Add(stack);
+            if (!selectedEntities.Any(e => e.Id == entity.Id))
+                selectedEntities.Add(entity);
         }
         else
         {
-            selectedStacks.RemoveAll(s => s.Id == stack.Id);
+            selectedEntities.RemoveAll(e => e.Id == entity.Id);
         }
     }
 
-    private void AddStack()
+    private void AddEntity()
     {
-        stackName = string.Empty;
-        selectedProducts.Clear();
-        selectedStack = null;
+        entityName = string.Empty;
+        observations = string.Empty;
+        selectedFleets.Clear();
+        selectedEntity = null;
         isAdding = true;
         isEditing = false;
     }
 
-    private async Task EditStack(int id)
+    private async Task EditEntity(int id)
     {
         isEditing = true;
         isAdding = false;
 
         using var context = DbContextFactory.CreateDbContext();
-        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == id);
+        selectedEntity = await context.Entities.FirstOrDefaultAsync(e => e.Id == id);
 
-        if (selectedStack != null)
+        if (selectedEntity != null)
         {
-            stackName = selectedStack.Name;
+            entityName = selectedEntity.Name;
+            observations = selectedEntity.Observation;
 
-            selectedProducts = await context.ProductStacks
-                .Where(ps => ps.StackId == id)
-                .Select(ps => ps.Product!)
+            selectedFleets = await context.EntityFleets
+                .Where(ef => ef.EntityId == id)
+                .Select(ef => ef.Fleet!)
                 .ToListAsync();
         }
     }
 
-    private async Task EditStack()
+    private async Task EditEntity()
     {
-        if (selectedStack == null) return;
+        if (selectedEntity == null) return;
 
         using var context = DbContextFactory.CreateDbContext();
 
-        var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == selectedStack.Id);
-        if (stackDb == null) return;
+        var entityDb = await context.Entities.FirstOrDefaultAsync(e => e.Id == selectedEntity.Id);
+        if (entityDb == null) return;
 
-        stackDb.Name = stackName;
+        entityDb.Name = entityName;
+        entityDb.Observation = observations;
 
-        var oldProductStacks = context.ProductStacks.Where(ps => ps.StackId == stackDb.Id);
-        context.ProductStacks.RemoveRange(oldProductStacks);
+        var oldEntityFleets = context.EntityFleets.Where(ef => ef.EntityId == entityDb.Id);
+        context.EntityFleets.RemoveRange(oldEntityFleets);
 
-        foreach (var product in selectedProducts)
+        foreach (var fleet in selectedFleets)
         {
-            context.ProductStacks.Add(new ProductStack
+            context.EntityFleets.Add(new EntityFleet
             {
-                ProductId = product.Id,
-                StackId = stackDb.Id
+                EntityId = entityDb.Id,
+                FleetId = fleet.Id
             });
         }
 
         await context.SaveChangesAsync();
 
-        var localStack = stacks.FirstOrDefault(s => s.Id == stackDb.Id);
-        if (localStack != null)
+        var localEntity = entities.FirstOrDefault(e => e.Id == entityDb.Id);
+        if (localEntity != null)
         {
-            localStack.Name = stackDb.Name;
+            localEntity.Name = entityDb.Name;
 
-            localStack.ProductStacks = selectedProducts.Select(p => new ProductStack
+            localEntity.EntityFleets = selectedFleets.Select(f => new EntityFleet
             {
-                StackId = stackDb.Id,
-                ProductId = p.Id,
-                Product = p
+                EntityId = entityDb.Id,
+                FleetId = f.Id,
+                Fleet = f
             }).ToList();
         }
 
@@ -346,34 +361,34 @@ else
 
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Stack editada com sucesso!",
+            Title = "Entidade editada com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
     }
 
-    private void ToggleProduct(ChangeEventArgs e, Product product)
+    private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
     {
         var isChecked = e.Value is bool b && b;
 
         if (isChecked)
         {
-            if (!selectedProducts.Any(p => p.Id == product.Id))
-                selectedProducts.Add(product);
+            if (!selectedFleets.Any(f => f.Id == fleet.Id))
+                selectedFleets.Add(fleet);
         }
         else
         {
-            selectedProducts.RemoveAll(p => p.Id == product.Id);
+            selectedFleets.RemoveAll(f => f.Id == fleet.Id);
         }
     }
 
     private async Task ApplyFilter()
     {
-        if (selectedStacks.Count == 0)
+        if (selectedEntities.Count == 0)
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos uma stack!",
+                Title = "Por favor selecione pelo menos uma entidade!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -381,7 +396,7 @@ else
         }
         else
         {
-            await FilterService.ApplyStacksFilter(new List<Stack>(selectedStacks));
+            await FilterService.ApplyEntitiesFilter(new List<Entity>(selectedEntities));
 
             await Swal.FireAsync(new SweetAlertOptions
             {
@@ -392,9 +407,9 @@ else
         }
     }
 
-    private async Task SaveStack()
+    private async Task SaveEntity()
     {
-        if (string.IsNullOrWhiteSpace(stackName))
+        if (string.IsNullOrWhiteSpace(entityName))
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
@@ -407,61 +422,54 @@ else
 
         using var context = DbContextFactory.CreateDbContext();
 
-        bool exists = await context.Stacks.AnyAsync(s => s.Name.ToLower() == stackName.Trim().ToLower());
+        bool exists = await context.Entities.AnyAsync(e => e.Name.ToLower() == entityName.Trim().ToLower());
 
         if (exists)
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Esta stack já existe!",
+                Title = "Esta entidade já existe!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
         }
 
-        var newStack = new Stack
+        var newEntity = new Entity
         {
-            Name = stackName,
+            Name = entityName,
+            Observation = observations,
             Enabled = true
         };
 
-        context.Stacks.Add(newStack);
+        context.Entities.Add(newEntity);
         await context.SaveChangesAsync();
 
-        foreach (var product in selectedProducts)
+        foreach (var fleet in selectedFleets)
         {
-            context.ProductStacks.Add(new ProductStack
+            context.EntityFleets.Add(new EntityFleet
             {
-                StackId = newStack.Id,
-                ProductId = product.Id
+                EntityId = newEntity.Id,
+                FleetId = fleet.Id
             });
         }
 
         await context.SaveChangesAsync();
 
-        newStack.ProductStacks = selectedProducts.Select(p => new ProductStack
+        entities.Add(newEntity);
+
+        newEntity.EntityFleets = selectedFleets.Select(f => new EntityFleet
         {
-            StackId = newStack.Id,
-            ProductId = p.Id,
-            Product = p
-        }).ToList();
-
-
-        stacks.Add(newStack);
-
-        newStack.ProductStacks = selectedProducts.Select(p => new ProductStack
-        {
-            Product = p,
-            StackId = newStack.Id,
-            ProductId = p.Id
+            EntityId = newEntity.Id,
+            FleetId = f.Id,
+            Fleet = f
         }).ToList();
 
         CancelAdd();
 
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Stack adicionada com sucesso!",
+            Title = "Entidade adicionada com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
@@ -470,24 +478,26 @@ else
     private void CancelAdd()
     {
         isAdding = false;
-        stackName = string.Empty;
-        selectedProducts.Clear();
-        selectedStack = null;
+        entityName = string.Empty;
+        observations = string.Empty;
+        selectedFleets.Clear();
+        selectedEntity = null;
     }
 
     private void CancelEdit()
     {
         isEditing = false;
-        stackName = string.Empty;
-        selectedProducts.Clear();
-        selectedStack = null;
+        entityName = string.Empty;
+        observations = string.Empty;
+        selectedFleets.Clear();
+        selectedEntity = null;
     }
 
-    private async Task DisableStack(int id)
+    private async Task DisableEntity(int id)
     {
         var result = await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Deseja desativar esta stack?",
+            Title = "Deseja desativar esta entidade?",
             Icon = SweetAlertIcon.Warning,
             ShowCancelButton = true,
             ConfirmButtonText = "Continuar",
@@ -500,15 +510,17 @@ else
             isLoading = true;
 
             using var context = DbContextFactory.CreateDbContext();
-            var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == id);
+            var entityDb = await context.Entities.FirstOrDefaultAsync(e => e.Id == id);
 
-            if (stackDb != null)
+            if (entityDb != null)
             {
-                stackDb.Enabled = false;
+                entityDb.Enabled = false;
                 await context.SaveChangesAsync();
             }
 
-            stacks.RemoveAll(s => s.Id == id);
+            entities.RemoveAll(e => e.Id == id);
+
+            UpdatePage();
 
             isLoading = false;
             StateHasChanged();
@@ -517,9 +529,9 @@ else
 
     private void UpdatePage()
     {
-        paginatedStacks = FilteredStacks
-                                 .Skip((actualPage - 1) * stacksPerPage)
-                                 .Take(stacksPerPage)
+        paginatedEntities = FilteredEntities
+                                 .Skip((actualPage - 1) * entitiesPerPage)
+                                 .Take(entitiesPerPage)
                                  .ToList();
     }
 
