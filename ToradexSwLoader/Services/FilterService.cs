@@ -20,6 +20,7 @@ namespace ToradexSwLoader.Services
         public List<Device> SelectedDevices { get; private set; } = new List<Device>();
         public List<Stack> SelectedStacks { get; private set; } = new List<Stack>();
         public List<Pattern> SelectedPatterns { get; private set; } = new List<Pattern>();
+        public List<Entity> SelectedEntities { get; private set; } = new List<Entity>();
 
         public FilterService(IDbContextFactory<AppDbContext> contextFactory)
         {
@@ -54,6 +55,9 @@ namespace ToradexSwLoader.Services
                 SelectedPatterns = string.IsNullOrWhiteSpace(filter.SelectedPatternsJson)
                                  ? new List<Pattern>()
                                  : JsonSerializer.Deserialize<List<Pattern>>(filter.SelectedPatternsJson) ?? new List<Pattern>();
+                SelectedEntities = string.IsNullOrWhiteSpace(filter.SelectedEntitiesJson)
+                                 ? new List<Entity>()
+                                 : JsonSerializer.Deserialize<List<Entity>>(filter.SelectedEntitiesJson) ?? new List<Entity>();
             }
         }
         
@@ -76,10 +80,17 @@ namespace ToradexSwLoader.Services
             filter.SelectedDevicesJson = JsonSerializer.Serialize(SelectedDevices);
             filter.SelectedStacksJson = JsonSerializer.Serialize(SelectedStacks);
             filter.SelectedPatternsJson = JsonSerializer.Serialize(SelectedPatterns);
+            filter.SelectedEntitiesJson = JsonSerializer.Serialize(SelectedEntities);
             filter.LastUpdated = DateTime.Now;
 
             await context.SaveChangesAsync();
             OnFilterChanged?.Invoke();
+        }
+
+        private async Task ApplyFilterAsync<T>(Action<List<T>> setFilter, List<T> value)
+        {
+            setFilter(value);
+            await SaveFilterAsync();
         }
 
         public async Task ApplyPackageFilter(string? name, string? version)
@@ -89,34 +100,23 @@ namespace ToradexSwLoader.Services
             await SaveFilterAsync();
         }
 
-        public async Task ApplyFleetFilter(List<Fleet> fleetNames)
-        {
-            SelectedFleets = fleetNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyFleetFilter(List<Fleet> fleets) =>
+            ApplyFilterAsync(f => SelectedFleets = f, fleets);
 
-        public async Task ApplyProductsFilter(List<Product> productsNames)
-        {
-            SelectedProducts = productsNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyProductsFilter(List<Product> products) =>
+            ApplyFilterAsync(p => SelectedProducts = p, products);
 
-        public async Task ApplyDevicesFilter(List<Device> devicesNames)
-        {
-            SelectedDevices = devicesNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyDevicesFilter(List<Device> devices) =>
+            ApplyFilterAsync(d => SelectedDevices = d, devices);
 
-        public async Task ApplyStacksFilter(List<Stack> stacksNames)
-        {
-            SelectedStacks = stacksNames;
-            await SaveFilterAsync();
-        }
-        public async Task ApplyPatternsFilter(List<Pattern> patternsNames)
-        {
-            SelectedPatterns = patternsNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyStacksFilter(List<Stack> stacks) =>
+            ApplyFilterAsync(s => SelectedStacks = s, stacks);
+
+        public Task ApplyPatternsFilter(List<Pattern> patterns) =>
+            ApplyFilterAsync(p => SelectedPatterns = p, patterns);
+
+        public Task ApplyEntitiesFilter(List<Entity> entities) =>
+            ApplyFilterAsync(e => SelectedEntities = e, entities);
 
         public async Task ApplyTimeFilter(int newTime)
         {

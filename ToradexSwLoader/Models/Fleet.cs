@@ -21,5 +21,7 @@ namespace ToradexSwLoader.Models
         [Required]
         public string FleetType { get; set; } = string.Empty;
         public string? Expression { get; set; }
+
+        public ICollection<EntityFleet> EntityFleets { get; set; } = new List<EntityFleet>();
     }
 }

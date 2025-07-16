@@ -20,6 +20,10 @@ namespace ToradexSwLoader.Models
         public string ActMessage { get; set; } = string.Empty;
 
         [Required]
+        [MaxLength(30)]
+        public string ActType { get; set; } = string.Empty;
+
+        [Required]
         public DateTime ActTimeStamp { get; set; }
     }
 }

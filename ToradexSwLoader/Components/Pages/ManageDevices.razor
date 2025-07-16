@@ -183,7 +183,7 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
-        devices = await context.Devices.ToListAsync();
+        devices = await context.Devices.Where(d => d.Enabled).ToListAsync();
 
         selectedDevices = FilterService.SelectedDevices;
         onlineTime = FilterService.OnlineTime;
