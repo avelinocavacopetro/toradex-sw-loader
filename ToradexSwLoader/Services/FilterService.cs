@@ -29,6 +29,11 @@ namespace ToradexSwLoader.Services
 
         public async Task LoadFilterAsync()
         {
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
             using var context = _contextFactory.CreateDbContext();
             var filter = await context.GlobalFilters.FirstOrDefaultAsync();
             if(filter != null)
@@ -40,24 +45,24 @@ namespace ToradexSwLoader.Services
 
                 SelectedFleets = string.IsNullOrWhiteSpace(filter.SelectedFleetsJson)
                                  ? new List<Fleet>()
-                                 : JsonSerializer.Deserialize<List<Fleet>>(filter.SelectedFleetsJson) ?? new List<Fleet>();
+                                 : JsonSerializer.Deserialize<List<Fleet>>(filter.SelectedFleetsJson, options) ?? new List<Fleet>();
 
                 SelectedProducts = string.IsNullOrWhiteSpace(filter.SelectedProductsJson)
                                  ? new List<Product>()
-                                 : JsonSerializer.Deserialize<List<Product>>(filter.SelectedProductsJson) ?? new List<Product>();
+                                 : JsonSerializer.Deserialize<List<Product>>(filter.SelectedProductsJson, options) ?? new List<Product>();
 
                 SelectedDevices = string.IsNullOrWhiteSpace(filter.SelectedDevicesJson)
                                  ? new List<Device>()
-                                 : JsonSerializer.Deserialize<List<Device>>(filter.SelectedDevicesJson) ?? new List<Device>();
+                                 : JsonSerializer.Deserialize<List<Device>>(filter.SelectedDevicesJson, options) ?? new List<Device>();
                 SelectedStacks = string.IsNullOrWhiteSpace(filter.SelectedStacksJson)
                                  ? new List<Stack>()
-                                 : JsonSerializer.Deserialize<List<Stack>>(filter.SelectedStacksJson) ?? new List<Stack>();
+                                 : JsonSerializer.Deserialize<List<Stack>>(filter.SelectedStacksJson, options) ?? new List<Stack>();
                 SelectedPatterns = string.IsNullOrWhiteSpace(filter.SelectedPatternsJson)
                                  ? new List<Pattern>()
-                                 : JsonSerializer.Deserialize<List<Pattern>>(filter.SelectedPatternsJson) ?? new List<Pattern>();
+                                 : JsonSerializer.Deserialize<List<Pattern>>(filter.SelectedPatternsJson, options) ?? new List<Pattern>();
                 SelectedEntities = string.IsNullOrWhiteSpace(filter.SelectedEntitiesJson)
                                  ? new List<Entity>()
-                                 : JsonSerializer.Deserialize<List<Entity>>(filter.SelectedEntitiesJson) ?? new List<Entity>();
+                                 : JsonSerializer.Deserialize<List<Entity>>(filter.SelectedEntitiesJson, options) ?? new List<Entity>();
             }
         }
         
@@ -71,16 +76,22 @@ namespace ToradexSwLoader.Services
                 context.GlobalFilters.Add(filter);
             }
 
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                WriteIndented = false
+            };
+
             filter.OnlineTime = OnlineTime;
             filter.RefreshTime = RefreshTime;
             filter.SelectedPackage = SelectedPackage;
             filter.Version = Version;
-            filter.SelectedFleetsJson = JsonSerializer.Serialize(SelectedFleets);
-            filter.SelectedProductsJson = JsonSerializer.Serialize(SelectedProducts);
-            filter.SelectedDevicesJson = JsonSerializer.Serialize(SelectedDevices);
-            filter.SelectedStacksJson = JsonSerializer.Serialize(SelectedStacks);
-            filter.SelectedPatternsJson = JsonSerializer.Serialize(SelectedPatterns);
-            filter.SelectedEntitiesJson = JsonSerializer.Serialize(SelectedEntities);
+            filter.SelectedFleetsJson = JsonSerializer.Serialize(SelectedFleets, options);
+            filter.SelectedProductsJson = JsonSerializer.Serialize(SelectedProducts, options);
+            filter.SelectedDevicesJson = JsonSerializer.Serialize(SelectedDevices, options);
+            filter.SelectedStacksJson = JsonSerializer.Serialize(SelectedStacks, options);
+            filter.SelectedPatternsJson = JsonSerializer.Serialize(SelectedPatterns, options);
+            filter.SelectedEntitiesJson = JsonSerializer.Serialize(SelectedEntities, options);
             filter.LastUpdated = DateTime.Now;
 
             await context.SaveChangesAsync();

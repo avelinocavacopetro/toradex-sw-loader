@@ -21,7 +21,7 @@
 else if (isAdding || isEditing)
 {
     <div class="center-edit">
-        <div class="edit-form">
+        <div class="edit-form" style="height: 600px; overflow-y: auto;">
             <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome da Entidade</label>
             <input type="text" @bind="entityName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
 
@@ -44,7 +44,7 @@ else if (isAdding || isEditing)
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var fleet in FilterService.SelectedFleets)
+                    @foreach (var fleet in PaginatedFleets)
                     {
                         <tr class="table-light">
                             <td>@fleet.Name</td>
@@ -59,6 +59,21 @@ else if (isAdding || isEditing)
                     }
                 </tbody>
             </table>
+
+            <div class="d-flex justify-content-between align-items-center gap-3">
+                <span>@currentFleetPage - @TotalFleetPages de @TotalFleetPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevFleetPage" disabled="@(currentFleetPage == 1)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextFleetPage" disabled="@(currentFleetPage == TotalFleetPages)">
+                        &gt;
+                    </button>
+                </div>
+            </div>
 
             <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
                 <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
@@ -126,7 +141,7 @@ else
                             @foreach (var entity in PaginatedEntities)
                             {
                                 <tr class="table-light">
-                                    <td>@entity.Name</td>
+                                    <td style="vertical-align: middle;">@entity.Name</td>
                                     <td class="align-middle">
                                         @if (entity.EntityFleets?.Any() == true)
                                         {
@@ -142,14 +157,14 @@ else
                                             <span class="text-muted" style="font-size:18px;">Sem Frotas</span>
                                         }
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         <div class="form-check d-flex justify-content-center">
                                             <input type="checkbox" class="largerCheckbox" id="toggle-@entity.Id"
                                                    @onchange="(e => ToggleEntity(e, entity))"
                                                    checked="@selectedEntities.Any(e => e.Id == entity.Id)" />
                                         </div>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center" style="vertical-align: middle;">
                                         <button class="btn btn-sm"
                                                 title="Editar"
                                                 @onclick="() => EditEntity(entity.Id)"
@@ -157,7 +172,7 @@ else
                                             <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                         </button>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center" style="vertical-align: middle;">
                                         <button class="btn btn-danger btn-sm"
                                                 title="Desativar"
                                                 @onclick="() => DisableEntity(entity.Id)"
@@ -194,6 +209,10 @@ else
     private int entitiesPerPage = 5;
     private int TotalPages => (int)Math.Ceiling((double)FilteredEntities.Count() / entitiesPerPage);
 
+    private int currentFleetPage = 1;
+    private int fleetsPerPage = 3;
+    private int TotalFleetPages => (int)Math.Ceiling((double)FilterService.SelectedFleets.Count / fleetsPerPage);
+
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
@@ -224,6 +243,11 @@ else
         .Skip((actualPage - 1) * entitiesPerPage)
         .Take(entitiesPerPage);
 
+    private IEnumerable<Fleet> PaginatedFleets =>
+    FilterService.SelectedFleets
+        .Skip((currentFleetPage - 1) * fleetsPerPage)
+        .Take(fleetsPerPage);
+
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
         dimension = newDimension;
@@ -237,29 +261,21 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
+
+        var filteredFleetsIds = FilterService.SelectedFleets.Select(f => f.Id).ToHashSet();
+
         entities = await context.Entities
             .Where(e => e.Enabled)
             .Include(e => e.EntityFleets)
             .ThenInclude(f => f.Fleet)
-            .Select(e => new Entity
-            {
-                Id = e.Id,
-                Name = e.Name,
-                EntityFleets = e.EntityFleets.Select(ef => new EntityFleet
-                {
-                    EntityId = ef.EntityId,
-                    FleetId = ef.FleetId,
-                    Fleet = new Fleet
-                    {
-                        Id = ef.Fleet.Id,
-                        Name = ef.Fleet.Name,
-                        CreatedAt = ef.Fleet.CreatedAt,
-                        FleetType = ef.Fleet.FleetType,
-                        Expression = ef.Fleet.Expression
-                    }
-                }).ToList()
-            })
             .ToListAsync();
+
+        foreach (var entity in entities)
+        {
+            entity.EntityFleets = entity.EntityFleets
+                .Where(ef => ef.Fleet != null && filteredFleetsIds.Contains(ef.Fleet.Id))
+                .ToList();
+        }
 
         selectedEntities = FilterService.SelectedEntities;
         selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
@@ -515,10 +531,20 @@ else
             if (entityDb != null)
             {
                 entityDb.Enabled = false;
+
+                var relations = await context.EntityFleets
+                    .Where(ef => ef.EntityId == id)
+                    .ToListAsync();
+
+                context.EntityFleets.RemoveRange(relations);
+
                 await context.SaveChangesAsync();
             }
 
             entities.RemoveAll(e => e.Id == id);
+
+            FilterService.SelectedEntities.RemoveAll(e => e.Id == id);
+            await FilterService.SaveFilterAsync();
 
             UpdatePage();
 
@@ -551,5 +577,17 @@ else
             actualPage--;
             UpdatePage();
         }
+    }
+
+    private void PrevFleetPage()
+    {
+        if (currentFleetPage > 1)
+            currentFleetPage--;
+    }
+
+    private void NextFleetPage()
+    {
+        if (currentFleetPage < TotalFleetPages)
+            currentFleetPage++;
     }
 }

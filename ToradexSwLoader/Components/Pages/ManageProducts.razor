@@ -118,7 +118,7 @@ else
                             @foreach (var product in PaginatedProducts)
                             {
                                 <tr class="table-light">
-                                    <td>@product.Name</td>
+                                    <td style="vertical-align: middle;">@product.Name</td>
                                     <td class="align-middle">
                                         @if (product.DeviceProducts?.Any() == true)
                                         {
@@ -134,14 +134,14 @@ else
                                             <span class="text-muted" style="font-size:18px;">Sem dispositivos</span>
                                         }
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         <div class="form-check d-flex justify-content-center">
                                             <input type="checkbox" class="largerCheckbox" id="toggle-@product.Id"
                                                    @onchange="(e => ToggleProduct(e, product))"
                                                    checked="@selectedProducts.Any(p => p.Id == product.Id)" />
                                         </div>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center" style="vertical-align: middle;">
                                         <button class="btn btn-sm"
                                                 title="Editar"
                                                 @onclick="() => EditProduct(product.Id)"
@@ -149,7 +149,7 @@ else
                                             <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
                                         </button>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center" style="vertical-align: middle;">
                                         <button class="btn btn-danger btn-sm"
                                                 title="Desativar"
                                                 @onclick="() => DisableProduct(product.Id)"
@@ -226,30 +226,24 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
+
+        var filteredDevicesIds = FilterService.SelectedDevices.Select(d => d.Id).ToHashSet();
+
         products = await context.Products
             .Where(p => p.Enabled)
             .Include(p => p.DeviceProducts)
             .ThenInclude(dp => dp.Device)
-            .Select(p => new Product
-            {
-                Id = p.Id,
-                Name = p.Name,
-                DeviceProducts = p.DeviceProducts.Select(dp => new DeviceProduct
-                {
-                    DeviceId = dp.DeviceId,
-                    ProductId = dp.ProductId,
-                    Device = new Device
-                    {
-                        Id = dp.Device.Id,
-                        Name = dp.Device.Name
-                    }
-                }).ToList()
-            })
             .ToListAsync();
 
+        foreach(var product in products)
+        {
+            product.DeviceProducts = product.DeviceProducts
+                .Where(dp => dp.Device != null && filteredDevicesIds.Contains(dp.Device.Id))
+                .ToList();
+        }
 
         selectedProducts = FilterService.SelectedProducts;
-        selectedDevices = new List<Device>(FilterService.SelectedDevices);
+        selectedDevices = new List<Device>(FilterService.SelectedDevices.Where(d => d.Enabled));
 
         UpdatePage();
 
@@ -474,7 +468,7 @@ else
         selectedProduct = null;
     }
 
-    private async Task DisableProduct(int productId)
+    private async Task DisableProduct(int id)
     {
         var result = await Swal.FireAsync(new SweetAlertOptions
             {
@@ -491,15 +485,25 @@ else
             isLoading = true;
 
             using var context = DbContextFactory.CreateDbContext();
-            var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+            var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == id);
 
             if (productDb != null)
             {
                 productDb.Enabled = false;
+
+                var relations = await context.ProductStacks
+                    .Where(ps => ps.ProductId == id)
+                    .ToListAsync();
+
+                context.ProductStacks.RemoveRange(relations);
+
                 await context.SaveChangesAsync();
             }
 
-            products.RemoveAll(p => p.Id == productId);
+            products.RemoveAll(p => p.Id == id);
+
+            FilterService.SelectedProducts.RemoveAll(p => p.Id == id);
+            await FilterService.SaveFilterAsync();
 
             isLoading = false;
             StateHasChanged();
