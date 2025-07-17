@@ -89,9 +89,8 @@ else
         selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
 
         products = await context.DeviceProducts
-            .Where(dp => dp.DeviceId == deviceId)
+            .Where(dp => dp.DeviceId == deviceId && dp.Product.Enabled)
             .Select(dp => dp.Product!)
-            .Where(p => p.Enabled)
             .Distinct()
             .ToListAsync();
 

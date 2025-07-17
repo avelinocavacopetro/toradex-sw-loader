@@ -260,17 +260,6 @@ else
 
     private async Task ApplyFilter()
     {
-        // if (onlineTime < 1 || onlineTime > 5)
-        // {
-        //     await Swal.FireAsync(new SweetAlertOptions
-        //     {
-        //         Title = "Por favor coloque um valor entre 1 a 5 minutos!",
-        //         Icon = SweetAlertIcon.Warning,
-        //         ConfirmButtonColor = "#0B5120"
-        //     });
-        //     return;
-        // }
-
         if (selectedDevices.Count == 0)
         {
             await Swal.FireAsync(new SweetAlertOptions
@@ -281,7 +270,7 @@ else
             });
             return;
         }
-            
+
         await FilterService.ApplyDevicesFilter(new List<Device>(selectedDevices));
 
         await Swal.FireAsync(new SweetAlertOptions
@@ -377,10 +366,20 @@ else
             if (deviceDb != null)
             {
                 deviceDb.Enabled = false;
+
+                var relations = await context.DeviceProducts
+                    .Where(dp => dp.DeviceId == id)
+                    .ToListAsync();
+
+                context.DeviceProducts.RemoveRange(relations);
+
                 await context.SaveChangesAsync();
             }
 
             devices.RemoveAll(d => d.Id == id);
+
+            FilterService.SelectedDevices.RemoveAll(d => d.Id == id);
+            await FilterService.SaveFilterAsync();
 
             isLoading = false;
             StateHasChanged();
