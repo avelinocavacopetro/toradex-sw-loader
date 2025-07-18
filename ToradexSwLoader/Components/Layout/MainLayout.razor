@@ -10,7 +10,7 @@
 <div class="page">
 
     @if (IsCurrentPage(new[] { "/home", "/manageDevices", "/manageProducts", "/manageStacks", "/managePackages", "/manageFleets",
-        "/manageEntities", "/manageSecret", "/managePatterns" }))
+        "/manageEntities", "/manageUsers", "/manageSecret", "/managePatterns" }))
     {
         <div class="sidebar">
             <NavMenu />
@@ -63,7 +63,6 @@
         color:white;
     }
 </style>
-
 
 @code {
     private string? currentTime;

@@ -28,29 +28,45 @@ else if (isAdding || isEditing)
             <br />
             <h4>Selecionar Produto(s):</h4>
 
-            <table class="table mt-3 w-100">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th>Produto</th>
-                        <th class="text-center">Selecionar</th>
+                        <th style="width: 70%; text-align: left; padding-left: 25px;">Produto</th>
+                        <th style="width: 30%; text-align: center;">Selecionar</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var product in FilterService.SelectedProducts)
+                    @foreach (var product in PaginatedProducts)
                     {
-                        <tr class="table-light">
-                            <td>@product.Name</td>
-                            <td>
-                                <div class="form-check d-flex justify-content-center">
-                                    <input type="checkbox" class="largerCheckbox" id="toggle-@product.Id"
-                                           @onchange="(e => ToggleProduct(e, product))"
-                                           checked="@selectedProducts.Any(p => p.Id == product.Id)" />
-                                </div>
+                        <tr class="table-light" style="height: 45px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 25px; font-weight: 500;">
+                                @product.Name
+                            </td>
+                            <td class="text-center align-middle p-0">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@product.Id"
+                                       @onchange="(e => ToggleProduct(e, product))"
+                                       checked="@selectedProducts.Any(p => p.Id == product.Id)" />
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
+
+            <div class="d-flex justify-content-between align-items-center gap-3">
+                <span>@currentProductPage - @TotalProductPages de @TotalProductPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevProductPage" disabled="@(currentProductPage == 1)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextProductPage" disabled="@(currentProductPage == TotalProductPages)">
+                        &gt;
+                    </button>
+                </div>
+            </div>
 
             <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
                 <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
@@ -104,22 +120,24 @@ else
                 </div>
 
                 <div class="pb-5">
-                    <table class="table mt-3 w-100">
+                    <table class="table mt-3 w-100" style="table-layout: fixed;">
                         <thead style="background-color: #0c6527; color: white;">
                             <tr>
-                                <th>Nome da Stack</th>
-                                <th>Produtos associados</th>
-                                <th class="text-center">Ativo</th>
-                                <th></th>
-                                <th></th>
+                                <th style="width: 30%; text-align: left; padding-left: 20px;">Nome da Stack</th>
+                                <th style="width: 30%; text-align: center;">Produtos Associados</th>
+                                <th style="width: 15%; text-align: center;">Estado</th>
+                                <th style="width: 12.5%;"></th>
+                                <th style="width: 12.5%;"></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var stack in PaginatedStacks)
                             {
-                                <tr class="table-light">
-                                    <td style="vertical-align: middle;">@stack.Name</td>
-                                    <td class="align-middle">
+                                <tr class="table-light" style="height: 60px;">
+                                    <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                        @stack.Name
+                                    </td>
+                                    <td class="text-center" style="vertical-align: middle;">
                                         @if (stack.ProductStacks?.Any() == true)
                                         {
                                             <ul class="mb-0 ps-3">
@@ -131,30 +149,27 @@ else
                                         }
                                         else
                                         {
-                                            <span class="text-muted" style="font-size:18px;">Sem produtos</span>
+                                            <span class="text-muted" style="font-size:18px;">Sem Produtos</span>
                                         }
                                     </td>
-                                    <td style="vertical-align: middle;">
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" class="largerCheckbox" id="toggle-@stack.Id"
-                                                   @onchange="(e => ToggleStack(e, stack))"
-                                                   checked="@selectedStacks.Any(s => s.Id == stack.Id)" />
-                                        </div>
+                                    <td class="text-center align-middle p-0">
+                                        <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                               id="toggle-@stack.Id"
+                                               @onchange="(e => ToggleStack(e, stack))"
+                                               checked="@selectedStacks.Any(s => s.Id == stack.Id)" />
                                     </td>
-                                    <td class="text-center" style="vertical-align: middle;">
-                                        <button class="btn btn-sm"
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
                                                 title="Editar"
-                                                @onclick="() => EditStack(stack.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                                @onclick="() => EditStack(stack.Id)">
+                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                         </button>
                                     </td>
-                                    <td class="text-center" style="vertical-align: middle;">
-                                        <button class="btn btn-danger btn-sm"
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
                                                 title="Desativar"
-                                                @onclick="() => DisableStack(stack.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                                @onclick="() => DisableStack(stack.Id)">
+                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -185,6 +200,10 @@ else
     private int stacksPerPage = 5;
     private int TotalPages => (int)Math.Ceiling((double)FilteredStacks.Count() / stacksPerPage);
 
+    private int currentProductPage = 1;
+    private int productsPerPage = 3;
+    private int TotalProductPages => (int)Math.Ceiling((double)FilterService.SelectedProducts.Count / productsPerPage);
+
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
@@ -214,6 +233,11 @@ else
     FilteredStacks
         .Skip((actualPage - 1) * stacksPerPage)
         .Take(stacksPerPage);
+
+    private IEnumerable<Product> PaginatedProducts =>
+    FilterService.SelectedProducts
+        .Skip((currentProductPage - 1) * productsPerPage)
+        .Take(productsPerPage);
 
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
@@ -534,5 +558,17 @@ else
             actualPage--;
             UpdatePage();
         }
+    }
+
+    private void PrevProductPage()
+    {
+        if (currentProductPage > 1)
+            currentProductPage--;
+    }
+
+    private void NextProductPage()
+    {
+        if (currentProductPage < TotalProductPages)
+            currentProductPage++;
     }
 }

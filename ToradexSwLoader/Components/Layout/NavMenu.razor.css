@@ -16,9 +16,18 @@
 }
 
 .top-row {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     height: 4rem;
     background-color: #0B5120;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    padding-left: 1rem;
 }
+
 
 .navbar-brand {
     font-size: 1.1rem;

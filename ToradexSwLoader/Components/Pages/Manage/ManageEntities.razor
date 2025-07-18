@@ -21,7 +21,7 @@
 else if (isAdding || isEditing)
 {
     <div class="center-edit">
-        <div class="edit-form" style="height: 600px; overflow-y: auto;">
+        <div class="edit-form p-4" style="max-height: 90vh;">
             <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome da Entidade</label>
             <input type="text" @bind="entityName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
 
@@ -31,26 +31,32 @@ else if (isAdding || isEditing)
                       style="font-size: 1.2rem; text-align: center;"
                       rows="2"
                       placeholder="Insira uma observação...">
-            </textarea>
+                </textarea>
 
-            <br />
-            <h4>Selecionar Frota(s):</h4>
+            <br/>
 
-            <table class="table mt-3 w-100">
+            <h4 class="mb-3">Selecionar Frota(s):</h4>
+
+            <table class="table w-100 mb-3">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th>Frota</th>
-                        <th class="text-center">Selecionar</th>
+                        <th style="width: 70%; text-align: left; padding-left: 20px;">Frota</th>
+                        <th style="width: 30%; text-align: center;">Selecionar</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var fleet in PaginatedFleets)
                     {
-                        <tr class="table-light">
-                            <td>@fleet.Name</td>
-                            <td>
+                        <tr class="table-light" style="height: 50px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                @fleet.Name
+                            </td>
+                            <td class="text-center align-middle">
                                 <div class="form-check d-flex justify-content-center">
-                                    <input type="checkbox" class="largerCheckbox" id="toggle-@fleet.Id"
+                                    <input type="checkbox"
+                                           class="form-check-input largerCheckbox"
+                                           style="width: 18px; height: 18px;"
+                                           id="toggle-@fleet.Id"
                                            @onchange="(e => ToggleFleet(e, fleet))"
                                            checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
                                 </div>
@@ -60,16 +66,17 @@ else if (isAdding || isEditing)
                 </tbody>
             </table>
 
-            <div class="d-flex justify-content-between align-items-center gap-3">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
                 <span>@currentFleetPage - @TotalFleetPages de @TotalFleetPages</span>
                 <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevFleetPage" disabled="@(currentFleetPage == 1)">
+                    <button class="btn btn-outline-secondary"
+                            @onclick="PrevFleetPage"
+                            disabled="@(currentFleetPage == 1)">
                         &lt;
                     </button>
-
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextFleetPage" disabled="@(currentFleetPage == TotalFleetPages)">
+                    <button class="btn btn-outline-secondary"
+                            @onclick="NextFleetPage"
+                            disabled="@(currentFleetPage == TotalFleetPages)">
                         &gt;
                     </button>
                 </div>
@@ -94,8 +101,6 @@ else
         @if (!isAdding)
         {
             <div class="container-fluid">
-                <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
-
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="w-50">
                         <input type="text" class="form-control" placeholder="Pesquisar entidade pelo nome..."
@@ -127,57 +132,62 @@ else
                 </div>
 
                 <div class="pb-5">
-                    <table class="table mt-3 w-100">
+                    <table class="table mt-3 w-100" style="table-layout: fixed;">
                         <thead style="background-color: #0c6527; color: white;">
                             <tr>
-                                <th>Nome da Entidade</th>
-                                <th>Frotas associadas</th>
-                                <th class="text-center">Ativo</th>
-                                <th></th>
-                                <th></th>
+                                <th style="width: 30%; text-align: left; padding-left: 20px;">Nome da Entidade</th>
+                                <th style="width: 30%; text-align: center;">Frotas Associadas</th>
+                                <th style="width: 15%; text-align: center;">Estado</th>
+                                <th style="width: 12.5%;"></th>
+                                <th style="width: 12.5%;"></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var entity in PaginatedEntities)
                             {
-                                <tr class="table-light">
-                                    <td style="vertical-align: middle;">@entity.Name</td>
-                                    <td class="align-middle">
+                                <tr class="table-light" style="height: 60px;">
+                                    <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                        @entity.Name
+                                    </td>
+                                    <td class="text-center" style="vertical-align: middle;">
                                         @if (entity.EntityFleets?.Any() == true)
                                         {
-                                            <ul class="mb-0 ps-3">
-                                                @foreach (var ef in entity.EntityFleets)
-                                                {
-                                                    <li style="list-style-type: none;">@ef.Fleet?.Name</li>
-                                                }
-                                            </ul>
+                                            <div style="max-height: 80px; overflow-y: auto;">
+                                                <ul class="mb-0 ps-0">
+                                                    @foreach (var ef in entity.EntityFleets)
+                                                    {
+                                                        <li class="py-1" style="list-style-type: none;">
+                                                            <span class="badge bg-secondary d-inline-flex align-items-center">
+                                                                <i class="bi bi-truck me-2"></i>@ef.Fleet?.Name
+                                                            </span>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
                                         }
                                         else
                                         {
-                                            <span class="text-muted" style="font-size:18px;">Sem Frotas</span>
+                                            <span class="text-muted" style="font-size: 1rem;">Sem Frotas</span>
                                         }
                                     </td>
-                                    <td style="vertical-align: middle;">
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" class="largerCheckbox" id="toggle-@entity.Id"
-                                                   @onchange="(e => ToggleEntity(e, entity))"
-                                                   checked="@selectedEntities.Any(e => e.Id == entity.Id)" />
-                                        </div>
+                                    <td class="text-center align-middle p-0">
+                                        <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                               id="toggle-@entity.Id"
+                                               @onchange="(e => ToggleEntity(e, entity))"
+                                               checked="@selectedEntities.Any(e => e.Id == entity.Id)" />
                                     </td>
-                                    <td class="text-center" style="vertical-align: middle;">
-                                        <button class="btn btn-sm"
-                                                title="Editar"
-                                                @onclick="() => EditEntity(entity.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                                title="Editar Entidade"
+                                                @onclick="() => EditEntity(entity.Id)">
+                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                         </button>
                                     </td>
-                                    <td class="text-center" style="vertical-align: middle;">
-                                        <button class="btn btn-danger btn-sm"
-                                                title="Desativar"
-                                                @onclick="() => DisableEntity(entity.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                                title="Remover Entidade"
+                                                @onclick="() => DisableEntity(entity.Id)">
+                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                         </button>
                                     </td>
                                 </tr>
