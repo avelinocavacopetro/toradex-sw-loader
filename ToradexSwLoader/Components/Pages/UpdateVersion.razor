@@ -1,4 +1,4 @@
-﻿@page "/updateImage/{deviceUuid}"
+﻿@page "/updateVersion/{deviceUuid}"
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -12,9 +12,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<PageTitle>Atualizar Imagem</PageTitle>
-
-<WindowDimensions OnChange="OnDimensionsChanged" />
+<PageTitle>Atualizar Versão</PageTitle>
 
 @if (isLoading)
 {
@@ -36,47 +34,36 @@ else
         <i class="bi bi-arrow-left fs-1"></i>
     </a>
 
-    <h3 class="text-center pb-5">Atualizar Imagem</h3>
+    <h3 class="text-center pb-5">Atualizar Versão</h3>
 
-    <div class="d-flex justify-content-end pe-5">
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
-
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <table class="table mt-3 w-100">
-        <thead style="background-color: #0c6527; color: white;">
-            <tr>
-                <th>Nome</th>
-                <th style="text-align: center;">Versão</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var package in paginatedPackages)
-            {
-                if (package?.Package != null)
-                {
-                    <tr class="@GetRowClass(package.Package)" @onclick="() => SelectRow(package.Package)">
-                        <td title="@package.Package.Name" style="word-break: break-word; white-space: normal;">
-                            @package.Package.Name
-                        </td>
-                        <td style="text-align: center;">@package.Package.Version</td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
+    @if (selectedDevice?.Packages?.Any() == true)
+    {
+        <table class="table mt-3 w-100">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th>Nome</th>
+                    <th>Versão</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@installedPackageName</td>
+                    <td>
+                        <select @bind="selectedVersion">
+                            @foreach (var stack in filteredPackages)
+                            {
+                                <option value="@stack?.Package?.Version">@stack?.Package?.Version</option>
+                            }
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="text-danger text-center">Não foram encontrados pacotes para este dispositivo.</p>
+    }
 
     <div class="text-center fixed-bottom pb-5">
         <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Atualizar</button>
@@ -86,25 +73,16 @@ else
 @code {
     [Parameter]
     public string? deviceUuid { get; set; }
-    private DetailedDevice? selectedDevice = new DetailedDevice();
-
-    private List<StackPackage> paginatedPackages = new List<StackPackage>();
-    private List<StackPackage> stacksPackages = new List<StackPackage>();
-    private Package? selectedPackage;
-    private WindowDimension? dimension;
-
-    private int actualPage = 1;
-    private int packagesPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
-
+    private List<StackPackage> filteredPackages = new List<StackPackage>();
+    private DetailedDevice? selectedDevice = new();
+    private string? devicePackage;
+    private List<StackPackage> stacksPackages = new();
     private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    private string? selectedVersion;
+    private string? installedPackageName;
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
         bool authOk = await TorizonService.AuthenticateAsync();
 
         if (!authOk)
@@ -117,37 +95,52 @@ else
         var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
         selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
 
+        if (selectedDevice == null)
+        {
+            Console.WriteLine("Dispositivo não encontrado.");
+            isLoading = false;
+            return;
+        }
+
+        if (selectedDevice.Packages?.Count > 1)
+        {
+            var fullName = selectedDevice.Packages[1].Name;
+
+            var lastDashIndex = fullName.LastIndexOf('-');
+            if (lastDashIndex > 0 && lastDashIndex < fullName.Length - 1)
+            {
+                installedPackageName = fullName.Substring(0, lastDashIndex);
+                selectedVersion = fullName.Substring(lastDashIndex + 1);
+            }
+            else
+            {
+                installedPackageName = fullName;
+                selectedVersion = "unknown";
+            }
+        }
+
+        using var context = await DbContextFactory.CreateDbContextAsync();
         stacksPackages = await context.StackPackages
             .Include(pp => pp.Package)
             .ToListAsync();
 
+        filteredPackages = stacksPackages
+            .Where(sp => sp?.Package?.Name == installedPackageName)
+            .OrderByDescending(sp => sp?.Package?.Version)
+            .ToList();
+
         await FilterService.LoadFilterAsync();
 
-        UpdatePage();
-
         isLoading = false;
-        StateHasChanged();
-    }
-
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        packagesPerPage = dimension.Width <= 1024 ? 3 : 5;
-
-        UpdatePage();
-        StateHasChanged();
-    }
-
-    private void SelectRow(Package package)
-    {
-        selectedPackage = package;
     }
 
     private async Task OnClick()
     {
+        devicePackage = installedPackageName + "-" + selectedVersion;
+
         using var context = DbContextFactory.CreateDbContext();
 
-        if (selectedPackage != null)
+        if (selectedVersion != null)
         {
             var result = await Swal.FireAsync(new SweetAlertOptions
             {
@@ -164,26 +157,28 @@ else
                 var userAct = new UserActivity
                 {
                     UserId = LoginService.UserId,
-                    ActMessage = $"Selecionou o software: Nome: {selectedPackage.Name} | Versão: {selectedPackage.Version} para a placa {selectedDevice?.DeviceName}",
+                    ActMessage = $"Selecionou a versão: {selectedVersion} para a placa {selectedDevice?.DeviceName}",
                     ActType = "Manutenção",
                     ActTimeStamp = DateTime.Now
                 };
 
+                var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == devicePackage);
+
                 var deviceDto = new DeviceDTO
                 {
-                    PackageIds = new List<string> { selectedPackage.Id.ToString() },
+                    PackageIds = new List<string> { devicePackage },
                     Custom = new Dictionary<string, PackageUri>
                 {
                     {
-                        selectedPackage.Id,
+                        devicePackage,
                         new PackageUri
                         {
-                            Uri = selectedPackage.Id
+                            Uri = packageUri?.Uri
                         }
                     }
                 },
                     Devices = new List<string> {deviceUuid.ToString()},
-                    };
+                };
 
                 var response = await TorizonService.SendUpdateAsync(deviceDto);
 
@@ -194,7 +189,7 @@ else
 
                     await Swal.FireAsync(new SweetAlertOptions
                     {
-                        Title = "Imagem atualizada com sucesso!",
+                        Title = "Versão atualizada com sucesso!",
                         Icon = SweetAlertIcon.Success,
                         ConfirmButtonColor = "#0B5120"
                     });
@@ -205,7 +200,7 @@ else
                 {
                     await Swal.FireAsync(new SweetAlertOptions
                     {
-                        Title = "Erro ao atualizar imagem",
+                        Title = "Erro ao atualizar versão",
                         Icon = SweetAlertIcon.Warning,
                         Text = $"{response.StatusCode}",
                         ConfirmButtonColor = "#0B5120"
@@ -225,37 +220,6 @@ else
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120",
             });
-        }
-    }
-
-    private string GetRowClass(Package package)
-    {
-        return selectedPackage == package ? "table-primary" : string.Empty;
-    }
-
-    private void UpdatePage()
-    {
-        paginatedPackages = stacksPackages
-                                 .Skip((actualPage - 1) * packagesPerPage)
-                                 .Take(packagesPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
         }
     }
 }

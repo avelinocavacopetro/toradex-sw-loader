@@ -1,6 +1,10 @@
-﻿@page "/selectAction"
+﻿@page "/selectAction/{deviceUuid}"
 
 @inject NavigationManager UriHelper
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject TorizonService TorizonService
+@inject FilterService FilterService
+@inject SweetAlertService Swal
 
 <PageTitle>Selecionar Ação</PageTitle>
 
@@ -26,21 +30,82 @@ else
 
     <h3 class="text-center pb-5">Selecionar Ação</h3>
 
-    <div class="grid-container">
-        <div class="grid-item" @onclick="UpdateImage">
+    <div class="grid-container-action d-flex justify-content-center">
+        <div class="grid-item-action" @onclick="UpdateImage">
             Atualizar imagem
         </div>
-        <div class="grid-item">
+        <div class="grid-item-action @(hasVersion ? "" : "disabled")"
+             @onclick="UpdateVersion"
+             style="cursor:@(hasVersion ? "pointer" : "not-allowed"); opacity:@(hasVersion ? "1" : "0.5")">
             Atualizar versão
         </div>
     </div>
 }
 
 @code {
+    [Parameter]
+    public string? deviceUuid { get; set; }
     private bool isLoading = false;
+    private bool hasVersion = true;
+    private DetailedDevice? selectedDevice = new();
+    private List<StackPackage> stacksPackages = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool authOk = await TorizonService.AuthenticateAsync();
+
+        if (!authOk)
+        {
+            Console.WriteLine("Falha na autenticação.");
+            isLoading = false;
+            return;
+        }
+
+        var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
+        selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+
+        stacksPackages = await context.StackPackages
+            .Include(pp => pp.Package)
+            .ToListAsync();
+
+        var devicePackage = selectedDevice.Packages[1].Name.ToString();
+        var hasPackage = stacksPackages.Any(sp => sp.PackageId == devicePackage);
+
+        Console.WriteLine($"\n Pacote do dispositivo: {devicePackage} \n");
+        Console.WriteLine($"\n Tem pacote: {hasPackage} \n");
+
+        if (hasPackage){
+            hasVersion = true;
+        }
+        else
+        {
+            hasVersion = false;
+        }
+
+        await FilterService.LoadFilterAsync();
+    }
 
     private async Task UpdateImage()
     {
-        UriHelper.NavigateTo($"/updateImage");
+        UriHelper.NavigateTo($"/updateImage/{deviceUuid}");
+    }
+
+    private async Task UpdateVersion()
+    {
+        if (hasVersion)
+        {
+            UriHelper.NavigateTo($"/updateVersion/{deviceUuid}");
+        }
+        else
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Sem suporte",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
     }
 }
