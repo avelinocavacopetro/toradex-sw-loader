@@ -43,8 +43,6 @@ else
     @if (!isAdding)
     {
         <div class="container-fluid">
-            <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
-
             <div class="d-flex justify-content-between align-items-center mt-4">
                 <div class="w-50">
                     <input type="text" class="form-control" placeholder="Pesquisar pattern pelo nome..."
@@ -76,41 +74,40 @@ else
             </div>
 
             <div class="pb-5">
-                <table class="table mt-3 w-100">
+                <table class="table mt-3 w-100" style="table-layout: fixed;">
                     <thead style="background-color: #0c6527; color: white;">
                         <tr>
-                            <th>Nome da Pattern</th>
-                            <th class="text-center">Ativo</th>
-                            <th></th>
-                            <th></th>
+                            <th style="width: 30%; text-align: left; padding-left: 20px;">Nome da Pattern</th>
+                            <th style="width: 30%; text-align: center; padding-left: 10px;">Ativo</th>
+                            <th style="width: 20%;"></th>
+                            <th style="width: 20%;"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var pattern in PaginatedPatterns)
                         {
-                            <tr class="table-light">
-                                <td>@pattern.NameContains</td>
-                                <td>
-                                    <div class="form-check d-flex justify-content-center">
-                                        <input type="checkbox" class="largerCheckbox" id="toggle-@pattern.Id"
-                                               @onchange="(e => TogglePattern(e, pattern))"
-                                               checked="@selectedPatterns.Any(p => p.Id == pattern.Id)" />
-                                    </div>
+                            <tr class="table-light" style="height: 60px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                    @pattern.NameContains
                                 </td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm"
+                                <td class="text-center align-middle p-0">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@pattern.Id"
+                                           @onchange="(e => TogglePattern(e, pattern))"
+                                           checked="@selectedPatterns.Any(p => p.Id == pattern.Id)" />
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
                                             title="Editar"
-                                            @onclick="() => EditPattern(pattern.Id)"
-                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                        <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                            @onclick="() => EditPattern(pattern.Id)">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                     </button>
                                 </td>
-                                <td class="text-center">
-                                    <button class="btn btn-danger btn-sm"
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
                                             title="Desativar"
-                                            @onclick="() => DisablePattern(pattern.Id)"
-                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                        <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                            @onclick="() => DisablePattern(pattern.Id)">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                     </button>
                                 </td>
                             </tr>
@@ -183,7 +180,7 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
-        patterns = await context.Patterns.ToListAsync();
+        patterns = await context.Patterns.Where(p => p.Enabled).ToListAsync();
 
         selectedPatterns = FilterService.SelectedPatterns;
         onlineTime = FilterService.OnlineTime;

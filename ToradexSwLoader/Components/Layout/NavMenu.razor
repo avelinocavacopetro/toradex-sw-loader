@@ -6,66 +6,85 @@
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="selectdevices" Match="NavLinkMatch.All">
-                <span class="bi bi-usb-symbol-nav-menu" aria-hidden="true"></span> Wizard
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="maintenance" Match="NavLinkMatch.All">
-                <span class="bi bi-tools-nav-menu" aria-hidden="true"></span> Manutenção
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="devices" style="gap: 0.5rem;">
-                <span class="bi bi-motherboard-nav-menu" aria-hidden="true"></span> Dispositivos
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <a class="nav-link" style="gap: 0.5rem; cursor:pointer;" @onclick="ToggleMenu">
-                <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Administração
-            </a>
+<div class="sidebar-container">
+    <div class="nav" onclick="document.querySelector('.navbar-toggler').click()">
+        <nav class="flex-column">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="selectdevices" Match="NavLinkMatch.All">
+                    <span class="bi bi-usb-symbol-nav-menu" aria-hidden="true"></span> Wizard
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="maintenance" Match="NavLinkMatch.All">
+                    <span class="bi bi-tools-nav-menu" aria-hidden="true"></span> Manutenção
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="devices" style="gap: 0.5rem;">
+                    <span class="bi bi-motherboard-nav-menu" aria-hidden="true"></span> Dispositivos
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <a class="nav-link" style="gap: 0.5rem; cursor:pointer;" @onclick="ToggleMenu">
+                    <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Administração
+                </a>
 
-            @if (menuOpen)
-            {
-                <div class="pt-1">
-                    <NavLink class="nav-link pb-1" href="manageDevices" style="gap: 1rem;">
-                        <span  aria-hidden="true"></span> Gerir Dispositivos
-                    </NavLink>
-                    <NavLink class="nav-link pb-1" href="manageProducts" style="gap: 1rem;">
-                        <span  aria-hidden="true"></span> Gerir Produtos
-                    </NavLink>
-                    <NavLink class="nav-link pb-1" href="manageStacks" style="gap: 1rem;">
-                        <span aria-hidden="true"></span> Gerir Stacks
-                    </NavLink>
-                    <NavLink class="nav-link pb-1" href="managePackages" style="gap: 1rem;">
-                        <span aria-hidden="true"></span> Gerir Pacotes
-                    </NavLink>
-                    <NavLink class="nav-link pb-1" href="manageFleets" style="gap: 1rem;">
-                        <span  aria-hidden="true"></span> Gerir Frotas
-                    </NavLink>
-                    <NavLink class="nav-link pb-1" href="managePatterns" style="gap: 1rem;">
-                        <span  aria-hidden="true"></span> Gerir Patterns
-                    </NavLink>
-                    <NavLink class="nav-link pb-1" href="manageSecret" style="gap: 1rem;">
-                        <span aria-hidden="true"></span> Definições
-                    </NavLink>
-                    <NavLink class="nav-link pb-1" href="adminHistory" style="gap: 1rem;">
-                        <span aria-hidden="true"></span> Carregamentos
-                    </NavLink>
-                </div>
-            }
-        </div>
-    </nav>
+                @if (menuOpen)
+                {
+                    <div class="pt-1">
+                        <NavLink class="nav-link pb-1" href="manageDevices" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Dispositivos
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="manageProducts" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Produtos
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="manageStacks" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Stacks
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="managePackages" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Pacotes
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="manageFleets" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Frotas
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="manageEntities" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Entidades
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="manageUsers" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Utilizadores
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="managePatterns" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Gerir Patterns
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="manageSecret" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Definições
+                        </NavLink>
+                        <NavLink class="nav-link pb-1" href="adminHistory" style="gap: 1rem;">
+                            <span aria-hidden="true"></span> Carregamentos
+                        </NavLink>
+                    </div>
+                }
+            </div>
+        </nav>
+    </div>
 </div>
 
 <style>
     .nav-link {
-        font-size: 20px;
+        font-size: 0.95rem;
         background-color: transparent !important;
+        display: flex; 
+        align-items: center;
+        gap: 0.5rem;
+
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+
+        padding: 0.5rem 1rem; 
+        width: 100%;
     }
+
 
     .nav-link:hover{
             background-color: rgba(205, 205, 205, 0.2) !important;

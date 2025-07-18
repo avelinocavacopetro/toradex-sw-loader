@@ -43,8 +43,6 @@ else
         @if (!isAdding)
         {
             <div class="container-fluid">
-                <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
-
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="w-50">
                         <input type="text" class="form-control" placeholder="Pesquisar dispositivo pelo nome..."
@@ -76,47 +74,46 @@ else
                 </div>
 
                 <div class="pb-5">
-                    <table class="table mt-3 w-100">
-                        <thead style="background-color: #0c6527; color: white;">
-                            <tr>
-                                <th>Nome do Dispositivo</th>
-                                <th class="text-center">Ativo</th>
-                                <th></th>
-                                <th></th>
+                <table class="table mt-3 w-100" style="table-layout: fixed;">
+                    <thead style="background-color: #0c6527; color: white;">
+                        <tr>
+                            <th style="width: 40%; text-align: left; padding-left: 20px;">Nome do Dispositivo</th>
+                            <th style="width: 20%; text-align: center;">Ativo</th>
+                            <th style="width: 20%;"></th>
+                            <th style="width: 20%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var device in PaginatedDevices)
+                        {
+                            <tr class="table-light" style="height: 50px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                    @device.Name
+                                </td>
+                                <td class="text-center align-middle p-0">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@device.Id"
+                                           @onchange="(e => ToggleDevice(e, device))"
+                                           checked="@selectedDevices.Any(d => d.Id == device.Id)" />
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                            title="Editar"
+                                            @onclick="() => EditDevice(device.Id)">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                            title="Desativar"
+                                            @onclick="() => DisableDevice(device.Id)">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var device in PaginatedDevices)
-                            {
-                                <tr class="table-light">
-                                    <td>@device.Name</td>
-                                    <td>
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" class="largerCheckbox" id="toggle-@device.Id"
-                                                   @onchange="(e => ToggleDevice(e, device))"
-                                                   checked="@selectedDevices.Any(d => d.Id == device.Id)" />
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm"
-                                                title="Editar"
-                                                @onclick="() => EditDevice(device.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
-                                        </button>
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-danger btn-sm"
-                                                title="Desativar"
-                                                @onclick="() => DisableDevice(device.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                        }
+                    </tbody>
+                </table>
                 </div>
 
                 <div class="text-center fixed-bottom pb-4">
@@ -183,7 +180,7 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
-        devices = await context.Devices.ToListAsync();
+        devices = await context.Devices.Where(d => d.Enabled).ToListAsync();
 
         selectedDevices = FilterService.SelectedDevices;
         onlineTime = FilterService.OnlineTime;
@@ -260,17 +257,6 @@ else
 
     private async Task ApplyFilter()
     {
-        // if (onlineTime < 1 || onlineTime > 5)
-        // {
-        //     await Swal.FireAsync(new SweetAlertOptions
-        //     {
-        //         Title = "Por favor coloque um valor entre 1 a 5 minutos!",
-        //         Icon = SweetAlertIcon.Warning,
-        //         ConfirmButtonColor = "#0B5120"
-        //     });
-        //     return;
-        // }
-
         if (selectedDevices.Count == 0)
         {
             await Swal.FireAsync(new SweetAlertOptions
@@ -281,7 +267,7 @@ else
             });
             return;
         }
-            
+
         await FilterService.ApplyDevicesFilter(new List<Device>(selectedDevices));
 
         await Swal.FireAsync(new SweetAlertOptions
@@ -377,10 +363,20 @@ else
             if (deviceDb != null)
             {
                 deviceDb.Enabled = false;
+
+                var relations = await context.DeviceProducts
+                    .Where(dp => dp.DeviceId == id)
+                    .ToListAsync();
+
+                context.DeviceProducts.RemoveRange(relations);
+
                 await context.SaveChangesAsync();
             }
 
             devices.RemoveAll(d => d.Id == id);
+
+            FilterService.SelectedDevices.RemoveAll(d => d.Id == id);
+            await FilterService.SaveFilterAsync();
 
             isLoading = false;
             StateHasChanged();

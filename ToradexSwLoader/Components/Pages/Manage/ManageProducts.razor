@@ -28,29 +28,45 @@ else if (isAdding || isEditing)
             <br />
             <h4>Selecionar Dispositivo(s):</h4>
 
-            <table class="table mt-3 w-100">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th>Dispositivo</th>
-                        <th class="text-center">Selecionar</th>
+                        <th style="width: 70%; text-align: left; padding-left: 25px;">Dispositivo</th>
+                        <th style="width: 30%; text-align: center;">Selecionar</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var device in FilterService.SelectedDevices)
+                    @foreach (var device in PaginatedDevices)
                     {
-                        <tr class="table-light">
-                            <td>@device.Name</td>
-                            <td>
-                                <div class="form-check d-flex justify-content-center">
-                                    <input type="checkbox" class="largerCheckbox" id="toggle-@device.Id"
-                                           @onchange="(e => ToggleDevice(e, device))"
-                                           checked="@selectedDevices.Any(d => d.Id == device.Id)" />
-                                </div>
+                        <tr class="table-light" style="height: 45px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 25px; font-weight: 500;">
+                                @device.Name
+                            </td>
+                            <td class="text-center align-middle p-0">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@device.Id"
+                                       @onchange="(e => ToggleDevice(e, device))"
+                                       checked="@selectedDevices.Any(d => d.Id == device.Id)" />
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
+
+            <div class="d-flex justify-content-between align-items-center gap-3">
+                <span>@currentDevicePage - @TotalDevicePages de @TotalDevicePages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevDevicePage" disabled="@(currentDevicePage == 1)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextDevicePage" disabled="@(currentDevicePage == TotalDevicePages)">
+                        &gt;
+                    </button>
+                </div>
+            </div>
 
             <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
                 <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
@@ -71,8 +87,6 @@ else
         @if (!isAdding)
         {
             <div class="container-fluid">
-                <h3 style="text-align: left;">Configurar filtros a aplicar:</h3>
-
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="w-50">
                         <input type="text" class="form-control" placeholder="Pesquisar produto pelo nome..."
@@ -104,22 +118,24 @@ else
                 </div>
             
                 <div class="pb-5">
-                    <table class="table mt-3 w-100">
+                    <table class="table mt-3 w-100" style="table-layout: fixed;">
                         <thead style="background-color: #0c6527; color: white;">
                             <tr>
-                                <th>Nome do Produto</th>
-                                <th>Dispositivos associados</th>
-                                <th class="text-center">Ativo</th>
-                                <th></th>
-                                <th></th>
+                                <th style="width: 30%; text-align: left; padding-left: 20px;">Nome do Produto</th>
+                                <th style="width: 30%; text-align: center;">Dispositivos Associados</th>
+                                <th style="width: 15%; text-align: center;">Estado</th>
+                                <th style="width: 12.5%;"></th>
+                                <th style="width: 12.5%;"></th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var product in PaginatedProducts)
                             {
-                                <tr class="table-light">
-                                    <td>@product.Name</td>
-                                    <td class="align-middle">
+                                <tr class="table-light" style="height: 60px;">
+                                    <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                        @product.Name
+                                    </td>
+                                    <td class="text-center" style="vertical-align: middle;">
                                         @if (product.DeviceProducts?.Any() == true)
                                         {
                                             <ul class="mb-0 ps-3">
@@ -131,30 +147,27 @@ else
                                         }
                                         else
                                         {
-                                            <span class="text-muted" style="font-size:18px;">Sem dispositivos</span>
+                                            <span class="text-muted" style="font-size:18px;">Sem Dispositivos</span>
                                         }
                                     </td>
-                                    <td>
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" class="largerCheckbox" id="toggle-@product.Id"
-                                                   @onchange="(e => ToggleProduct(e, product))"
-                                                   checked="@selectedProducts.Any(p => p.Id == product.Id)" />
-                                        </div>
+                                    <td class="text-center align-middle p-0">
+                                        <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                               id="toggle-@product.Id"
+                                               @onchange="(e => ToggleProduct(e, product))"
+                                               checked="@selectedProducts.Any(p => p.Id == product.Id)" />
                                     </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm"
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
                                                 title="Editar"
-                                                @onclick="() => EditProduct(product.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                                @onclick="() => EditProduct(product.Id)">
+                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                         </button>
                                     </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-danger btn-sm"
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
                                                 title="Desativar"
-                                                @onclick="() => DisableProduct(product.Id)"
-                                                style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                            <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
+                                                @onclick="() => DisableProduct(product.Id)">
+                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -180,12 +193,18 @@ else
     private WindowDimension dimension = new WindowDimension();
 
     private string productName = string.Empty;
+
+    private int currentDevicePage = 1;
+    private int devicesPerPage = 3;
+    private int TotalDevicePages => (int)Math.Ceiling((double)FilterService.SelectedDevices.Count / devicesPerPage);
+
     private int actualPage = 1;
+    private int productsPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredProducts.Count() / productsPerPage);
+
     private bool isLoading = true;
     private bool isAdding = false;
     private bool isEditing = false;
-    private int productsPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredProducts.Count() / productsPerPage);
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
@@ -213,6 +232,11 @@ else
         .Skip((actualPage - 1) * productsPerPage)
         .Take(productsPerPage);
 
+    private IEnumerable<Device> PaginatedDevices =>
+    FilterService.SelectedDevices
+        .Skip((currentDevicePage - 1) * devicesPerPage)
+        .Take(devicesPerPage);
+
     private void OnDimensionsChanged(WindowDimension newDimension)
     {
         dimension = newDimension;
@@ -226,29 +250,24 @@ else
         await FilterService.LoadFilterAsync();
 
         using var context = DbContextFactory.CreateDbContext();
+
+        var filteredDevicesIds = FilterService.SelectedDevices.Select(d => d.Id).ToHashSet();
+
         products = await context.Products
+            .Where(p => p.Enabled)
             .Include(p => p.DeviceProducts)
-                .ThenInclude(dp => dp.Device)
-            .Select(p => new Product
-            {
-                Id = p.Id,
-                Name = p.Name,
-                DeviceProducts = p.DeviceProducts.Select(dp => new DeviceProduct
-                {
-                    DeviceId = dp.DeviceId,
-                    ProductId = dp.ProductId,
-                    Device = new Device
-                    {
-                        Id = dp.Device.Id,
-                        Name = dp.Device.Name
-                    }
-                }).ToList()
-            })
+            .ThenInclude(dp => dp.Device)
             .ToListAsync();
 
+        foreach(var product in products)
+        {
+            product.DeviceProducts = product.DeviceProducts
+                .Where(dp => dp.Device != null && filteredDevicesIds.Contains(dp.Device.Id))
+                .ToList();
+        }
 
         selectedProducts = FilterService.SelectedProducts;
-        selectedDevices = new List<Device>(FilterService.SelectedDevices);
+        selectedDevices = new List<Device>(FilterService.SelectedDevices.Where(d => d.Enabled));
 
         UpdatePage();
 
@@ -473,7 +492,7 @@ else
         selectedProduct = null;
     }
 
-    private async Task DisableProduct(int productId)
+    private async Task DisableProduct(int id)
     {
         var result = await Swal.FireAsync(new SweetAlertOptions
             {
@@ -490,15 +509,25 @@ else
             isLoading = true;
 
             using var context = DbContextFactory.CreateDbContext();
-            var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+            var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == id);
 
             if (productDb != null)
             {
                 productDb.Enabled = false;
+
+                var relations = await context.ProductStacks
+                    .Where(ps => ps.ProductId == id)
+                    .ToListAsync();
+
+                context.ProductStacks.RemoveRange(relations);
+
                 await context.SaveChangesAsync();
             }
 
-            products.RemoveAll(p => p.Id == productId);
+            products.RemoveAll(p => p.Id == id);
+
+            FilterService.SelectedProducts.RemoveAll(p => p.Id == id);
+            await FilterService.SaveFilterAsync();
 
             isLoading = false;
             StateHasChanged();
@@ -529,5 +558,17 @@ else
             actualPage--;
             UpdatePage();
         }
+    }
+
+    private void PrevDevicePage()
+    {
+        if (currentDevicePage > 1)
+            currentDevicePage--;
+    }
+
+    private void NextDevicePage()
+    {
+        if (currentDevicePage < TotalDevicePages)
+            currentDevicePage++;
     }
 }
