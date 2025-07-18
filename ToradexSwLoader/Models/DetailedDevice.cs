@@ -33,6 +33,9 @@ namespace ToradexSwLoader.Models
 
         public bool Hibernated { get; set; }
 
+        [JsonPropertyName("deviceFleets")]
+        public List<DeviceFleet>? Fleets { get; set; }
+
         [JsonPropertyName("devicePackages")]
         public List<DevicePackage>? Packages { get; set; }
     }
