@@ -94,44 +94,41 @@
                 </button>
             </div>
 
-
             <div class="pb-5">
-                <table class="table mt-3 w-100">
+                <table class="table mt-3 w-100" style="table-layout: fixed;">
                     <thead style="background-color: #0c6527; color: white;">
                         <tr>
-                            <th>Stack</th>
-                            <th>Pacote</th>
-                            <th>Versão</th>
-                            <th></th>
-                            <th></th>
+                            <th style="width: 25%; text-align: left; padding-left: 20px;">Stack</th>
+                            <th style="width: 30%; text-align: center;">Pacote</th>
+                            <th style="width: 15%; text-align: center;">Versão</th>
+                            <th style="width: 15%;"></th>
+                            <th style="width: 15%;"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var stackpackage in stacksPackages)
                         {
-                        if (stackpackage?.Stack != null && stackpackage?.Package != null)
+                            @if (stackpackage?.Stack != null && stackpackage?.Package != null)
                             {
-                                <tr class="table-light">
-                                <td>@stackpackage.Stack.Name</td>
-                                <td>@stackpackage.Package.Name</td>
-                                <td>@stackpackage.Package.Version</td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm"
-                                            title="Editar"
-                                            @onclick="() => EditStack(stackpackage.StackId, stackpackage.PackageId)"
-                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                        <i class="bi bi-pencil-square" style="font-size: 1.4rem; vertical-align: middle;"></i>
-                                    </button>
-                                </td>
-                                <td class="text-center">
-                                    <button class="btn btn-danger btn-sm"
-                                            title="Desativar"
-                                            @onclick="() => RemoveStack(stackpackage.StackId, stackpackage.PackageId)"
-                                            style="padding: 0; display: flex; justify-content: center; align-items: center; height: 32px; width: 32px;">
-                                        <i class="bi bi-trash-fill" style="font-size: 1.4rem; vertical-align: middle;"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                                <tr class="table-light" style="height: 60px;">
+                                    <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">@stackpackage.Stack.Name</td>
+                                    <td class="text-center truncate-text" style="vertical-align: middle;">@stackpackage.Package.Name</td>
+                                    <td class="text-center" style="vertical-align: middle;">@stackpackage.Package.Version</td>
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                                title="Editar"
+                                                @onclick="() => EditStack(stackpackage.StackId, stackpackage.PackageId)">
+                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                        </button>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                                title="Remover"
+                                                @onclick="() => RemoveStack(stackpackage.StackId, stackpackage.PackageId)">
+                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                        </button>
+                                    </td>
+                                </tr>
                             }
                         }
                     </tbody>
@@ -139,6 +136,15 @@
             </div>
         </div>
 }
+
+<style>
+    .truncate-text {
+        white-space: nowrap;
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        max-width: 100%; 
+    }
+</style>
 
 @code {
     private Stack? selectedStack;

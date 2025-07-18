@@ -1,0 +1,268 @@
+﻿@page "/manageUsers"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
+
+<PageTitle>Gerir Utilizadores</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="center-customization">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="w-50">
+                    <input type="text" class="form-control" placeholder="Pesquisar utilizador pelo nome..."
+                           @bind="searchTerm" @bind:event="oninput" />
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center gap-3">
+                    <span>@actualPage - @TotalPages de @TotalPages</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                            &lt;
+                        </button>
+
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="NextPage" disabled="@(!CanGoNext)">
+                            &gt;
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pb-5">
+                <table class="table mt-3 w-100">
+                    <thead style="background-color: #0c6527; color: white;">
+                        <tr>
+                            <th style="width: 50%; text-align: left; padding-left: 20px;">Nome do Utilizador</th>
+                            <th style="width: 25%; text-align: center;">Função</th>
+                            <th style="width: 25%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in PaginatedUsers)
+                        {
+                            <tr class="table-light" style="height: 50px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                    @user.UserName
+                                </td>
+                                <td class="text-center align-middle">
+                                    @if (editingUserId == user.Id)
+                                    {
+                                        <select class="form-select form-select-sm mx-auto"
+                                                @bind="selectedRoleId"
+                                                style="width: 90%; max-width: 200px; height: 32px;">
+                                            @foreach (var role in roles)
+                                            {
+                                                <option value="@role.Id" selected="@(role.Id == user.UserRole?.Id)">@role.Name</option>
+                                            }
+                                        </select>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary py-2 px-3">@user.UserRole?.Name</span>
+                                    }
+                                </td>
+                                <td class="text-center align-middle">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        @if (editingUserId == user.Id)
+                                        {
+                                            <button class="btn btn-success btn-sm px-3"
+                                                    @onclick="() => SaveRole(user.Id)">
+                                                <i class="bi bi-check-lg"></i> Salvar
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm px-3"
+                                                    @onclick="() => CancelEdit()">
+                                                <i class="bi bi-x-lg"></i> Cancelar
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                                    title="Editar"
+                                                    @onclick="() => EditRole(user)">
+                                                <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                            </button>
+                                            <div style="width: 40px;"></div>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    table {
+        table-layout: fixed;
+    }
+
+    th, td {
+        padding: 12px 15px;
+    }
+
+    .form-select-sm {
+        margin: 0 auto;
+    }
+
+    .table-light td {
+        background-color: #f8f9fa;
+    }
+
+    .table > :not(:first-child) {
+        border-top: none;
+    }
+</style>
+
+@code {
+    private List<UserPetrotec> users = new List<UserPetrotec>();
+    private List<UserPetrotec> paginatedUsers = new List<UserPetrotec>();
+    private List<UserRole> roles = new List<UserRole>();
+    private WindowDimension dimension = new WindowDimension();
+
+    private string userName = string.Empty;
+
+    private int actualPage = 1;
+    private int usersPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredUsers.Count() / usersPerPage);
+
+    private int? editingUserId = null; 
+    private int? selectedRoleId = null;
+
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
+
+    private IEnumerable<UserPetrotec> FilteredUsers =>
+    string.IsNullOrWhiteSpace(searchTerm)
+        ? users
+        : users.Where(u => u.UserName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<UserPetrotec> PaginatedUsers =>
+    FilteredUsers
+        .Skip((actualPage - 1) * usersPerPage)
+        .Take(usersPerPage);
+
+    private void OnDimensionsChanged(WindowDimension newDimension)
+    {
+        dimension = newDimension;
+
+        UpdatePage();
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        users = await context.Users
+            .Include(u => u.UserRole)
+            .ToListAsync();
+
+        roles = await context.Roles.ToListAsync();
+
+        UpdatePage();
+
+        isLoading = false;
+    }
+
+    private void EditRole(UserPetrotec user)
+    {
+        editingUserId = user.Id;
+        selectedRoleId = user.UserRole?.Id ?? roles.FirstOrDefault()?.Id;
+    }
+
+    private async Task SaveRole(int userId)
+    {
+        if (selectedRoleId == null)
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user != null)
+        {
+            user.UserRoleId = selectedRoleId.Value;
+            await context.SaveChangesAsync();
+
+            var localUser = users.FirstOrDefault(u => u.Id == userId);
+            if (localUser != null)
+            {
+                localUser.UserRole = roles.FirstOrDefault(r => r.Id == selectedRoleId.Value);
+            }
+
+            editingUserId = null;
+            selectedRoleId = null;
+
+            await Swal.FireAsync(new SweetAlertOptions
+             {
+                 Title = "Utilizador atualizado com sucesso!",
+                 Icon = SweetAlertIcon.Success,
+                 ConfirmButtonColor = "#0B5120"
+             });
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editingUserId = null;
+    }
+
+    private void UpdatePage()
+    {
+        paginatedUsers = FilteredUsers
+                                 .Skip((actualPage - 1) * usersPerPage)
+                                 .Take(usersPerPage)
+                                 .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+}

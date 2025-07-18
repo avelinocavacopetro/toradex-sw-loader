@@ -22,8 +22,6 @@
 } 
 else
 {
-    <h3 class="pb-2">Gerir Frotas</h3>
-
     <div class="d-flex justify-content-between align-items-center mt-4">
         <div class="w-50"> 
             <input type="text" class="form-control" placeholder="Pesquisar frota pelo nome..."
@@ -47,24 +45,25 @@ else
     </div>
 
     <div class="d-flex justify-content-center align-items-center">
-        <table class="table mt-5 w-100">
+        <table class="table mt-5 w-100" style="table-layout: fixed;">
             <thead style="background-color: #0c6527; color: white;">
                 <tr>
-                    <th>Nome</th>
-                    <th class="text-center">Ativo</th>
+                    <th style="width: 70%; text-align: left; padding-left: 20px;">Nome</th>
+                    <th style="width: 30%; text-align: center;">Estado</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var fleet in PaginatedFleets)
                 {
-                    <tr class="table-light">
-                        <td>@fleet.Name</td>
-                        <td>
-                            <div class="form-check d-flex justify-content-center">
-                                <input type="checkbox" class="largerCheckbox" id="toggle-@fleet.Id"
-                                       @onchange="(e => ToggleFleet(e, fleet))"
-                                       checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
-                            </div>
+                    <tr class="table-light" style="height: 50px;">
+                        <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                            @fleet.Name
+                        </td>
+                        <td class="text-center align-middle p-0">
+                            <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                   id="toggle-@fleet.Id"
+                                   @onchange="(e => ToggleFleet(e, fleet))"
+                                   checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
                         </td>
                     </tr>
                 }

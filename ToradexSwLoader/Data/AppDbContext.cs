@@ -19,6 +19,7 @@ namespace ToradexSwLoader.Data
         public DbSet<Pattern> Patterns { get; set; }
         public DbSet<Entity> Entities { get; set; }
         public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
+        public DbSet<UserRole> Roles { get; set; }
         public DbSet<StackPackage> StackPackages { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; } 
         public DbSet<LoginLog> LoginLogs { get; set; }
