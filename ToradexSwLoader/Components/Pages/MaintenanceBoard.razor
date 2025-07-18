@@ -55,6 +55,7 @@ else
         <thead style="background-color: #0c6527; color: white;">
             <tr>
                 <th>Nome</th>
+                <td>Software</td>
                 <th>Entidade</th>
                 <th style="text-align: center;">Estado</th>
             </tr>
@@ -66,7 +67,8 @@ else
                     <td title="@board.DeviceName" style="word-break: break-word; white-space: normal; vertical-align: middle;">
                         @board.DeviceName
                     </td>
-                    <td style="vertical-align: middle;">ENTIDADE </td>
+                    <td style="vertical-align: middle;">@board?.Packages?[1].Name</td>
+                    <td style="vertical-align: middle;">ENTIDADE</td>
                     <td style="text-align: center;">
                         @GetStatusIcon(board.DeviceStatus)
                     </td>
@@ -106,8 +108,19 @@ else
             foreach (var pattern in FilterService.SelectedPatterns)
             {
                 var url = $"https://app.torizon.io/api/v2beta/devices?limit=200&offset=0&nameContains={Uri.EscapeDataString(pattern.NameContains)}";
-                var partialBoards = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
-                allBoards.AddRange(partialBoards);
+
+                var devices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+
+                var detailedTasks = devices.Select(async device =>
+                {
+                    var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{device.DeviceUuid}";
+                    var detailedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+                    return detailedDevice;
+                });
+
+                var detailedDevices = await Task.WhenAll(detailedTasks);
+
+                allBoards.AddRange(detailedDevices.Where(d => d != null));
             }
 
             boards = allBoards
@@ -125,6 +138,7 @@ else
     {
         selectedBoard = board;
     }
+
 
     private string GetRowClass(DetailedDevice board)
     {
@@ -147,7 +161,7 @@ else
             context.UserActivities.Add(userAct);
             await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectAction");
+            UriHelper.NavigateTo($"/selectAction/{selectedBoard.DeviceUuid}");
         }
         else
         {

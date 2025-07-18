@@ -30,6 +30,26 @@ input.largerCheckbox {
     white-space: normal;
 }
 
+.grid-container-action {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+    padding: 10vh;
+}
+
+.grid-item-action {
+    background-color: #0c6527;
+    color: white;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 40px;
+    font-size: 26px;
+    border-radius: 5px;
+    white-space: normal;
+}
+
 .pag-bts {
     visibility: hidden;
 }
