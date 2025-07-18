@@ -56,7 +56,7 @@ else
             <tr>
                 <th>Nome</th>
                 <td>Software</td>
-                <th>Entidade</th>
+                <th style="text-align: center;">Entidade</th>
                 <th style="text-align: center;">Estado</th>
             </tr>
         </thead>
@@ -68,7 +68,21 @@ else
                         @board.DeviceName
                     </td>
                     <td style="vertical-align: middle;">@board?.Packages?[1].Name</td>
-                    <td style="vertical-align: middle;">ENTIDADE</td>
+                    <td class="text-center" style="vertical-align: middle;">
+                        @if (deviceEntityNames.TryGetValue(board.DeviceUuid, out var entityList) && entityList.Any())
+                        {
+                            <ul class="mb-0 ps-3" style="list-style-type: none;">
+                                @foreach (var entityName in entityList)
+                                {
+                                    <li>@entityName</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <span class="text-muted" style="font-size: 18px;">Sem entidade</span>
+                        }
+                    </td>
                     <td style="text-align: center;">
                         @GetStatusIcon(board.DeviceStatus)
                     </td>
@@ -86,16 +100,19 @@ else
     private List<DetailedDevice> boards = new List<DetailedDevice>();
     private List<DetailedDevice> allBoards = new List<DetailedDevice>();
     private List<DetailedDevice> paginatedBoards = new List<DetailedDevice>();
+    private Dictionary<string, List<string>> deviceEntityNames = new();
+    private List<EntityFleet> entitiesFleets = new();
     private List<Pattern> patterns = new List<Pattern>();
+    private List<Fleet> fleets = new List<Fleet>();
     private DetailedDevice? selectedBoard = new DetailedDevice();
-
+    public string? EntityName { get; set; }
     private int actualPage = 1;
     private int boardsPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)boards.Count / boardsPerPage);
-
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -128,11 +145,45 @@ else
                         .Select(g => g.First())
                         .ToList();
 
-            isLoading = false;
-        }
+            entitiesFleets = await context.EntityFleets
+                .Include(ef => ef.Entity)
+                .ToListAsync();
 
-        UpdatePage();
+            deviceEntityNames.Clear();
+
+            foreach (var board in boards)
+            {
+                var entityNames = new List<string>();
+
+                if (board.Fleets != null && board.Fleets.Count > 0)
+                {
+                    foreach (var fleet in board.Fleets)
+                    {
+                        var entityFleetsForThisFleet = entitiesFleets.Where(ef => ef.FleetId == fleet.Id && ef.Entity != null);
+
+                        foreach (var ef in entityFleetsForThisFleet)
+                        {
+                            if (!entityNames.Contains(ef.Entity!.Name))
+                            {
+                                entityNames.Add(ef.Entity.Name);
+                            }
+                        }
+                    }
+                }
+
+                if (entityNames.Count == 0)
+                {
+                    entityNames.Add("Sem entidade");
+                }
+
+                deviceEntityNames[board.DeviceUuid] = entityNames;
+            }
+
+            isLoading = false;
+            UpdatePage();
+        }
     }
+
 
     private void SelectRow(DetailedDevice board)
     {
