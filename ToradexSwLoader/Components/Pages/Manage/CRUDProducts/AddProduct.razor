@@ -1,0 +1,187 @@
+﻿@page "/manageProducts/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Produto</PageTitle>
+
+<div class="center-edit">
+    <div class="edit-form">
+        <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome do produto</label>
+        <input type="text" @bind="productName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+        <br />
+        <h4>Selecionar Dispositivo(s):</h4>
+
+        <table class="table mt-3 w-100"
+               style="table-layout: fixed; border-collapse: separate; border-spacing: 0; border-radius: 5px; overflow: hidden; border-bottom: none;">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                       border-right: 1px solid white">Dispositivo</th>
+                    <th style="width: 30%; text-align: center; border-top-right-radius: 5px;">Selecionar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int rowIndex = 0;
+                }
+                @foreach (var device in PaginatedDevices)
+                {
+                    <tr style="height: 45px; background-color: @(rowIndex % 2 == 0 ? "#f8f9fa" : "white");">
+                        <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500; border-bottom: none;">
+                            @device.Name
+                        </td>
+                        <td class="text-center align-middle p-0" style="border-bottom: none;">
+                            <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                   id="toggle-@device.Id"
+                                   @onchange="(e => ToggleDevice(e, device))"
+                                   checked="@selectedDevices.Any(d => d.Id == device.Id)" />
+                        </td>
+                    </tr>
+                    rowIndex++;
+                }
+            </tbody>
+        </table>
+
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <span>@currentDevicePage - @TotalDevicePages de @TotalDevicePages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevDevicePage" disabled="@(currentDevicePage == 1)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextDevicePage" disabled="@(currentDevicePage == TotalDevicePages)">
+                    &gt;
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+            <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="SaveProduct">
+                Salvar
+            </button>
+            <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="Cancel">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Device> selectedDevices = new List<Device>();
+
+    private string productName = string.Empty;
+
+    private int currentDevicePage = 1;
+    private int devicesPerPage = 3;
+    private int TotalDevicePages => (int)Math.Ceiling((double)FilterService.SelectedDevices.Count / devicesPerPage);
+
+    private IEnumerable<Device> PaginatedDevices =>
+        FilterService.SelectedDevices
+            .Skip((currentDevicePage - 1) * devicesPerPage)
+            .Take(devicesPerPage);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterService.LoadFilterAsync();
+        selectedDevices = new List<Device>();
+    }
+
+    private void ToggleDevice(ChangeEventArgs e, Device device)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedDevices.Any(d => d.Id == device.Id))
+                selectedDevices.Add(device);
+        }
+        else
+        {
+            selectedDevices.RemoveAll(d => d.Id == device.Id);
+        }
+    }
+
+    private async Task SaveProduct()
+    {
+        if (string.IsNullOrWhiteSpace(productName))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool exists = await context.Products.AnyAsync(p => p.Name.ToLower() == productName.Trim().ToLower());
+
+        if (exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este produto já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var newProduct = new Product
+        {
+            Name = productName,
+            Enabled = true
+        };
+
+        context.Products.Add(newProduct);
+        await context.SaveChangesAsync();
+
+        foreach (var device in selectedDevices)
+        {
+            context.DeviceProducts.Add(new DeviceProduct
+            {
+                ProductId = newProduct.Id,
+                DeviceId = device.Id
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Produto adicionado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+
+        NavigationManager.NavigateTo("/manageProducts");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageProducts");
+    }
+
+    private void PrevDevicePage()
+    {
+        if (currentDevicePage > 1)
+            currentDevicePage--;
+    }
+
+    private void NextDevicePage()
+    {
+        if (currentDevicePage < TotalDevicePages)
+            currentDevicePage++;
+    }
+}

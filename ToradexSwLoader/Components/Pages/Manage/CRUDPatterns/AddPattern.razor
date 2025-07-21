@@ -1,0 +1,83 @@
+﻿@page "/managePatterns/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Padrão</PageTitle>
+
+<div class="center-edit">
+    <div class="edit-form">
+        <label for="text" class="pb-4" style="font-size: 1.5rem;">Pattern</label>
+        <input type="text" @bind="pattern" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+        <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+            <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="SavePattern">
+                Salvar
+            </button>
+            <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="Cancel">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string pattern = string.Empty;
+
+    private async Task SavePattern()
+    {
+        if (string.IsNullOrWhiteSpace(pattern))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool exists = await context.Patterns.AnyAsync(p => p.NameContains.ToLower() == pattern.Trim().ToLower());
+
+        if (exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este padrão já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var newPattern = new Pattern
+        {
+            NameContains = pattern,
+            Enabled = true
+        };
+
+        context.Patterns.Add(newPattern);
+        await context.SaveChangesAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Padrão adicionado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+
+        NavigationManager.NavigateTo("/managePatterns");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/managePatterns");
+    }
+}

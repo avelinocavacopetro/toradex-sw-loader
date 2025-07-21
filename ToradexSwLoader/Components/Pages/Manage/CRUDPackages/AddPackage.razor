@@ -1,0 +1,256 @@
+﻿@page "/managePackages/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject SweetAlertService Swal
+@inject FilterService FilterService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Pacote</PageTitle>
+
+<div class="center-edit">
+    <div class="edit-form">
+        <label for="stackSelect" class="pt-4" style="font-size: 18px; font-weight: bold; width: 50%;">Stack</label>
+        <select id="stackSelect" class="form-select w-50" @bind="selectedStackId">
+            <option value="0">Selecione um stack</option>
+            @foreach (var stack in FilterService.SelectedStacks)
+            {
+                <option value="@stack.Id">@stack.Name</option>
+            }
+        </select>
+
+        <div class="w-50">
+            <label for="packageInput" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
+            <div class="position-relative">
+                <input id="packageInput" class="form-control" type="text"
+                       @bind="searchTerm"
+                       @oninput="FilterPackageNames"
+                       @onfocus="() => showSuggestions = true"
+                       @onblur="HideSuggestions"
+                       disabled="@packageDisabled" />
+
+                @if (showSuggestions && filteredPackageNames.Any())
+                {
+                    <ul class="list-group position-absolute w-100 shadow"
+                        style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                        @foreach (var name in filteredPackageNames)
+                        {
+                            <li class="list-group-item list-group-item-action"
+                                style="cursor: pointer;"
+                                @onclick="() => SelectPackage(name)">
+                                @name
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <label for="versionInput" class="pt-3" style="font-size: 18px; font-weight: bold;">Versão</label>
+            <div class="position-relative">
+                <input id="versionInput" class="form-control" type="text"
+                       @bind="versionSearchTerm"
+                       @oninput="FilterVersions"
+                       @onfocus="() => showVersionSuggestions = true"
+                       @onblur="HideVersionSuggestions"
+                       disabled="@versionDisabled" />
+
+                @if (showVersionSuggestions && filteredVersionList.Any())
+                {
+                    <ul class="list-group position-absolute w-100 shadow"
+                        style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                        @foreach (var version in filteredVersionList)
+                        {
+                            <li class="list-group-item list-group-item-action"
+                                style="cursor: pointer;"
+                                @onclick="() => SelectVersion(version)">
+                                @version
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+
+        <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+            <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="Save">
+                Salvar
+            </button>
+            <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="Cancel">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Package> packages = new();
+    private HashSet<string> packageNames = new();
+    private List<string> filteredPackageNames = new();
+    private List<string> filteredVersionList = new();
+    private List<string> filteredVersions = new();
+    private Package? selectedPackage;
+
+    private string searchTerm = "";
+    private string versionSearchTerm = "";
+    private string? selectedPackageName;
+    private string? selectedPackageVersion;
+
+    private bool showSuggestions = false;
+    private bool showVersionSuggestions = false;
+    private bool versionDisabled = true;
+    private bool packageDisabled = true;
+
+    private int _selectedStackId;
+    private int selectedStackId
+    {
+        get => _selectedStackId;
+        set
+        {
+            _selectedStackId = value;
+            packageDisabled = value == 0;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        packages = await context.Packages.ToListAsync();
+
+        packageNames = packages
+            .Select(p => p.Name)
+            .Distinct()
+            .OrderBy(p => p)
+            .ToHashSet();
+
+        filteredPackageNames = packageNames.ToList();
+
+        await FilterService.LoadFilterAsync();
+    }
+
+    private void FilterPackageNames(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        showSuggestions = true;
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredPackageNames = packageNames.ToList();
+        }
+        else
+        {
+            filteredPackageNames = packageNames
+                .Where(p => p.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void SelectPackage(string name)
+    {
+        selectedPackageName = name;
+        searchTerm = name;
+        showSuggestions = false;
+
+        filteredVersions = packages
+            .Where(p => p.Name == selectedPackageName)
+            .Select(p => p.Version)
+            .OrderByDescending(v => v)
+            .ToList();
+
+        filteredVersionList = filteredVersions.ToList();
+        versionSearchTerm = "";
+        versionDisabled = false;
+    }
+
+    private async Task HideSuggestions()
+    {
+        await Task.Delay(200);
+        showSuggestions = false;
+    }
+
+    private void FilterVersions(ChangeEventArgs e)
+    {
+        versionSearchTerm = e.Value?.ToString() ?? "";
+        showVersionSuggestions = true;
+
+        if (string.IsNullOrWhiteSpace(versionSearchTerm))
+        {
+            filteredVersionList = filteredVersions.ToList();
+        }
+        else
+        {
+            filteredVersionList = filteredVersions
+                .Where(v => v.Contains(versionSearchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+    }
+
+    private void SelectVersion(string version)
+    {
+        selectedPackageVersion = version;
+        versionSearchTerm = version;
+        showVersionSuggestions = false;
+
+        selectedPackage = packages.FirstOrDefault(p =>
+            p.Name == selectedPackageName && p.Version == selectedPackageVersion);
+    }
+
+    private async Task HideVersionSuggestions()
+    {
+        await Task.Delay(200);
+        showVersionSuggestions = false;
+    }
+
+    private async Task Save()
+    {
+        if (selectedStackId == 0 || selectedPackage == null)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor selecione um stack e um pacote válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool exists = await context.StackPackages.AnyAsync(sp =>
+            sp.StackId == selectedStackId && sp.PackageId == selectedPackage.Id);
+
+        if (exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Esta combinação já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var newStackPackage = new StackPackage
+        {
+            StackId = selectedStackId,
+            PackageId = selectedPackage.Id
+        };
+
+        context.StackPackages.Add(newStackPackage);
+        await context.SaveChangesAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Pacote adicionado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+
+        NavigationManager.NavigateTo("/managePackages");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/managePackages");
+    }
+}

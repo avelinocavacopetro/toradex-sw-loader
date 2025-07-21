@@ -1,0 +1,83 @@
+﻿@page "/manageDevices/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Dispositivo</PageTitle>
+
+<div class="center-edit">
+    <div class="edit-form">
+        <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome do Dispositivo</label>
+        <input type="text" @bind="deviceName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+        <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+            <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="SaveDevice">
+                Salvar
+            </button>
+            <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="Cancel">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string deviceName = string.Empty;
+
+    private async Task SaveDevice()
+    {
+        if (string.IsNullOrWhiteSpace(deviceName))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool exists = await context.Devices.AnyAsync(d => d.Name.ToLower() == deviceName.Trim().ToLower());
+
+        if (exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este dispositivo já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var newDevice = new Device
+        {
+            Name = deviceName,
+            Enabled = true
+        };
+
+        context.Devices.Add(newDevice);
+        await context.SaveChangesAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Dispositivo adicionado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+
+        NavigationManager.NavigateTo("/manageDevices");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageDevices");
+    }
+}
