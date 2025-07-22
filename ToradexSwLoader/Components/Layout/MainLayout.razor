@@ -9,8 +9,7 @@
 
 <div class="page">
 
-    @if (IsCurrentPage(new[] { "/home", "/manageDevices", "/manageProducts", "/manageStacks", "/managePackages", "/manageFleets",
-        "/manageEntities", "/manageUsers", "/manageSecret", "/managePatterns" }))
+    @if (ShouldShowSidebar())
     {
         <div class="sidebar">
             <NavMenu />
@@ -22,7 +21,7 @@
     }
 
     <main>
-        @if (IsCurrentPage(new[] { "/" }))
+        @if (IsRootPage())
         {
             <article class="content px-4">  
                 @Body
@@ -31,7 +30,7 @@
              <div class="top-row px-4 d-flex justify-content-between">
                 <span>@username</span>
                 <span>@currentTime</span>
-                @if (IsCurrentPage(new[] { "/home" }))
+                @if (IsHomePage())
                 {
                     <a href="" class="logout" target="">Terminar Sessão</a>
                 }
@@ -115,15 +114,59 @@
         LoginService.OnLoginChanged -= OnLoginChanged;
     }
 
-    private bool IsCurrentPage(IEnumerable<string> pages)
+    private bool ShouldShowSidebar()
     {
         var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
         relativePath = "/" + relativePath.TrimStart('/');
 
-        if (string.IsNullOrEmpty(relativePath) && pages.Contains("/"))
+        var pages = new[] { 
+            "/home", 
+            "/manageDevices", 
+            "/manageDevices/add", 
+            "/manageDevices/edit", 
+            "/manageProducts", 
+            "/manageProducts/add",
+            "/manageProducts/edit",
+            "/manageStacks", 
+            "/manageStacks/add", 
+            "/manageStacks/edit", 
+            "/managePackages", 
+            "/managePackages/add", 
+            "/managePackages/edit", 
+            "/manageFleets",
+            "/manageEntities", 
+            "/manageEntities/add", 
+            "/manageEntities/edit", 
+            "/manageUsers", 
+            "/manageSecret", 
+            "/managePatterns", 
+            "/managePatterns/add", 
+            "/managePatterns/edit" 
+        };
+
+        if (string.IsNullOrEmpty(relativePath)) 
+            return false;
+
+        if (pages.Contains(relativePath, StringComparer.OrdinalIgnoreCase))
             return true;
 
-        return pages.Contains(relativePath, StringComparer.OrdinalIgnoreCase);
+        if (relativePath.Contains("/edit/", StringComparison.OrdinalIgnoreCase) ||
+        relativePath.EndsWith("/edit", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
     }
 
+    private bool IsRootPage()
+    {
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return string.IsNullOrEmpty(relativePath) || relativePath == "/";
+    }
+
+    private bool IsHomePage()
+    {
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        relativePath = "/" + relativePath.TrimStart('/');
+        return relativePath.Equals("/home", StringComparison.OrdinalIgnoreCase);
+    }
 }

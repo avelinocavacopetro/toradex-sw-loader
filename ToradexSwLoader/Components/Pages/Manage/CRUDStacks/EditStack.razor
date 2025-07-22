@@ -1,0 +1,200 @@
+﻿@page "/manageStacks/edit/{StackId:int}"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Editar Stack</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="center-edit">
+        <div class="edit-form">
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome da Stack</label>
+            <input type="text" @bind="stackName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+            <br />
+            <h4>Selecionar Produto(s):</h4>
+
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th style="width: 70%; text-align: left; padding-left: 25px;">Produto</th>
+                        <th style="width: 30%; text-align: center;">Selecionar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in PaginatedProducts)
+                    {
+                        <tr class="table-light" style="height: 45px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 25px; font-weight: 500;">
+                                @product.Name
+                            </td>
+                            <td class="text-center align-middle p-0">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@product.Id"
+                                       @onchange="(e => ToggleProduct(e, product))"
+                                       checked="@selectedProducts.Any(p => p.Id == product.Id)" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between align-items-center gap-3">
+                <span>@currentProductPage - @TotalProductPages de @TotalProductPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevProductPage" disabled="@(currentProductPage == 1)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextProductPage" disabled="@(currentProductPage == TotalProductPages)">
+                        &gt;
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+                <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="SaveChanges">
+                    Salvar
+                </button>
+                <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="Cancel">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int StackId { get; set; }
+
+    private List<Product> selectedProducts = new List<Product>();
+
+    private string stackName = string.Empty;
+
+    private bool isLoading = true;
+
+    private int currentProductPage = 1;
+    private int productsPerPage = 3;
+    private int TotalProductPages => (int)Math.Ceiling((double)FilterService.SelectedProducts.Count / productsPerPage);
+
+    private IEnumerable<Product> PaginatedProducts =>
+        FilterService.SelectedProducts
+            .Skip((currentProductPage - 1) * productsPerPage)
+            .Take(productsPerPage);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterService.LoadFilterAsync();
+
+        using var context = DbContextFactory.CreateDbContext();
+        var stack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == StackId);
+
+        if (stack != null)
+        {
+            stackName = stack.Name;
+
+            selectedProducts = await context.ProductStacks
+                .Where(ps => ps.StackId == StackId)
+                .Select(ps => ps.Product!)
+                .ToListAsync();
+        }
+
+        isLoading = false;
+    }
+
+    private void ToggleProduct(ChangeEventArgs e, Product product)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedProducts.Any(p => p.Id == product.Id))
+                selectedProducts.Add(product);
+        }
+        else
+        {
+            selectedProducts.RemoveAll(p => p.Id == product.Id);
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (string.IsNullOrWhiteSpace(stackName))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == StackId);
+        if (stackDb == null) return;
+
+        stackDb.Name = stackName;
+
+        var oldProductStacks = context.ProductStacks.Where(ps => ps.StackId == stackDb.Id);
+        context.ProductStacks.RemoveRange(oldProductStacks);
+
+        foreach (var product in selectedProducts)
+        {
+            context.ProductStacks.Add(new ProductStack
+            {
+                StackId = stackDb.Id,
+                ProductId = product.Id
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Stack editado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+
+        NavigationManager.NavigateTo("/manageStacks");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageStacks");
+    }
+
+    private void PrevProductPage()
+    {
+        if (currentProductPage > 1)
+            currentProductPage--;
+    }
+
+    private void NextProductPage()
+    {
+        if (currentProductPage < TotalProductPages)
+            currentProductPage++;
+    }
+}

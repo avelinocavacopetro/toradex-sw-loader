@@ -1,8 +1,9 @@
-﻿@page "/managePackages"
+﻿@* @page "/managePackages"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject FilterService FilterService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Gerir Pacotes</PageTitle>
 
@@ -81,9 +82,10 @@
             </div>
         </div>
     </div>
-} else{
+} 
+else
+{
         <div class="container-fluid">
-
             <h3 style="text-align: left;">Configurar pacotes a visualizar</h3>
 
             <div class="pb-2" style="text-align: right;">
@@ -486,5 +488,131 @@
     {
         await Task.Delay(200);
         showVersionSuggestions = false;
+    }
+} *@
+
+
+
+@page "/managePackages"
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Gerir Pacotes</PageTitle>
+
+<div class="container-fluid">
+    <h3 style="text-align: left;">Configurar pacotes a visualizar</h3>
+
+    <div class="pb-2" style="text-align: right;">
+        <button class="btn btn-color btn-lg"
+                style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
+                @onclick="NavigateToAdd">
+            +
+        </button>
+    </div>
+
+    <div class="pb-5">
+        <table class="table mt-3 w-100" style="table-layout: fixed;">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th style="width: 25%; text-align: left; padding-left: 20px;">Stack</th>
+                    <th style="width: 30%; text-align: center;">Pacote</th>
+                    <th style="width: 15%; text-align: center;">Versão</th>
+                    <th style="width: 15%;"></th>
+                    <th style="width: 15%;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var stackPackage in stacksPackages)
+                {
+                    @if (stackPackage?.Stack != null && stackPackage?.Package != null)
+                    {
+                        <tr class="table-light" style="height: 60px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">@stackPackage.Stack.Name</td>
+                            <td class="text-center truncate-text" style="vertical-align: middle;">@stackPackage.Package.Name</td>
+                            <td class="text-center" style="vertical-align: middle;">@stackPackage.Package.Version</td>
+                            <td class="text-center align-middle">
+                                <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                        title="Editar"
+                                        @onclick="() => NavigateToEdit(stackPackage.StackId, stackPackage.PackageId)">
+                                    <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                </button>
+                            </td>
+                            <td class="text-center align-middle">
+                                <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                        title="Remover"
+                                        @onclick="() => RemoveStack(stackPackage.StackId, stackPackage.PackageId)">
+                                    <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .truncate-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+</style>
+
+@code {
+    private List<StackPackage> stacksPackages = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        stacksPackages = await context.StackPackages
+            .Include(sp => sp.Stack)
+            .Include(sp => sp.Package)
+            .ToListAsync();
+    }
+
+    private void NavigateToAdd()
+    {
+        NavigationManager.NavigateTo("/managePackages/add");
+    }
+
+    private void NavigateToEdit(int stackId, string packageId)
+    {
+        NavigationManager.NavigateTo($"/managePackages/edit/{stackId}/{packageId}");
+    }
+
+    private async Task RemoveStack(int stackId, string packageId)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Deseja remover?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = "Cancelar"
+        });
+
+        if (result.IsConfirmed)
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var toRemove = await context.StackPackages
+                .FirstOrDefaultAsync(sp => sp.StackId == stackId && sp.PackageId == packageId);
+
+            if (toRemove != null)
+            {
+                context.StackPackages.Remove(toRemove);
+                await context.SaveChangesAsync();
+                await LoadData();
+            }
+        }
     }
 }
