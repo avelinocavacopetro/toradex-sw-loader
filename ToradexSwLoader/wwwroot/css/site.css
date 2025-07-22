@@ -1,4 +1,15 @@
 ﻿/* 
+    CSS para login
+*/
+.center-login {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 50vh;
+}
+
+/* 
     CSS para a gestor
 */
 input.largerCheckbox {
@@ -179,6 +190,10 @@ input.largerCheckbox {
 /*
     CSS para classes globais
 */
+body {
+    font-family: 'Roboto', sans-serif;
+}
+
 td, th {
     white-space: nowrap;
     overflow: visible;
