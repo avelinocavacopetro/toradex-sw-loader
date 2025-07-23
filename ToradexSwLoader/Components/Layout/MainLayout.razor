@@ -7,29 +7,22 @@
 @inject LoginService LoginService
 @inject FinalProductStateService ProductState
 
-<div class="page">
-
-    @if (ShouldShowSidebar())
+<div class="layout-container">
+    @if (!IsRootPage())
     {
-        <div class="sidebar">
-            <NavMenu />
-        </div>
-    }
-    else
-    {
-        <div></div>
-    }
+        <header class="topbar">
+            @if(ShouldShowSidebar())
+            {
+                <i class="bi bi-list fs-2" 
+                   @onclick="SidebarIconOnClick" 
+                   style="cursor: pointer;"></i>
+            }
 
-    <main>
-        @if (IsRootPage())
-        {
-            <article class="content px-4">  
-                @Body
-            </article>
-        } else{
-             <div class="top-row px-4 d-flex justify-content-between">
-                <span>@username</span>
-                <span>@currentTime</span>
+            <div class="container-fluid d-flex align-items-center justify-content-between">
+                <a class="navbar-brand" style="color: white; font-size: 1.5rem;" href="/home">ToradexSwLoader</a>
+
+                <span style="font-size: 1.5rem;">@currentTime</span>
+                <span>Bem-vindo(a), @username</span>
                 @if (IsHomePage())
                 {
                     <div class="user-menu-wrapper">
@@ -100,6 +93,14 @@
     private System.Timers.Timer? timer;
     private string? username;
     private Modal modal;
+
+    private bool sidebarVisible = false;
+
+    private void SidebarIconOnClick()
+    {
+        sidebarVisible = !sidebarVisible;
+    }
+
 
     protected override Task OnInitializedAsync()
     {
