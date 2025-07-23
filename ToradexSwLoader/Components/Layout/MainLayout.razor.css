@@ -8,14 +8,58 @@ main {
     flex: 1;
 }
 
-.sidebar {
-    /*background-image: linear-gradient(0deg,#1b5e20 100%, #2e7d32 30%);*/
+.layout-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.topbar {
+    height: 60px;
     background-color: #0c6527;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.main-container {
+    display: flex;
+    flex: 1;
+    margin-top: 60px;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 275px;
+    background-color: #f8f9fa;
+    border-radius: 5px; 
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.sidebar.show {
+    width: 275px;
+}
+
+.sidebar.hide {
+    display: none;
+}
+
+.content-area {
+    flex: 1;
+    padding: 1rem;
+    overflow: hidden;
 }
 
 .top-row {
-    /*background-image: linear-gradient(180deg, #2e7d32 0%, #1b5e20 70%);*/
-    background-color: #0B5120;
     border-bottom: 1px solid #d6d5d5;
     justify-content: flex-end;
     height: 4rem;
