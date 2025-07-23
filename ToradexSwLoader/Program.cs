@@ -26,6 +26,7 @@ builder.Services.AddScoped<FilterService>();
 builder.Services.AddSingleton<FinalProductStateService>();
 builder.Services.AddHostedService<DeviceStatusUpdaterService>();
 builder.Services.AddSweetAlert2();
+builder.Services.AddBlazorBootstrap();
 
 var app = builder.Build();
 

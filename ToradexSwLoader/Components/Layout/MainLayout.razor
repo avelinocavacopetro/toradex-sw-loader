@@ -32,11 +32,44 @@
                 <span>@currentTime</span>
                 @if (IsHomePage())
                 {
-                    <a href="" class="logout" target="">Terminar Sessão</a>
+                    <div class="user-menu-wrapper">
+                        <button @onclick="ToggleMenu" class="user-icon-navbar">
+                            <i class="bi bi-person-fill"></i>
+                        </button>
+
+                        @if (openMenu)
+                        {
+                            <div class="user-dropdown">
+                                <Button @onclick="OnShowModalClick" class="dropdown-item"><i class="bi bi-question-circle mx-1"></i> Sobre</Button>
+
+                                <Button @onclick="Logout" class="dropdown-item"><i class="bi bi-box-arrow-right mx-1"></i> Terminar Sessão</Button>
+                                
+                            </div>
+                        }
+                    </div>
                 }
              </div>
+
             <article class="content px-4">
                 @Body
+                <Modal @ref="modal" Title="Sobre" IsVerticallyCentered="true">
+                    <BodyTemplate>
+                        <div style="width: 450px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
+                                <strong>Versão:</strong>
+                                <div style="text-align: right; flex-grow: 1;">
+                                    2.0.0
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between">
+                                <strong>URL Base:</strong>
+                                <div style="text-align: right; flex-grow: 1;">
+                                    https://172.16.50.146:7023/
+                                </div>
+                            </div>
+                        </div>
+                    </BodyTemplate>
+                </Modal>
             </article>
         }
     </main>
@@ -64,10 +97,11 @@
 </style>
 
 @code {
+    private bool openMenu = false;
     private string? currentTime;
     private System.Timers.Timer? timer;
-
     private string? username;
+    private Modal modal;
 
     protected override Task OnInitializedAsync()
     {
@@ -82,6 +116,23 @@
         LoginService.OnLoginChanged += OnLoginChanged;
 
         return Task.CompletedTask;
+    }
+
+    private async Task OnShowModalClick()
+    {
+        await modal?.ShowAsync();
+        openMenu = !openMenu;
+    }
+
+    private async Task Logout()
+    {
+        Navigation.NavigateTo("");
+        openMenu = !openMenu;
+    }
+
+    private void ToggleMenu()
+    {
+        openMenu = !openMenu;
     }
 
     private void OnLoginChanged()
