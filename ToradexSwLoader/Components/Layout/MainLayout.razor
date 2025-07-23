@@ -11,18 +11,23 @@
     @if (!IsRootPage())
     {
         <header class="topbar">
-            @if(ShouldShowSidebar())
+            @if (ShouldShowSidebar())
             {
-                <i class="bi bi-list fs-2" 
-                   @onclick="SidebarIconOnClick" 
-                   style="cursor: pointer;"></i>
+                @if (!sidebarVisible)
+                {
+                    <i class="bi bi-list fs-2" @onclick="SidebarIconOnClick" style="cursor: pointer;"></i>
+                }
+                else
+                {
+                    <i class="bi bi-list-nested fs-2" @onclick="SidebarIconOnClick" style="cursor: pointer;"></i>
+                }
             }
+            
 
             <div class="container-fluid d-flex align-items-center justify-content-between">
                 <a class="navbar-brand" style="color: white; font-size: 1.5rem;" href="/home">ToradexSwLoader</a>
-
                 <span style="font-size: 1.5rem;">@currentTime</span>
-                <span>Bem-vindo(a), @username</span>
+
                 @if (IsHomePage())
                 {
                     <div class="user-menu-wrapper">
@@ -33,37 +38,49 @@
                         @if (openMenu)
                         {
                             <div class="user-dropdown">
-                                <Button @onclick="OnShowModalClick" class="dropdown-item"><i class="bi bi-question-circle mx-1"></i> Sobre</Button>
-                                <Button @onclick="Logout" class="dropdown-item"><i class="bi bi-box-arrow-right mx-1"></i> Terminar Sessão</Button>
+                                <button @onclick="OnShowModalClick" class="dropdown-item">
+                                    <i class="bi bi-question-circle mx-1"></i> Sobre
+                                </button>
+                                <button @onclick="Logout" class="dropdown-item">
+                                    <i class="bi bi-box-arrow-right mx-1"></i> Terminar Sessão
+                                </button>
                             </div>
                         }
                     </div>
                 }
-             </div>
+            </div>
+        </header>
+    }
 
-            <article class="content px-4">
-                @Body
-                <Modal @ref="modal" Title="Sobre" IsVerticallyCentered="true">
-                    <BodyTemplate>
-                        <div style="width: 450px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
-                                <strong>Versão:</strong>
-                                <div style="text-align: right; flex-grow: 1;">
-                                    2.0.0
-                                </div>
-                            </div>
-                            <div style="display: flex; justify-content: space-between">
-                                <strong>URL Base:</strong>
-                                <div style="text-align: right; flex-grow: 1;">
-                                    https://172.16.50.146:7023/
-                                </div>
+    <div class="main-container">
+        @if (ShouldShowSidebar())
+        {
+            <nav class="sidebar @(sidebarVisible ? "show" : "hide")">
+                <NavMenu />
+            </nav>
+        }
+
+        <main class="content-area">
+            @Body
+
+            <Modal @ref="modal" Title="Sobre" IsVerticallyCentered="true">
+                <BodyTemplate>
+                    <div style="width: 450px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
+                            <strong>Versão:</strong>
+                            <div style="text-align: right; flex-grow: 1;">2.0.0</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong>URL Base:</strong>
+                            <div style="text-align: right; flex-grow: 1;">
+                                https://172.16.50.146:7023/
                             </div>
                         </div>
-                    </BodyTemplate>
-                </Modal>
-            </article>
-        }
-    </main>
+                    </div>
+                </BodyTemplate>
+            </Modal>
+        </main>
+    </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
