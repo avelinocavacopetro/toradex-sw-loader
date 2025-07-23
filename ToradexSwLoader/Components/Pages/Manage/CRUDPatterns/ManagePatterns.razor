@@ -177,7 +177,12 @@ else
         using var context = DbContextFactory.CreateDbContext();
         patterns = await context.Patterns.Where(p => p.Enabled).ToListAsync();
 
-        selectedPatterns = FilterService.SelectedPatterns;
+        selectedPatterns = FilterService.SelectedPatterns
+            .Select(sp => patterns.FirstOrDefault(p => p.Id == sp.Id))
+            .Where(p => p != null)
+            .ToList();
+
+
         // onlineTime = FilterService.OnlineTime;
 
         UpdatePage();
@@ -273,7 +278,12 @@ else
             return;
         }
 
-        await FilterService.ApplyPatternsFilter(new List<Pattern>(selectedPatterns));
+        await FilterService.ApplyPatternsFilter(
+            new List<Pattern>(
+                selectedPatterns.Where(p => patterns.Any(a => a.Id == p.Id && a.Enabled))
+            )
+        );
+
 
         await Swal.FireAsync(new SweetAlertOptions
         {
