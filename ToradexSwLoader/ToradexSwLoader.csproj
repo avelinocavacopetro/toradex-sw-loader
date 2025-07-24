@@ -19,6 +19,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="MySql.EntityFrameworkCore" Version="9.0.3" />
+    <PackageReference Include="Syncfusion.Blazor" Version="30.1.41" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.7" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="9.0.7" />
     <PackageReference Include="System.Security.Permissions" Version="9.0.7" />

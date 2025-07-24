@@ -1,5 +1,6 @@
 using CurrieTechnologies.Razor.SweetAlert2;
 using Microsoft.EntityFrameworkCore;
+using Syncfusion.Blazor;
 using ToradexSwLoader.Components;
 using ToradexSwLoader.Data;
 using ToradexSwLoader.Services;
@@ -26,6 +27,8 @@ builder.Services.AddScoped<FilterService>();
 builder.Services.AddSingleton<FinalProductStateService>();
 builder.Services.AddHostedService<DeviceStatusUpdaterService>();
 builder.Services.AddSweetAlert2();
+builder.Services.AddBlazorBootstrap();
+builder.Services.AddSyncfusionBlazor();
 
 var app = builder.Build();
 
