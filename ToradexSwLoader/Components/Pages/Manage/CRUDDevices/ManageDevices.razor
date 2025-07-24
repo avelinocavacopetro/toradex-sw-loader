@@ -21,102 +21,113 @@
 }
 else
 {
-    <div class="center-customization">
-        <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <div class="w-50">
-                    <input type="text" class="form-control" placeholder="Pesquisar dispositivo pelo nome..."
-                           @bind="searchTerm" @bind:event="oninput" />
-                </div>
+    <div class="custom-container">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Gerir Dispositivos</h3>
+        </div>
 
-                <div class="d-flex justify-content-between align-items-center gap-3">
-                    <span>@actualPage - @TotalPages de @TotalPages</span>
-                    <div class="d-flex gap-2">
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                            &lt;
-                        </button>
-
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="NextPage" disabled="@(!CanGoNext)">
-                            &gt;
-                        </button>
-                    </div>
-                </div>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="w-50 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar dispositivo pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
             </div>
 
-            <div class="pb-2 pt-4" style="text-align: right;">
+            <div>
                 <button class="btn btn-color btn-lg"
-                        style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
+                        style="font-size: 1.25rem;"
                         @onclick="NavigateToAddDevice">
-                    +
+                    <i class="bi bi-plus icon-align"></i> Novo
+                </button>
+                <button class="btn btn-color btn-lg"
+                        style="font-size: 1.25rem;"
+                        @onclick="ApplyFilter">
+                    <i class="bi bi-floppy icon-align"></i> Aplicar
                 </button>
             </div>
+        </div>
 
-            <div class="pb-5">
-                <table class="table mt-3 w-100" style="table-layout: fixed;">
-                    <thead style="background-color: #0c6527; color: white;">
+        <div class="pb-5">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th onclick="@(() => SortByColumn("Name"))"
+                            style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px; 
+                                   border-right: 1px solid white; cursor: pointer;">
+                            Nome do Dispositivo
+                            <span style="font-size: 0.9rem; margin-left: 5px;
+                                                         color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+
+                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Ativo</th>
+                        <th style="width: 20%;"></th>
+                        <th style="width: 20%; border-top-right-radius: 5px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (PaginatedDevices is null || !PaginatedDevices.Any())
+                    {
                         <tr>
-                            <th onclick="@(() => SortByColumn("Name"))"
-                                style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px; cursor: pointer;">
-                                Nome do Dispositivo
-                                <span style="font-size: 0.9rem; margin-left: 5px;
-                                                     color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
-                                    @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
-                                </span>
-                            </th>
-
-                            <th style="width: 20%; text-align: center;">Ativo</th>
-                            <th style="width: 20%;"></th>
-                            <th style="width: 20%;"></th>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @if (PaginatedDevices is null || !PaginatedDevices.Any())
+                    }
+                    else
+                    {
+                        @foreach (var device in PaginatedDevices)
                         {
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                    Sem dados disponíveis
+                            <tr class="table-light" style="height: 60px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                    @device.Name
+                                </td>
+                                <td class="text-center align-middle p-0">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@device.Id"
+                                           @onchange="(e => ToggleDevice(e, device))"
+                                           checked="@selectedDevices.Any(d => d.Id == device.Id)" />
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                            title="Editar"
+                                            @onclick="() => NavigateToEditDevice(device.Id)">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                            title="Desativar"
+                                            @onclick="() => DisableDevice(device.Id)">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                    </button>
                                 </td>
                             </tr>
-                        } 
-                        else
-                        {
-                            @foreach (var device in PaginatedDevices)
-                            {
-                                <tr class="table-light" style="height: 50px;">
-                                    <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                        @device.Name
-                                    </td>
-                                    <td class="text-center align-middle p-0">
-                                        <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                               id="toggle-@device.Id"
-                                               @onchange="(e => ToggleDevice(e, device))"
-                                               checked="@selectedDevices.Any(d => d.Id == device.Id)" />
-                                    </td>
-                                    <td class="text-center align-middle">
-                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
-                                                title="Editar"
-                                                @onclick="() => NavigateToEditDevice(device.Id)">
-                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
-                                        </button>
-                                    </td>
-                                    <td class="text-center align-middle">
-                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
-                                                title="Desativar"
-                                                @onclick="() => DisableDevice(device.Id)">
-                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
                         }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
+        </div>
 
-            <div class="text-center fixed-bottom pb-4">
-                <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
+        <div class="sticky-footer-right">
+            <div class="d-flex justify-content-end align-items-center gap-3">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
+                </div>
             </div>
         </div>
     </div>

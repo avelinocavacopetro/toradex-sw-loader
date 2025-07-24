@@ -1,22 +1,21 @@
 ﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject LoginService LoginService
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/home">ToradexSwLoader</a>
-    </div>
-</div>
-
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
 <div class="sidebar-container">
     <div class="nav" onclick="document.querySelector('.navbar-toggler').click()">
-        <nav class="flex-column">
+        <nav class="flex-column sidebar-content">
             @if (HasRole("Administrador", "Operador", "Técnico"))
             {
                 <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
+                        <span class="bi bi-house icon-align" aria-hidden="true"></span> Inicio
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
                     <NavLink class="nav-link" href="selectdevices" Match="NavLinkMatch.All">
-                        <span class="bi bi-usb-symbol-nav-menu" aria-hidden="true"></span> Wizard
+                        <span class="bi bi-tools icon-align" aria-hidden="true"></span> Wizard
                     </NavLink>
                 </div>
             }
@@ -25,7 +24,7 @@
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="maintenance" Match="NavLinkMatch.All">
-                        <span class="bi bi-usb-symbol-nav-menu" aria-hidden="true"></span> Manutenção
+                        <span class="bi bi-tools icon-align" aria-hidden="true"></span> Manutenção
                     </NavLink>
                 </div>
             }
@@ -34,46 +33,51 @@
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="devices" style="gap: 0.5rem;">
-                        <span class="bi bi-motherboard-nav-menu" aria-hidden="true"></span> Dispositivos
+                        <span class="bi bi-motherboard icon-align" aria-hidden="true"></span> Dispositivos
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <a class="nav-link" style="gap: 0.5rem; cursor:pointer;" @onclick="ToggleMenu">
-                        <span class="bi bi-gear-nav-menu" aria-hidden="true"></span> Administração
+                    <a class="nav-link d-flex align-items-center justify-content-between" style="cursor: pointer;" @onclick="ToggleMenu">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-gear icon-align"></i>
+                            <span class="align-text">Administração</span>
+                        </div>
+
+                        <i class="bi @(menuOpen ? "bi-chevron-up" : "bi-chevron-down") icon-align"></i>
                     </a>
 
                     @if (menuOpen)
                     {
                         <div class="pt-1">
-                            <NavLink class="nav-link pb-1" href="manageDevices" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Dispositivos
+                            <NavLink class="nav-link pb-1" href="manageDevices">
+                                <span aria-hidden="true"></span> <i class="bi bi-motherboard icon-align"></i> Gerir Dispositivos
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="manageProducts" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Produtos
+                            <NavLink class="nav-link pb-1" href="manageProducts">
+                                <span aria-hidden="true"></span> <i class="bi bi-cpu icon-align"></i> Gerir Produtos
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="manageStacks" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Stacks
+                            <NavLink class="nav-link pb-1" href="manageStacks">
+                                <span aria-hidden="true"></span> <i class="bi bi-layers icon-align"></i> Gerir Stacks
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="managePackages" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Pacotes
+                            <NavLink class="nav-link pb-1" href="managePackages">
+                                <span aria-hidden="true"></span> <i class="bi bi-file-earmark-code icon-align"></i> Gerir Pacotes
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="manageFleets" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Frotas
+                            <NavLink class="nav-link pb-1" href="manageFleets">
+                                <span aria-hidden="true"></span> <i class="bi bi-truck icon-align"></i> Gerir Frotas
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="manageEntities" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Entidades
+                            <NavLink class="nav-link pb-1" href="manageEntities">
+                                <span aria-hidden="true"></span> <i class="bi bi-globe icon-align"></i> Gerir Entidades
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="manageUsers" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Utilizadores
+                            <NavLink class="nav-link pb-1" href="manageUsers">
+                                <span aria-hidden="true"></span> <i class="bi bi-person icon-align"></i> Gerir Utilizadores
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="managePatterns" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Gerir Patterns
+                            <NavLink class="nav-link pb-1" href="managePatterns">
+                                <span aria-hidden="true"></span> <i class="bi bi-funnel icon-align"></i> Gerir Patterns
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="manageSecret" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Definições
+                            <NavLink class="nav-link pb-1" href="manageSecret">
+                                <span aria-hidden="true"></span> <i class="bi bi-gear icon-align"></i> Definições
                             </NavLink>
-                            <NavLink class="nav-link pb-1" href="adminHistory" style="gap: 1rem;">
-                                <span aria-hidden="true"></span> Carregamentos
+                            <NavLink class="nav-link pb-1" href="adminHistory">
+                                <span aria-hidden="true"></span> <i class="bi bi-journal-text icon-align"></i> Carregamentos
                             </NavLink>
                         </div>
                     }
@@ -81,11 +85,15 @@
             }
         </nav> 
     </div>
+
+    <footer class="sidebar-footer px-3 py-2">
+        <small class="text-white"><img style="height:4vh;" src="images/linepetroteclogo.png" /> 2.0.0</small>
+    </footer>
 </div>
 
 <style>
     .nav-link {
-        font-size: 0.95rem;
+        font-size: 1rem;
         background-color: transparent !important;
         display: flex;
         align-items: center;
@@ -95,6 +103,7 @@
         text-overflow: ellipsis;
         padding: 0.5rem 1rem;
         width: 100%;
+        min-width: 225px;
         box-sizing: border-box;
     }
 
@@ -110,7 +119,11 @@
 
     .nav-link:hover {
         background-color: rgba(205, 205, 205, 0.2) !important;
-     }
+    }
+
+    .sidebar-footer img {
+        filter: brightness(0) invert(1);
+    }
 </style>
 
 @code {

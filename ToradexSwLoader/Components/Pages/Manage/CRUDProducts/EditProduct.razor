@@ -21,69 +21,82 @@
 }
 else
 {
-    <div class="center-edit">
-        <div class="edit-form">
-            <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome do produto</label>
-            <input type="text" @bind="productName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+    <div class="custom-container">
+        <div class="page-title d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+                <h3 class="ms-2 mb-0">Editar Produto</h3>
+            </div>
+
+            <div class="d-flex gap-3">
+                <button class="btn btn-outline-light border border-white border-2"
+                        style="width: 100px;"
+                        @onclick="Cancel">
+                    <i class="bi bi-arrow-left fs-5"></i>
+                </button>
+                <button class="btn btn-outline-light border border-white border-2 fs-5"
+                        style="width: 150px;"
+                        @onclick="SaveChanges">
+                    <i class="bi bi-floppy"></i> Salvar
+                </button>
+            </div>
+        </div>
+
+        <div class="edit-form mt-4">
+            <div class="d-flex align-items-center gap-3">
+                <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">Nome do produto
+                    <span style="font-size: 15px;"> (máx. 30 caracteres)</span> :</label>
+                <input type="text" @bind="productName"
+                       class="form-control"
+                       style="font-size: 1.2rem; border: 1px solid grey;" />
+            </div>
 
             <br />
             <h4>Selecionar Dispositivo(s):</h4>
 
-            <table class="table mt-3 w-100"
-                   style="table-layout: fixed; border-collapse: separate; border-spacing: 0; border-radius: 5px; overflow: hidden; border-bottom: none;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                               border-right: 1px solid white">Dispositivo</th>
-                        <th style="width: 30%; text-align: center; border-top-right-radius: 5px;">Selecionar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{
-                        int rowIndex = 0;
-                    }
-                    @foreach (var device in PaginatedDevices)
-                    {
-                        <tr style="height: 45px; background-color: @(rowIndex % 2 == 0 ? "#f8f9fa" : "white");">
-                            <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500; border-bottom: none;">
-                                @device.Name
-                            </td>
-                            <td class="text-center align-middle p-0" style="border-bottom: none;">
-                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                       id="toggle-@device.Id"
-                                       @onchange="(e => ToggleDevice(e, device))"
-                                       checked="@selectedDevices.Any(d => d.Id == device.Id)" />
-                            </td>
+            <div class="table-wrapper">
+                <table class="table mt-3 w-100" style="table-layout: fixed;">
+                    <thead style="background-color: #0c6527; color: white;">
+                        <tr>
+                            <th style="width: 50%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                   border-right: 1px solid white">Dispositivo</th>
+                            <th style="width: 50%; text-align: center; border-top-right-radius: 5px;">Selecionar</th>
                         </tr>
-                        rowIndex++;
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var device in PaginatedDevices)
+                        {
+                            <tr class="table-light" style="height: 60px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                    @device.Name
+                                </td>
+                                <td class="text-center align-middle p-0">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@device.Id"
+                                           @onchange="(e => ToggleDevice(e, device))"
+                                           checked="@selectedDevices.Any(d => d.Id == device.Id)" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
 
-            <div class="d-flex justify-content-between align-items-center gap-3">
-                <span>@currentDevicePage - @TotalDevicePages de @TotalDevicePages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevDevicePage" disabled="@(currentDevicePage == 1)">
-                        &lt;
-                    </button>
+                <div class="sticky-footer-right">
+                    <div class="d-flex justify-content-end align-items-center gap-3">
+                        <span>@currentDevicePage - @TotalDevicePages de @TotalDevicePages</span>
+                        <div class="d-flex gap-2">
+                            <button class="btn custom-outline-button btn-lg"
+                                    @onclick="PrevDevicePage" disabled="@(currentDevicePage == 1)">
+                                &lt;
+                            </button>
 
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextDevicePage" disabled="@(currentDevicePage == TotalDevicePages)">
-                        &gt;
-                    </button>
+                            <button class="btn custom-outline-button btn-lg"
+                                    @onclick="NextDevicePage" disabled="@(currentDevicePage == TotalDevicePages)">
+                                &gt;
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
-                <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
-                        @onclick="SaveChanges">
-                    Salvar
-                </button>
-                <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
-                        @onclick="Cancel">
-                    Cancelar
-                </button>
             </div>
         </div>
     </div>

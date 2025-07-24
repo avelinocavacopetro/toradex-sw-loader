@@ -16,7 +16,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseMySQL(connectionString)
 );
 
-// Configurar serviços a serem utilizados
+// Configurar serviÃ§os a serem utilizados
 builder.Services.AddHttpClient<TorizonService>();
 builder.Services.AddScoped<DeviceService>();
 builder.Services.AddScoped<PackageService>();

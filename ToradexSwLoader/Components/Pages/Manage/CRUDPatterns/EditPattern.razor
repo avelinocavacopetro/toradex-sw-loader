@@ -21,20 +21,36 @@
 }
 else
 {
-    <div class="center-edit">
-        <div class="edit-form">
-            <label for="text" class="pb-4" style="font-size: 1.5rem;">Pattern</label>
-            <input type="text" @bind="patternString" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+    <div class="custom-container">
+        <div class="page-title d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+                <h3 class="ms-2 mb-0">Editar Pattern</h3>
+            </div>
 
-            <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
-                <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
-                        @onclick="SaveChanges">
-                    Salvar
-                </button>
-                <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+            <div class="d-flex gap-3">
+                <button class="btn btn-outline-light border border-white border-2"
+                        style="width: 100px;"
                         @onclick="Cancel">
-                    Cancelar
+                    <i class="bi bi-arrow-left fs-5"></i>
                 </button>
+                <button class="btn btn-outline-light border border-white border-2 fs-5"
+                        style="width: 150px;"
+                        @onclick="SaveChanges">
+                    <i class="bi bi-floppy"></i> Salvar
+                </button>
+            </div>
+        </div>
+
+        <div class="edit-form mt-4">
+            <div class="d-flex align-items-center gap-3">
+                <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
+                    Nome do produto
+                    <span style="font-size: 15px;"> (máx. 50 caracteres)</span> :
+                </label>
+                <input type="text" @bind="patternString"
+                       class="form-control"
+                       style="font-size: 1.2rem;" />
             </div>
         </div>
     </div>

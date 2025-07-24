@@ -8,78 +8,105 @@
 
 <PageTitle>Adicionar Entidade</PageTitle>
 
-<div class="center-edit">
-    <div class="edit-form p-4" style="max-height: 90vh;">
-        <label for="text" class="pb-4" style="font-size: 1.5rem;">Nome da Entidade</label>
-        <input type="text" @bind="entityName" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
-
-        <label for="text" class="pb-4" style="font-size: 1.5rem;">Observações</label>
-        <textarea @bind="observations"
-                  class="form-control w-100 mx-auto"
-                  style="font-size: 1.2rem; text-align: center;"
-                  rows="2"
-                  placeholder="Insira uma observação...">
-                </textarea>
-
-        <br />
-
-        <h4 class="mb-3">Selecionar Frota(s):</h4>
-
-        <table class="table w-100 mb-3">
-            <thead style="background-color: #0c6527; color: white;">
-                <tr>
-                    <th style="width: 70%; text-align: left; padding-left: 20px;">Frota</th>
-                    <th style="width: 30%; text-align: center;">Selecionar</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var fleet in PaginatedFleets)
-                {
-                    <tr class="table-light" style="height: 50px;">
-                        <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
-                            @fleet.Name
-                        </td>
-                        <td class="text-center align-middle p-0">
-                            <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                   id="toggle-@fleet.Id"
-                                   @onchange="(e => ToggleFleet(e, fleet))"
-                                   checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-
-        <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
-            <span>@currentFleetPage - @TotalFleetPages de @TotalFleetPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary"
-                        @onclick="PrevFleetPage"
-                        disabled="@(currentFleetPage == 1)">
-                    &lt;
-                </button>
-                <button class="btn btn-outline-secondary"
-                        @onclick="NextFleetPage"
-                        disabled="@(currentFleetPage == TotalFleetPages)">
-                    &gt;
-                </button>
-            </div>
+<div class="custom-container">
+    <div class="page-title d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+            <h3 class="ms-2 mb-0">Adicionar Entidade</h3>
         </div>
 
-        <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
-            <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
-                    @onclick="SaveEntity">
-                Salvar
-            </button>
-            <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-light border border-white border-2"
+                    style="width: 100px;"
                     @onclick="Cancel">
-                Cancelar
+                <i class="bi bi-arrow-left fs-5"></i>
             </button>
+            <button class="btn btn-outline-light border border-white border-2 fs-5"
+                    style="width: 150px;"
+                    @onclick="SaveEntity">
+                <i class="bi bi-floppy"></i> Salvar
+            </button>
+        </div>
+    </div>
+
+    <div class="edit-form mt-4">
+        <div class="d-flex align-items-center gap-3">
+            <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
+                Nome da Entidade
+                <span style="font-size: 15px;"> (máx. 50 caracteres)</span> :
+            </label>
+            <input type="text" @bind="entityName"
+                   class="form-control"
+                   style="font-size: 1.2rem; border: 1px solid grey;" />
+        </div>
+        <div class="d-flex align-items-center gap-3 mt-3">
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Observações</label>
+            <textarea @bind="observations"
+                      class="form-control w-100 mx-auto"
+                      style="font-size: 1.2rem; text-align: center; border: 1px solid grey;"
+                      rows="2"
+                      placeholder="Insira uma observação...">
+                </textarea>
+        </div>
+
+        <br />
+        <h4>Selecionar Frota(s):</h4>
+
+        <div class="w-50">
+            <input type="text" class="form-control" style="border: 1px solid grey;"
+                   placeholder="Pesquisar frota pelo nome..."
+                   @bind="searchTerm" @bind:event="oninput" />
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th style="width: 70%; text-align: left; padding-left: 20px;">Frota</th>
+                        <th style="width: 30%; text-align: center;">Selecionar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var fleet in PaginatedFleets)
+                    {
+                        <tr class="table-light" style="height: 50px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                @fleet.Name
+                            </td>
+                            <td class="text-center align-middle p-0">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@fleet.Id"
+                                       @onchange="(e => ToggleFleet(e, fleet))"
+                                       checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="sticky-footer-right">
+                <div class="d-flex justify-content-end align-items-center gap-3">
+                    <span>@currentFleetPage - @TotalFleetPages de @TotalFleetPages</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary"
+                                @onclick="PrevFleetPage"
+                                disabled="@(currentFleetPage == 1)">
+                            &lt;
+                        </button>
+                        <button class="btn btn-outline-secondary"
+                                @onclick="NextFleetPage"
+                                disabled="@(currentFleetPage == TotalFleetPages)">
+                            &gt;
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @code {
+    private List<Fleet> fleets = new List<Fleet>();
     private List<Fleet> selectedFleets = new List<Fleet>();
 
     private string entityName = string.Empty;
@@ -87,17 +114,36 @@
 
     private int currentFleetPage = 1;
     private int fleetsPerPage = 3;
-    private int TotalFleetPages => (int)Math.Ceiling((double)FilterService.SelectedFleets.Count / fleetsPerPage);
+    private int TotalFleetPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
+
+    private IEnumerable<Fleet> FilteredFleets =>
+    string.IsNullOrWhiteSpace(searchTerm)
+        ? fleets
+        : fleets.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
     private IEnumerable<Fleet> PaginatedFleets =>
-        FilterService.SelectedFleets
-            .Skip((currentFleetPage - 1) * fleetsPerPage)
-            .Take(fleetsPerPage);
+    FilteredFleets
+        .Skip((currentFleetPage - 1) * fleetsPerPage)
+        .Take(fleetsPerPage);
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                currentFleetPage = 1;
+            }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-        selectedFleets = new List<Fleet>();
+        using var context = DbContextFactory.CreateDbContext();
+        fleets = await context.Fleets.ToListAsync();
     }
 
     private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
@@ -153,7 +199,7 @@
         context.Entities.Add(newEntity);
         await context.SaveChangesAsync();
 
-        foreach (var fleet in selectedFleets)
+        foreach (var fleet in fleets)
         {
             context.EntityFleets.Add(new EntityFleet
             {
@@ -164,7 +210,7 @@
 
         await context.SaveChangesAsync();
 
-        newEntity.EntityFleets = selectedFleets.Select(f => new EntityFleet
+        newEntity.EntityFleets = fleets.Select(f => new EntityFleet
         {
             EntityId = newEntity.Id,
             FleetId = f.Id,

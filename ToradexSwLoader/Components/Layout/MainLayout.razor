@@ -1,4 +1,5 @@
-﻿@using Microsoft.EntityFrameworkCore
+﻿@using BlazorBootstrap
+@using Microsoft.EntityFrameworkCore
 @using ToradexSwLoader.Data
 @using ToradexSwLoader.Services
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -7,39 +8,80 @@
 @inject LoginService LoginService
 @inject FinalProductStateService ProductState
 
-<div class="page">
-
-    @if (ShouldShowSidebar())
+<div class="layout-container">
+    @if (!IsRootPage())
     {
-        <div class="sidebar">
-            <NavMenu />
-        </div>
-    }
-    else
-    {
-        <div></div>
-    }
+        <header class="topbar">
+            @if (ShouldShowSidebar())
+            {
+                @if (!sidebarVisible)
+                {
+                    <i class="bi bi-list fs-2" @onclick="SidebarIconOnClick" style="cursor: pointer;"></i>
+                }
+                else
+                {
+                    <i class="bi bi-list-nested fs-2" @onclick="SidebarIconOnClick" style="cursor: pointer;"></i>
+                }
+            }
+            
 
-    <main>
-        @if (IsRootPage())
-        {
-            <article class="content px-4">  
-                @Body
-            </article>
-        } else{
-             <div class="top-row px-4 d-flex justify-content-between">
-                <span>@username</span>
-                <span>@currentTime</span>
+            <div class="container-fluid d-flex align-items-center justify-content-between">
+                <a class="navbar-brand" style="color: white; font-size: 1.5rem;" href="/home">ToradexSwLoader</a>
+                <span style="font-size: 1.5rem;">@currentTime</span>
+
                 @if (IsHomePage())
                 {
-                    <a href="" class="logout" target="">Terminar Sessão</a>
+                    <div class="user-menu-wrapper">
+                        <button @onclick="ToggleMenu" class="user-icon-navbar">
+                            <i class="bi bi-person-fill"></i>
+                        </button>
+
+                        @if (openMenu)
+                        {
+                            <div class="user-dropdown">
+                                <button @onclick="OnShowModalClick" class="dropdown-item">
+                                    <i class="bi bi-question-circle mx-1"></i> Sobre
+                                </button>
+                                <button @onclick="Logout" class="dropdown-item">
+                                    <i class="bi bi-box-arrow-right mx-1"></i> Terminar Sessão
+                                </button>
+                            </div>
+                        }
+                    </div>
                 }
-             </div>
-            <article class="content px-4">
-                @Body
-            </article>
+            </div>
+        </header>
+    }
+
+    <div class="main-container">
+        @if (ShouldShowSidebar())
+        {
+            <nav class="sidebar @(sidebarVisible ? "show" : "hide")">
+                <NavMenu />
+            </nav>
         }
-    </main>
+
+        <main class="content-area">
+            @Body
+
+            <Modal @ref="modal" Title="Sobre" IsVerticallyCentered="true">
+                <BodyTemplate>
+                    <div style="width: 450px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
+                            <strong>Versão:</strong>
+                            <div style="text-align: right; flex-grow: 1;">2.0.0</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong>URL Base:</strong>
+                            <div style="text-align: right; flex-grow: 1;">
+                                https://172.16.50.146:7023/
+                            </div>
+                        </div>
+                    </div>
+                </BodyTemplate>
+            </Modal>
+        </main>
+    </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -64,10 +106,18 @@
 </style>
 
 @code {
+    private bool openMenu = false;
     private string? currentTime;
     private System.Timers.Timer? timer;
-
     private string? username;
+    private Modal modal;
+
+    private bool sidebarVisible = false;
+
+    private void SidebarIconOnClick()
+    {
+        sidebarVisible = !sidebarVisible;
+    }
 
     protected override Task OnInitializedAsync()
     {
@@ -82,6 +132,23 @@
         LoginService.OnLoginChanged += OnLoginChanged;
 
         return Task.CompletedTask;
+    }
+
+    private async Task OnShowModalClick()
+    {
+        await modal?.ShowAsync();
+        openMenu = !openMenu;
+    }
+
+    private async Task Logout()
+    {
+        Navigation.NavigateTo("");
+        openMenu = !openMenu;
+    }
+
+    private void ToggleMenu()
+    {
+        openMenu = !openMenu;
     }
 
     private void OnLoginChanged()

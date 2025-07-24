@@ -22,14 +22,81 @@
 } 
 else
 {
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <div class="w-50"> 
-            <input type="text" class="form-control" placeholder="Pesquisar frota pelo nome..."
-                   @bind="searchTerm" @bind:event="oninput" />
+    <div class="custom-container">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Gerir Frotas</h3>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="w-50 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar frota pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-color btn-lg py-2"
+                        style="font-size: 1.25rem;"
+                        @onclick="SaveFleetFilter">
+                    <i class="bi bi-floppy"></i> Aplicar
+                </button>
+            </div>
+        </div>
+
+        <div class="pb-5">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th onclick="@(() => SortByColumn("Name"))"
+                            style="width: 70%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                           border-right: 1px solid white; cursor: pointer;">
+                            Frota
+                            <span style="font-size: 0.9rem; margin-left: 5px;
+                                                                 color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th style="width: 30%; text-align: center;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (PaginatedFleets is null || !PaginatedFleets.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var fleet in PaginatedFleets)
+                        {
+                            <tr class="table-light" style="height: 50px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                    @fleet.Name
+                                </td>
+                                <td class="text-center align-middle p-0">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@fleet.Id"
+                                           @onchange="(e => ToggleFleet(e, fleet))"
+                                           checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+
+        </div>
+
+        <div class="sticky-footer-right">
+            <div class="d-flex justify-content-end align-items-center gap-3">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
                 <div class="d-flex gap-2">
                     <button class="btn custom-outline-button btn-lg"
                             @onclick="PrevPage" disabled="@(!CanGoPrev)">
@@ -41,38 +108,8 @@ else
                         &gt;
                     </button>
                 </div>
+            </div>
         </div>
-    </div>
-
-    <div class="d-flex justify-content-center align-items-center">
-        <table class="table mt-5 w-100" style="table-layout: fixed;">
-            <thead style="background-color: #0c6527; color: white;">
-                <tr>
-                    <th style="width: 70%; text-align: left; padding-left: 20px;">Nome</th>
-                    <th style="width: 30%; text-align: center;">Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var fleet in PaginatedFleets)
-                {
-                    <tr class="table-light" style="height: 50px;">
-                        <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
-                            @fleet.Name
-                        </td>
-                        <td class="text-center align-middle p-0">
-                            <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                   id="toggle-@fleet.Id"
-                                   @onchange="(e => ToggleFleet(e, fleet))"
-                                   checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="text-center fixed-bottom pb-4">
-        <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="SaveFleetFilter">Aplicar</button>
     </div>
 }
 
@@ -83,17 +120,34 @@ else
     private WindowDimension? dimension;
 
     private int actualPage = 1;
-    private int fleetsPerPage = 8;
+    private int fleetsPerPage = 6;
     private int TotalPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
 
+    private string currentSortColumn = "Name";
+
+    private bool isNameAscending = true;
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
     
-    private IEnumerable<Fleet> FilteredFleets =>
-    string.IsNullOrWhiteSpace(searchTerm)
-        ? fleets
-        : fleets.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    private IEnumerable<Fleet> FilteredFleets 
+    {
+        get
+        {
+            var filtered = string.IsNullOrWhiteSpace(searchTerm)
+                ? fleets
+                : fleets.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+            if (currentSortColumn == "Name")
+            {
+                filtered = isNameAscending
+                    ? filtered.OrderBy(f => f.Name)
+                    : filtered.OrderByDescending(f => f.Name);
+            }
+
+            return filtered;
+        }
+    }
 
     private IEnumerable<Fleet> PaginatedFleets =>
     FilteredFleets
@@ -188,6 +242,21 @@ else
                 ConfirmButtonColor = "#0B5120"
             });
         }
+    }
+
+    private void SortByColumn(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            isNameAscending = !isNameAscending;
+        }
+        else
+        {
+            currentSortColumn = columnName;
+            isNameAscending = true;
+        }
+
+        actualPage = 1;
     }
 
     private void UpdatePage()

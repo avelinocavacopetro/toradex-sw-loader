@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Blazor.Bootstrap" Version="3.4.0" />
     <PackageReference Include="CurrieTechnologies.Razor.SweetAlert2" Version="5.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="9.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Analyzers" Version="9.0.7" />
