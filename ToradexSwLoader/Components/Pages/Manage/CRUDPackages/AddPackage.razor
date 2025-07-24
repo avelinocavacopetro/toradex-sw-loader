@@ -7,78 +7,95 @@
 
 <PageTitle>Adicionar Pacote</PageTitle>
 
-<div class="center-edit">
-    <div class="edit-form">
-        <label for="stackSelect" class="pt-4" style="font-size: 18px; font-weight: bold; width: 50%;">Stack</label>
-        <select id="stackSelect" class="form-select w-50" @bind="selectedStackId">
-            <option value="0">Selecione um stack</option>
-            @foreach (var stack in FilterService.SelectedStacks)
-            {
-                <option value="@stack.Id">@stack.Name</option>
-            }
-        </select>
-
-        <div class="w-50">
-            <label for="packageInput" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
-            <div class="position-relative">
-                <input id="packageInput" class="form-control" type="text"
-                       @bind="searchTerm"
-                       @oninput="FilterPackageNames"
-                       @onfocus="() => showSuggestions = true"
-                       @onblur="HideSuggestions"
-                       disabled="@packageDisabled" />
-
-                @if (showSuggestions && filteredPackageNames.Any())
-                {
-                    <ul class="list-group position-absolute w-100 shadow"
-                        style="z-index: 1000; max-height: 200px; overflow-y: auto;">
-                        @foreach (var name in filteredPackageNames)
-                        {
-                            <li class="list-group-item list-group-item-action"
-                                style="cursor: pointer;"
-                                @onclick="() => SelectPackage(name)">
-                                @name
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
-
-            <label for="versionInput" class="pt-3" style="font-size: 18px; font-weight: bold;">Versão</label>
-            <div class="position-relative">
-                <input id="versionInput" class="form-control" type="text"
-                       @bind="versionSearchTerm"
-                       @oninput="FilterVersions"
-                       @onfocus="() => showVersionSuggestions = true"
-                       @onblur="HideVersionSuggestions"
-                       disabled="@versionDisabled" />
-
-                @if (showVersionSuggestions && filteredVersionList.Any())
-                {
-                    <ul class="list-group position-absolute w-100 shadow"
-                        style="z-index: 1000; max-height: 200px; overflow-y: auto;">
-                        @foreach (var version in filteredVersionList)
-                        {
-                            <li class="list-group-item list-group-item-action"
-                                style="cursor: pointer;"
-                                @onclick="() => SelectVersion(version)">
-                                @version
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
+<div class="custom-container">
+    <div class="page-title d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+            <h3 class="ms-2 mb-0">Adicionar Pacote</h3>
         </div>
 
-        <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
-            <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
-                    @onclick="Save">
-                Salvar
-            </button>
-            <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-light border border-white border-2"
+                    style="width: 100px;"
                     @onclick="Cancel">
-                Cancelar
+                <i class="bi bi-arrow-left fs-5"></i>
             </button>
+            <button class="btn btn-outline-light border border-white border-2 fs-5"
+                    style="width: 150px;"
+                    @onclick="Save">
+                <i class="bi bi-floppy"></i> Salvar
+            </button>
+        </div>
+    </div>
+
+    <div class="edit-form mt-4">
+        <div class="w-50">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <label for="stackSelect" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">Stack</label>
+                <div class="flex-grow-1">
+                    <select id="stackSelect" class="form-control w-100" @bind="selectedStackId">
+                        <option value="0">Selecione um stack</option>
+                        @foreach (var stack in FilterService.SelectedStacks)
+                        {
+                            <option value="@stack.Id">@stack.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <label for="packageInput" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">Nome</label>
+                <div class="flex-grow-1 position-relative">
+                    <input id="packageInput" class="form-control w-100" type="text"
+                           @bind="searchTerm"
+                           @oninput="FilterPackageNames"
+                           @onfocus="() => showSuggestions = true"
+                           @onblur="HideSuggestions"
+                           disabled="@packageDisabled" />
+
+                    @if (showSuggestions && filteredPackageNames.Any())
+                    {
+                        <ul class="list-group position-absolute w-100 shadow"
+                            style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                            @foreach (var name in filteredPackageNames)
+                            {
+                                <li class="list-group-item list-group-item-action"
+                                    style="cursor: pointer;"
+                                    @onclick="() => SelectPackage(name)">
+                                    @name
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <label for="versionInput" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">Versão</label>
+                <div class="flex-grow-1 position-relative">
+                    <input id="versionInput" class="form-control w-100" type="text"
+                           @bind="versionSearchTerm"
+                           @oninput="FilterVersions"
+                           @onfocus="() => showVersionSuggestions = true"
+                           @onblur="HideVersionSuggestions"
+                           disabled="@versionDisabled" />
+
+                    @if (showVersionSuggestions && filteredVersionList.Any())
+                    {
+                        <ul class="list-group position-absolute w-100 shadow"
+                            style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                            @foreach (var version in filteredVersionList)
+                            {
+                                <li class="list-group-item list-group-item-action"
+                                    style="cursor: pointer;"
+                                    @onclick="() => SelectVersion(version)">
+                                    @version
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>

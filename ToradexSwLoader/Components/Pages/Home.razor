@@ -26,57 +26,55 @@ else
             <h3 class="pt-2">Últimos Carregamentos</h3>
         </div>
 
-        <div class="table-wrapper">
-            <div class="table-responsive">
-                <table class="table table-custom mt-3" style="min-width: 1100px;">
-                    <thead>
+        <div class="table-responsive">
+            <table class="table table-custom mt-3" style="min-width: 1100px;">
+                <thead>
+                    <tr>
+                        <th style="width: 300px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                       border-right: 1px solid white;">Placa</th>
+                        <th style="width: 180px; text-align: center; border-right: 1px solid white;">Hora</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado de atualização</th>
+                        <th style="width: 180px; text-align: center; border-top-right-radius: 5px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (finalProducts is null || !finalProducts.Any())
+                    {
                         <tr>
-                            <th style="width: 300px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                   border-right: 1px solid white;">Placa</th>
-                            <th style="width: 180px; text-align: center; border-right: 1px solid white;">Hora</th>
-                            <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado de atualização</th>
-                            <th style="width: 180px; text-align: center; border-top-right-radius: 5px;"></th>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @if (finalProducts is null || !finalProducts.Any())
+                    }
+                    else
+                    {
+                        var rowIndex = 0;
+                        @foreach (var finalProduct in finalProducts)
                         {
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                    Sem dados disponíveis
+                            <tr style="height: 60px; background-color: @(rowIndex % 2 == 0 ? "#f8f9fa" : "white");">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">@finalProduct.Name</td>
+                                <td style="text-align: center; vertical-align: middle; font-weight: 500;">@finalProduct.CreatedAt</td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    @GetStatusIcon(finalProduct.Status!)
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    @if (finalProduct.Status?.Equals("Outdated", StringComparison.OrdinalIgnoreCase) == true)
+                                    {
+                                        <button class="btn btn-danger btn-sm" style="width: 75%;"
+                                                @onclick="@(() => AbortOperation(finalProduct))">
+                                            <i class="bi bi-x-circle"></i> Abortar
+                                        </button>
+                                    }
                                 </td>
                             </tr>
+                            rowIndex++;
                         }
-                        else
-                        {
-                            var rowIndex = 0;
-                            @foreach (var finalProduct in finalProducts)
-                            {
-                                <tr style="height: 60px; background-color: @(rowIndex % 2 == 0 ? "#f8f9fa" : "white");">
-                                    <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">@finalProduct.Name</td>
-                                    <td style="text-align: center; vertical-align: middle; font-weight: 500;">@finalProduct.CreatedAt</td>
-                                    <td style="text-align: center; vertical-align: middle;">
-                                        @GetStatusIcon(finalProduct.Status!)
-                                    </td>
-                                    <td style="text-align: center; vertical-align: middle;">
-                                        @if (finalProduct.Status?.Equals("Outdated", StringComparison.OrdinalIgnoreCase) == true)
-                                        {
-                                            <button class="btn btn-danger btn-sm" style="width: 75%;"
-                                                    @onclick="@(() => AbortOperation(finalProduct))">
-                                                <i class="bi bi-x-circle"></i> Abortar
-                                            </button>
-                                        }
-                                    </td>
-                                </tr>
-                                rowIndex++;
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
         </div>
         
-        <div class="table-footer">
+        <div class="sticky-footer-center">
             Última atualização: @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
         </div>
     </div> 

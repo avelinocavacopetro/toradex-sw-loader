@@ -21,111 +21,120 @@
 }
 else
 {
-    <div class="center-customization">
-        <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <div class="w-50 position-relative">
-                    <input type="text"
-                           class="form-control py-2 ps-5"
-                           placeholder="Pesquisar produto pelo nome..."
-                           @bind="searchTerm"
-                           @bind:event="oninput" />
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
-                </div>
+    <div class="custom-container">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Gerir Produtos</h3>
+        </div>
 
-                <div>
-                    <button class="btn btn-color btn-lg py-2"
-                            style="font-size: 1.25rem;"
-                            @onclick="NavigateToAddProduct">
-                        + Novo
-                    </button>
-                </div>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="w-50 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar produto pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
             </div>
 
-            <div class="pb-5">
-                <table class="table table-custom mt-3 w-100">
-                    <thead style="background-color: #0c6527; color: white;">
-                        <tr>
-                            <th onclick="@(() => SortByColumn("Name"))"
-                                style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                           border-right: 1px solid white; cursor: pointer;">
-                                Nome do Produto
-                                <span style="font-size: 0.9rem; margin-left: 5px;
-                                                 color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
-                                    @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
-                                </span>
-                            </th>
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-color btn-lg py-2"
+                        style="font-size: 1.25rem;"
+                        @onclick="NavigateToAddProduct">
+                    <i class="bi bi-plus"></i> Novo
+                </button>
+                <button class="btn btn-color btn-lg"
+                        style="font-size: 1.25rem;"
+                        @onclick="ApplyFilter">
+                    <i class="bi bi-floppy"></i> Aplicar
+                </button>
+            </div>
+        </div>
 
-                            <th style="width: 30%; text-align: left; padding-left: 10px; border-right: 1px solid white;">Dispositivos Associados</th>
-                            <th style="width: 15%; text-align: center; border-right: 1px solid white;">Ativo</th>
-                            <th style="width: 12.5%;"></th>
-                            <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
+        <div class="pb-5">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th onclick="@(() => SortByColumn("Name"))"
+                            style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                   border-right: 1px solid white; cursor: pointer;">
+                            Nome do Produto
+                            <span style="font-size: 0.9rem; margin-left: 5px;
+                                                         color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+
+                        <th style="width: 30%; text-align: left; padding-left: 10px; border-right: 1px solid white;">Dispositivos Associados</th>
+                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">Ativo</th>
+                        <th style="width: 12.5%;"></th>
+                        <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (PaginatedProducts is null || !PaginatedProducts.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @if (PaginatedProducts is null || !PaginatedProducts.Any())
+                    }
+                    else
+                    {
+                        foreach (var product in PaginatedProducts)
                         {
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                    Sem dados disponíveis
+                            <tr class="table-light" style="height: 60px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                    @product.Name
+                                </td>
+                                <td style="text-align: left; padding-left: 10px; vertical-align: middle;">
+                                    @if (product.DeviceProducts?.Any() == true)
+                                    {
+                                        <ul class="mb-0 ps-3">
+                                            @foreach (var dp in product.DeviceProducts)
+                                            {
+                                                <li style="list-style-type: none;">@dp.Device?.Name</li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="font-size:18px;">Sem Dispositivos</span>
+                                    }
+                                </td>
+                                <td class="text-center align-middle p-0">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@product.Id"
+                                           @onchange="(e => ToggleProduct(e, product))"
+                                           checked="@selectedProducts.Any(p => p.Id == product.Id)"
+                                           style="border-radius: 5px;" />
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                            title="Editar"
+                                            @onclick="() => NavigateToEditProduct(product.Id)"
+                                            style="border-radius: 5px;">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                            title="Desativar"
+                                            @onclick="() => DisableProduct(product.Id)"
+                                            style="border-radius: 5px;">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                    </button>
                                 </td>
                             </tr>
                         }
-                        else
-                        {
-                            var rowIndex = 0;
-                            foreach (var product in PaginatedProducts)
-                            {
-                                <tr style="height: 60px; background-color: @(rowIndex % 2 == 0 ? "#f8f9fa" : "white");">
-                                    <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500; border-bottom: none;">
-                                        @product.Name
-                                    </td>
-                                    <td style="text-align: left; padding-left: 10px; vertical-align: middle; border-bottom: none;">
-                                        @if (product.DeviceProducts?.Any() == true)
-                                        {
-                                            <ul class="mb-0 ps-3">
-                                                @foreach (var dp in product.DeviceProducts)
-                                                {
-                                                    <li style="list-style-type: none;">@dp.Device?.Name</li>
-                                                }
-                                            </ul>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted" style="font-size:18px;">Sem Dispositivos</span>
-                                        }
-                                    </td>
-                                    <td class="text-center align-middle p-0" style="border-bottom: none;">
-                                        <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                               id="toggle-@product.Id"
-                                               @onchange="(e => ToggleProduct(e, product))"
-                                               checked="@selectedProducts.Any(p => p.Id == product.Id)"
-                                               style="border-radius: 5px;" />
-                                    </td>
-                                    <td class="text-center align-middle" style="border-bottom: none;">
-                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
-                                                title="Editar"
-                                                @onclick="() => NavigateToEditProduct(product.Id)"
-                                                style="border-radius: 5px;">
-                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
-                                        </button>
-                                    </td>
-                                    <td class="text-center align-middle" style="border-bottom: none;">
-                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
-                                                title="Desativar"
-                                                @onclick="() => DisableProduct(product.Id)"
-                                                style="border-radius: 5px;">
-                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                rowIndex++;
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
 
+        </div>
+
+        <div class="sticky-footer-right">
             <div class="d-flex justify-content-end align-items-center gap-3">
                 <span>@actualPage - @TotalPages de @TotalPages</span>
                 <div class="d-flex gap-2">
@@ -139,10 +148,6 @@ else
                         &gt;
                     </button>
                 </div>
-            </div>
-
-            <div class="text-center fixed-bottom pb-4">
-                <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
             </div>
         </div>
     </div>

@@ -21,14 +21,101 @@
 }
 else
 {
-    <div class="container-fluid">
+    <div class="custom-container">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Gerir Patterns</h3>
+        </div>
+
         <div class="d-flex justify-content-between align-items-center mt-4">
-            <div class="w-50">
-                <input type="text" class="form-control" placeholder="Pesquisar pattern pelo nome..."
-                       @bind="searchTerm" @bind:event="oninput" />
+            <div class="w-50 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar pattern pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center gap-3">
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-color btn-lg py-2"
+                        style="font-size: 1.25rem;"
+                        @onclick="NavigateToAddPattern">
+                    <i class="bi bi-plus"></i> Novo
+                </button>
+                <button class="btn btn-color btn-lg"
+                        style="font-size: 1.25rem;"
+                        @onclick="ApplyFilter">
+                    <i class="bi bi-floppy"></i> Aplicar
+                </button>
+            </div>
+        </div>
+
+        <div class="pb-5">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th onclick="@(() => SortByColumn("NameContains"))"
+                            style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                           border-right: 1px solid white; cursor: pointer;">
+                            Nome da Pattern
+                            <span style="font-size: 0.9rem; margin-left: 5px;
+                                                                     color: @(currentSortColumn == "NameContains" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "NameContains" ? (isNameContainsAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th style="width: 30%; text-align: center; padding-left: 10px; border-right: 1px solid white;">Ativo</th>
+                        <th style="width: 20%;"></th>
+                        <th style="width: 20%;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (PaginatedPatterns is null || !PaginatedPatterns.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var pattern in PaginatedPatterns)
+                        {
+                            <tr class="table-light" style="height: 60px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                    @pattern.NameContains
+                                </td>
+                                <td class="text-center align-middle p-0">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@pattern.Id"
+                                           @onchange="(e => TogglePattern(e, pattern))"
+                                           checked="@selectedPatterns.Any(p => p.Id == pattern.Id)" />
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                            title="Editar"
+                                            @onclick="() => NavigateToEditPattern(pattern.Id)">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                            title="Desativar"
+                                            @onclick="() => DisablePattern(pattern.Id)">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+
+        </div>
+
+        <div class="sticky-footer-right">
+            <div class="d-flex justify-content-end align-items-center gap-3">
                 <span>@actualPage - @TotalPages de @TotalPages</span>
                 <div class="d-flex gap-2">
                     <button class="btn custom-outline-button btn-lg"
@@ -43,61 +130,6 @@ else
                 </div>
             </div>
         </div>
-
-        <div class="pb-2 pt-4" style="text-align: right;">
-            <button class="btn btn-color btn-lg"
-                    style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
-                    @onclick="NavigateToAddPattern">
-                +
-            </button>
-        </div>
-
-        <div class="pb-5">
-            <table class="table mt-3 w-100" style="table-layout: fixed;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th style="width: 30%; text-align: left; padding-left: 20px;">Nome da Pattern</th>
-                        <th style="width: 30%; text-align: center; padding-left: 10px;">Ativo</th>
-                        <th style="width: 20%;"></th>
-                        <th style="width: 20%;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var pattern in PaginatedPatterns)
-                    {
-                        <tr class="table-light" style="height: 60px;">
-                            <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
-                                @pattern.NameContains
-                            </td>
-                            <td class="text-center align-middle p-0">
-                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                       id="toggle-@pattern.Id"
-                                       @onchange="(e => TogglePattern(e, pattern))"
-                                       checked="@selectedPatterns.Any(p => p.Id == pattern.Id)" />
-                            </td>
-                            <td class="text-center align-middle">
-                                <button class="btn btn-outline-success btn-sm py-1 px-2"
-                                        title="Editar"
-                                        @onclick="() => NavigateToEditPattern(pattern.Id)">
-                                    <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
-                                </button>
-                            </td>
-                            <td class="text-center align-middle">
-                                <button class="btn btn-outline-danger btn-sm py-1 px-2"
-                                        title="Desativar"
-                                        @onclick="() => DisablePattern(pattern.Id)">
-                                    <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-
-        <div class="text-center fixed-bottom pb-4">
-            <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
-        </div>
     </div>
 }
 
@@ -105,22 +137,15 @@ else
     private List<Pattern> patterns = new List<Pattern>();
     private List<Pattern> selectedPatterns = new List<Pattern>();
     private List<Pattern> paginatedPatterns = new List<Pattern>();
-    // private Pattern? selectedPattern = new Pattern();
-    // private WindowDimension dimension = new WindowDimension();
-
-    // private string pattern = string.Empty;
-
+   
     private string currentSortColumn = "NameContains";
 
-    // private int onlineTime = 1;
     private int actualPage = 1;
     private int patternsPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)FilteredPatterns.Count() / patternsPerPage);
 
     private bool isLoading = true;
     private bool isNameContainsAscending = true;
-    // private bool isAdding = false;
-    // private bool isEditing = false;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
@@ -162,14 +187,6 @@ else
         .Skip((actualPage - 1) * patternsPerPage)
         .Take(patternsPerPage);
 
-    // private void OnDimensionsChanged(WindowDimension newDimension)
-    // {
-    //     dimension = newDimension;
-
-    //     UpdatePage();
-    //     StateHasChanged();
-    // }
-
     protected override async Task OnInitializedAsync()
     {
         await FilterService.LoadFilterAsync();
@@ -181,9 +198,6 @@ else
             .Select(sp => patterns.FirstOrDefault(p => p.Id == sp.Id))
             .Where(p => p != null)
             .ToList();
-
-
-        // onlineTime = FilterService.OnlineTime;
 
         UpdatePage();
         isLoading = false;
@@ -214,57 +228,6 @@ else
         NavigationManager.NavigateTo($"/managePatterns/edit/{id}");
     }
 
-    // private void AddPattern()
-    // {
-    //     pattern = string.Empty;
-    //     selectedPattern = null;
-    //     isAdding = true;
-    //     isEditing = false;
-    // }
-
-    // private async Task EditPattern(int id)
-    // {
-    //     isEditing = true;
-    //     isAdding = false;
-
-    //     using var context = DbContextFactory.CreateDbContext();
-    //     selectedPattern = await context.Patterns.FirstOrDefaultAsync(d => d.Id == id);
-
-    //     if (selectedPattern != null)
-    //     {
-    //         pattern = selectedPattern.NameContains;
-    //     }
-    // }
-
-    // private async Task EditPattern()
-    // {
-    //     if (selectedPattern == null) return;
-
-    //     using var context = DbContextFactory.CreateDbContext();
-
-    //     var patternDb = await context.Patterns.FirstOrDefaultAsync(p => p.Id == selectedPattern.Id);
-    //     if (patternDb == null) return;
-
-    //     patternDb.NameContains = pattern;
-
-    //     await context.SaveChangesAsync();
-
-    //     var localPattern = patterns.FirstOrDefault(p => p.Id == patternDb.Id);
-    //     if (localPattern != null)
-    //     {
-    //         localPattern.NameContains = patternDb.NameContains;
-    //     }
-
-    //     CancelEdit();
-
-    //     await Swal.FireAsync(new SweetAlertOptions
-    //     {
-    //         Title = "Pattern editada com sucesso!",
-    //         Icon = SweetAlertIcon.Success,
-    //         ConfirmButtonColor = "#0B5120"
-    //     });
-    // }
-
     private async Task ApplyFilter()
     {
         if (selectedPatterns.Count == 0)
@@ -292,69 +255,6 @@ else
             ConfirmButtonColor = "#0B5120"
         });
     }
-
-    // private async Task SavePattern()
-    // {
-    //     if (string.IsNullOrWhiteSpace(pattern))
-    //     {
-    //         await Swal.FireAsync(new SweetAlertOptions
-    //         {
-    //             Title = "Por favor insira um nome válido!",
-    //             Icon = SweetAlertIcon.Warning,
-    //             ConfirmButtonColor = "#0B5120"
-    //         });
-    //         return;
-    //     }
-
-    //     using var context = DbContextFactory.CreateDbContext();
-
-    //     bool exists = await context.Patterns.AnyAsync(p => p.NameContains.ToLower() == pattern.Trim().ToLower());
-
-    //     if (exists)
-    //     {
-    //         await Swal.FireAsync(new SweetAlertOptions
-    //         {
-    //             Title = "Esta pattern já existe!",
-    //             Icon = SweetAlertIcon.Warning,
-    //             ConfirmButtonColor = "#0B5120"
-    //         });
-    //         return;
-    //     }
-
-    //     var newPattern = new Pattern
-    //     {
-    //         NameContains = pattern,
-    //         Enabled = true
-    //     };
-
-    //     context.Patterns.Add(newPattern);
-    //     await context.SaveChangesAsync();
-
-    //     patterns.Add(newPattern);
-
-    //     CancelAdd();
-
-    //     await Swal.FireAsync(new SweetAlertOptions
-    //     {
-    //         Title = "Pattern adicionada com sucesso!",
-    //         Icon = SweetAlertIcon.Success,
-    //         ConfirmButtonColor = "#0B5120"
-    //     });
-    // }
-
-    // private void CancelAdd()
-    // {
-    //     isAdding = false;
-    //     pattern = string.Empty;
-    //     selectedPattern = null;
-    // }
-
-    // private void CancelEdit()
-    // {
-    //     isEditing = false;
-    //     pattern = string.Empty;
-    //     selectedPattern = null;
-    // }
 
     private async Task DisablePattern(int id)
     {

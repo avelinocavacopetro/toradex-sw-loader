@@ -21,54 +21,70 @@
 }
 else
 {
-    <div class="center-customization">
-        <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <div class="w-50">
-                    <input type="text" class="form-control" placeholder="Pesquisar entidade pelo nome..."
-                           @bind="searchTerm" @bind:event="oninput" />
-                </div>
+    <div class="custom-container">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Gerir Entidades</h3>
+        </div>
 
-                <div class="d-flex justify-content-between align-items-center gap-3">
-                    <span>@actualPage - @TotalPages de @TotalPages</span>
-                    <div class="d-flex gap-2">
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                            &lt;
-                        </button>
-
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="NextPage" disabled="@(!CanGoNext)">
-                            &gt;
-                        </button>
-                    </div>
-                </div>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="w-50 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar entidade pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
             </div>
 
-            <div class="pb-2 pt-4" style="text-align: right;">
-                <button class="btn btn-color btn-lg"
-                        style="font-size: 2rem; width: 50px; height: 50px; padding: 0;"
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-color btn-lg py-2"
+                        style="font-size: 1.25rem;"
                         @onclick="NavigateToAddEntity">
-                    +
+                    <i class="bi bi-plus"></i> Novo
+                </button>
+                <button class="btn btn-color btn-lg"
+                        style="font-size: 1.25rem;"
+                        @onclick="ApplyFilter">
+                    <i class="bi bi-floppy"></i> Aplicar
                 </button>
             </div>
+        </div>
 
-            <div class="pb-5">
-                <table class="table mt-3 w-100" style="table-layout: fixed;">
-                    <thead style="background-color: #0c6527; color: white;">
+        <div class="pb-5">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th onclick="@(() => SortByColumn("Name"))"
+                            style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                           border-right: 1px solid white; cursor: pointer;">
+                            Nome da Entidade
+                            <span style="font-size: 0.9rem; margin-left: 5px;
+                                                                 color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">Frotas Associadas</th>
+                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">Estado</th>
+                        <th style="width: 12.5%;"></th>
+                        <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (PaginatedEntities is null || !PaginatedEntities.Any())
+                    {
                         <tr>
-                            <th style="width: 30%; text-align: left; padding-left: 20px;">Nome da Entidade</th>
-                            <th style="width: 30%; text-align: center;">Frotas Associadas</th>
-                            <th style="width: 15%; text-align: center;">Estado</th>
-                            <th style="width: 12.5%;"></th>
-                            <th style="width: 12.5%;"></th>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
+                    }
+                    else
+                    {
                         @foreach (var entity in PaginatedEntities)
                         {
                             <tr class="table-light" style="height: 60px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
                                     @entity.Name
                                 </td>
                                 <td class="text-center" style="vertical-align: middle;">
@@ -108,12 +124,26 @@ else
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    }
+                </tbody>
+            </table>
 
-            <div class="text-center fixed-bottom pb-4">
-                <button class="btn btn-color btn-lg" style="margin-left: 20vw; width: 20vw; font-size: 1.5rem;" @onclick="ApplyFilter">Aplicar</button>
+        </div>
+
+        <div class="sticky-footer-right">
+            <div class="d-flex justify-content-end align-items-center gap-3">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -294,6 +324,21 @@ else
             isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private void SortByColumn(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            isNameAscending = !isNameAscending;
+        }
+        else
+        {
+            currentSortColumn = columnName;
+            isNameAscending = true;
+        }
+
+        actualPage = 1;
     }
 
     private void UpdatePage()
