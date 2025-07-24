@@ -120,6 +120,7 @@ else
     private string finalBoard = string.Empty;
     private string editableTag = string.Empty;
     private string notEditable = string.Empty;
+    private string serialNumber = string.Empty;
 
     private bool isLoading = true;
     private bool isEditing = false;
@@ -143,13 +144,17 @@ else
 
             isLoading = false;
         }
+
+        string[] parts = selectedBoard.DeviceId.Split('-');
+        serialNumber = parts[2];
+        
     }
 
     protected override void OnParametersSet()
     {
         if (string.IsNullOrEmpty(finalBoard) && selectedDevice != null && selectedPackage != null && selectedFleet != null && selectedProduct != null)
         {
-            notEditable = $"Petrotec_{selectedFleet.Name}_{selectedProduct.Name} ";
+            notEditable = $"{selectedProduct.Name} _{serialNumber}";
             finalBoard = notEditable;
         }
     }

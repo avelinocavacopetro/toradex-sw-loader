@@ -3,6 +3,8 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
 @inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
 
 <PageTitle>Gerir Utilizadores</PageTitle>
 
@@ -22,25 +24,23 @@ else
     <div class="center-customization">
         <div class="container-fluid">
             <div class="d-flex justify-content-between align-items-center mt-4">
-                <div class="w-50">
-                    <input type="text" class="form-control" placeholder="Pesquisar utilizador pelo nome..."
-                           @bind="searchTerm" @bind:event="oninput" />
+                <div class="w-50 position-relative">
+                    <input type="text"
+                           class="form-control py-2 ps-5"
+                           placeholder="Pesquisar utilizador pelo nome..."
+                           @bind="searchTerm"
+                           @bind:event="oninput" />
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center gap-3">
-                    <span>@actualPage - @TotalPages de @TotalPages</span>
-                    <div class="d-flex gap-2">
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                            &lt;
-                        </button>
-
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="NextPage" disabled="@(!CanGoNext)">
-                            &gt;
-                        </button>
-                    </div>
+                <div>
+                    <button class="btn btn-color btn-lg py-2"
+                            style="font-size: 1.25rem;"
+                            @onclick="NavigateToAddUser">
+                        + Novo
+                    </button>
                 </div>
+
             </div>
 
             <div class="pb-5">
@@ -48,6 +48,7 @@ else
                     <thead style="background-color: #0c6527; color: white;">
                         <tr>
                             <th style="width: 40%; text-align: left; padding-left: 20px;">Nome do Utilizador</th>
+                            <th style="width: 40%; text-align: center;">User</th>
                             <th style="width: 25%; text-align: center;">Função</th>
                             <th style="width: 35%;"></th>
                         </tr>
@@ -58,6 +59,9 @@ else
                             <tr class="table-light" style="height: 50px;">
                                 <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
                                     @user.UserName
+                                </td>
+                                <td style="text-align: center; vertical-align: middle; font-weight: 500;">
+                                    @user.Email
                                 </td>
                                 <td class="text-center align-middle">
                                     @if (editingUserId == user.Id)
@@ -78,32 +82,38 @@ else
                                 </td>
                                 <td class="text-center align-middle">
                                     <div class="d-flex justify-content-center gap-2">
-                                        @if (editingUserId == user.Id)
-                                        {
-                                            <button class="btn btn-success btn-sm px-3"
-                                                    @onclick="() => SaveRole(user.Id)">
-                                                <i class="bi bi-check-lg"></i> Salvar
-                                            </button>
-                                            <button class="btn btn-outline-danger btn-sm px-3"
-                                                    @onclick="() => CancelEdit()">
-                                                <i class="bi bi-x-lg"></i> Cancelar
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-outline-success btn-sm py-1 px-2"
-                                                    title="Editar"
-                                                    @onclick="() => EditRole(user)">
-                                                <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
-                                            </button>
-                                            <div style="width: 40px;"></div>
-                                        }
+                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                                title="Editar"
+                                                @onclick="() => NavigateToEditUser(user.Id)"
+                                                style="border-radius: 5px;">
+                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                                title="Desativar"
+                                                @onclick="() => DisableUser(user.Id)"
+                                                style="border-radius: 5px;">
+                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
                         }
                     </tbody>
                 </table>
+                <div class="d-flex justify-content-between align-items-center gap-3">
+                    <span>@actualPage - @TotalPages de @TotalPages</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                            &lt;
+                        </button>
+
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="NextPage" disabled="@(!CanGoNext)">
+                            &gt;
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -188,6 +198,7 @@ else
         using var context = DbContextFactory.CreateDbContext();
 
         users = await context.Users
+            .Where(u => u.Enabled)
             .Include(u => u.UserRole)
             .ToListAsync();
 
@@ -198,47 +209,90 @@ else
         isLoading = false;
     }
 
-    private void EditRole(UserPetrotec user)
+    private void NavigateToAddUser()
     {
-        editingUserId = user.Id;
-        selectedRoleId = user.UserRole?.Id ?? roles.FirstOrDefault()?.Id;
+        NavigationManager.NavigateTo("/manageUsers/add");
     }
 
-    private async Task SaveRole(int userId)
+    private void NavigateToEditUser(int id)
     {
-        if (selectedRoleId == null)
-            return;
+        NavigationManager.NavigateTo($"/manageUsers/edit/{id}");
+    }
 
-        using var context = DbContextFactory.CreateDbContext();
-
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user != null)
+    private async Task DisableUser(int id)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
         {
-            user.UserRoleId = selectedRoleId.Value;
-            await context.SaveChangesAsync();
+            Title = "Deseja desativar este utilizador?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = "Cancelar"
+        });
 
-            var localUser = users.FirstOrDefault(u => u.Id == userId);
-            if (localUser != null)
+        if (result.IsConfirmed)
+        {
+            isLoading = true;
+
+            using var context = DbContextFactory.CreateDbContext();
+            var userDb = await context.Users.FirstOrDefaultAsync(p => p.Id == id);
+
+            if (userDb != null)
             {
-                localUser.UserRole = roles.FirstOrDefault(r => r.Id == selectedRoleId.Value);
+                userDb.Enabled = false;
+
+                await context.SaveChangesAsync();
             }
 
-            editingUserId = null;
-            selectedRoleId = null;
+            users.RemoveAll(u => u.Id == id);
 
-            await Swal.FireAsync(new SweetAlertOptions
-             {
-                 Title = "Utilizador atualizado com sucesso!",
-                 Icon = SweetAlertIcon.Success,
-                 ConfirmButtonColor = "#0B5120"
-             });
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
-    private void CancelEdit()
-    {
-        editingUserId = null;
-    }
+    // private void EditRole(UserPetrotec user)
+    // {
+    //     editingUserId = user.Id;
+    //     selectedRoleId = user.UserRole?.Id ?? roles.FirstOrDefault()?.Id;
+    // }
+
+    // private async Task SaveRole(int userId)
+    // {
+    //     if (selectedRoleId == null)
+    //         return;
+
+    //     using var context = DbContextFactory.CreateDbContext();
+
+    //     var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    //     if (user != null)
+    //     {
+    //         user.UserRoleId = selectedRoleId.Value;
+    //         await context.SaveChangesAsync();
+
+    //         var localUser = users.FirstOrDefault(u => u.Id == userId);
+    //         if (localUser != null)
+    //         {
+    //             localUser.UserRole = roles.FirstOrDefault(r => r.Id == selectedRoleId.Value);
+    //         }
+
+    //         editingUserId = null;
+    //         selectedRoleId = null;
+
+    //         await Swal.FireAsync(new SweetAlertOptions
+    //          {
+    //              Title = "Utilizador atualizado com sucesso!",
+    //              Icon = SweetAlertIcon.Success,
+    //              ConfirmButtonColor = "#0B5120"
+    //          });
+    //     }
+    // }
+
+    // private void CancelEdit()
+    // {
+    //     editingUserId = null;
+    // }
 
     private void UpdatePage()
     {

@@ -27,7 +27,7 @@
             </button>
         </div>
     </div>
-
+  
     <div class="edit-form mt-4">
         <div class="w-50">
             <div class="d-flex align-items-center gap-3 mb-3">
@@ -36,6 +36,25 @@
                     <select id="stackSelect" class="form-control w-100" @bind="selectedStackId">
                         <option value="0">Selecione um stack</option>
                         @foreach (var stack in FilterService.SelectedStacks)
+            <label for="packageInput" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
+            <div class="position-relative">
+                <input id="packageInput" class="form-control pe-5" type="text"
+                       @bind="searchTerm"
+                       @oninput="FilterPackageNames"
+                       @onfocus="() => showSuggestions = true"
+                       @onblur="HideSuggestions"
+                       disabled="@packageDisabled"
+                       placeholder="Selecione ou escreva o pacote..." />
+
+                <span class="position-absolute top-50 end-0 translate-middle-y pe-3 text-muted" style="pointer-events: none; font-size: 0.9rem;">
+                    <i class="bi bi-chevron-down"></i>
+                </span>
+
+                @if (showSuggestions && filteredPackageNames.Any())
+                {
+                    <ul class="list-group position-absolute w-100 shadow"
+                        style="z-index: 1000; max-height: 200px; overflow-y: auto;">
+                        @foreach (var name in filteredPackageNames)
                         {
                             <option value="@stack.Id">@stack.Name</option>
                         }

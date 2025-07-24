@@ -1,0 +1,125 @@
+﻿@page "/manageUsers/edit/{UserId:int}"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Editar Utilizador</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="center-edit">
+        <div class="edit-form">
+            <label for="text" class="pb-2" style="font-size: 1.5rem;">Nome</label>
+            <input type="text" @bind="userName" class="form-control w-50 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+            <label for="text" class="pb-2 pt-4" style="font-size: 1.5rem;">Email</label>
+            <input type="text" @bind="userEmail" class="form-control w-50 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+            <label for="password" class="pb-2 pt-4" style="font-size: 1.5rem;">Palavra-passe</label>
+            <input type="password" @bind="userPassword" class="form-control w-50 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+            <label for="text" class="pt-4" style="font-size: 1.5rem;">Função</label>
+            <select class="form-select form-select-sm mx-auto w-50"
+                    @bind="selectedRoleId"
+                    style="height: 32px; font-size: 1.2rem;">
+                <option value="">Selecione uma função</option>
+                @foreach (var role in roles)
+                {
+                    <option value="@role.Id">@role.Name</option>
+                }
+            </select>
+
+            <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+                <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="SaveChanges">
+                    Salvar
+                </button>
+                <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                        @onclick="Cancel">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int UserId { get; set; }
+    private List<UserRole> roles = new();
+    private string userName = string.Empty;
+    private string userEmail = string.Empty;
+    private string userPassword = string.Empty;
+    private int? selectedRoleId = null;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
+        roles = await context.Roles.ToListAsync();
+
+        if (user != null)
+        {
+            selectedRoleId = user.UserRoleId;
+            userName = user.UserName;
+            userEmail = user.Email;
+            userPassword = user.Password;
+        }
+
+        isLoading = false;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (string.IsNullOrWhiteSpace(userName) & string.IsNullOrWhiteSpace(userEmail) & string.IsNullOrWhiteSpace(userPassword))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira dados válidos!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        var userDb = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
+        if (userDb == null) return;
+
+        userDb.UserName = userName;
+        userDb.Email = userEmail;
+        userDb.Password = userPassword;
+        userDb.UserRoleId = selectedRoleId.Value;
+
+        await context.SaveChangesAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Utilizador editado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+
+        NavigationManager.NavigateTo("/manageUsers");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageUsers");
+    }
+}

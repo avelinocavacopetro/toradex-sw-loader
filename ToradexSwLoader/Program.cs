@@ -1,5 +1,6 @@
 using CurrieTechnologies.Razor.SweetAlert2;
 using Microsoft.EntityFrameworkCore;
+using Syncfusion.Blazor;
 using ToradexSwLoader.Components;
 using ToradexSwLoader.Data;
 using ToradexSwLoader.Services;
@@ -15,7 +16,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseMySQL(connectionString)
 );
 
-// Configurar serviços a serem utilizados
+// Configurar serviÃ§os a serem utilizados
 builder.Services.AddHttpClient<TorizonService>();
 builder.Services.AddScoped<DeviceService>();
 builder.Services.AddScoped<PackageService>();
@@ -27,6 +28,7 @@ builder.Services.AddSingleton<FinalProductStateService>();
 builder.Services.AddHostedService<DeviceStatusUpdaterService>();
 builder.Services.AddSweetAlert2();
 builder.Services.AddBlazorBootstrap();
+builder.Services.AddSyncfusionBlazor();
 
 var app = builder.Build();
 
