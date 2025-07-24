@@ -1,0 +1,118 @@
+﻿@page "/manageUsers/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Utilizador</PageTitle>
+
+<div class="center-edit">
+    <div class="edit-form">
+        <label for="text" class="pb-2" style="font-size: 1.5rem;">Nome</label>
+        <input type="text" @bind="userName" class="form-control w-50 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+        <label for="text" class="pb-2 pt-4" style="font-size: 1.5rem;">Email</label>
+        <input type="text" @bind="userEmail" class="form-control w-50 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+        <label for="password" class="pb-2 pt-4" style="font-size: 1.5rem;">Palavra-passe</label>
+        <input type="password" @bind="userPassword" class="form-control w-50 mx-auto" style="font-size: 1.2rem; text-align: center;" />
+
+        <label for="text" class="pt-4" style="font-size: 1.5rem;">Função</label>
+        <select class="form-select form-select-sm mx-auto w-50"
+                @bind="selectedRoleId"
+                style="height: 32px; font-size: 1.2rem;">
+            <option value="">Selecione uma função</option>
+            @foreach (var role in roles)
+            {
+                <option value="@role.Id">@role.Name</option>
+            }
+        </select>
+
+        <div class="d-flex flex-row flex-wrap justify-content-center gap-3 mt-5">
+            <button class="btn btn-color btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="SaveUser">
+                Salvar
+            </button>
+            <button class="btn btn-danger btn-lg btn-edit-custom" style="min-width: 120px;"
+                    @onclick="Cancel">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<UserPetrotec> users = new List<UserPetrotec>();
+    private List<UserRole> roles = new List<UserRole>();
+    private string userName = string.Empty;
+    private string userEmail = string.Empty;
+    private string userPassword = string.Empty;
+    private int? selectedRoleId = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        users = await context.Users
+            .Include(u => u.UserRole)
+            .ToListAsync();
+
+        roles = await context.Roles.ToListAsync();
+    }
+
+    private async Task SaveUser()
+    {
+        if (string.IsNullOrWhiteSpace(userName) & string.IsNullOrWhiteSpace(userEmail) & string.IsNullOrWhiteSpace(userPassword))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira dados válidos!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        bool exists = await context.Users.AnyAsync(u => u.Email.ToLower() == userEmail.ToLower());
+
+        if (exists)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Este utilizador já existe!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var newUser = new UserPetrotec
+        {
+            UserRoleId = selectedRoleId.Value,
+            Enabled = true,
+            UserName = userName,
+            Email = userEmail,
+            Password = userPassword
+        };
+
+        context.Users.Add(newUser);
+        await context.SaveChangesAsync();
+
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Utilizador adicionado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+
+        NavigationManager.NavigateTo("/manageUsers");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageUsers");
+    }
+}
