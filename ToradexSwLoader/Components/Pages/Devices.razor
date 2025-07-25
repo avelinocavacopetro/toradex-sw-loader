@@ -1,7 +1,7 @@
 ﻿@page "/devices"
 
 @rendermode InteractiveServer
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
 
@@ -26,8 +26,8 @@ else
             <h3 class="pt-2">Dispositivos</h3>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <div class="w-25 position-relative">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mt-4 gap-3">
+            <div class="position-relative w-50">
                 <input type="text"
                        class="form-control py-2 ps-5"
                        placeholder="Pesquisar dispositivo pelo nome..."
@@ -36,37 +36,26 @@ else
                 <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
             </div>
 
-            <div class="d-flex justify-content-end align-items-center gap-2">
-                <div class="d-flex flex-column">
-                    <label for="nameOrder" style="font-size: 18px; font-weight: bold;">Nome</label>
-                    <select id="nameOrder" class="form-select" @onchange='e => OnOrderChanged(e, "DeviceName")'>
-                        <option value="relevance">Relevância</option>
-                        <option value="ascendent">Ascendente</option>
-                        <option value="descendent">Descendente</option>
+            <div class="d-flex flex-grow-1 gap-3">
+
+                <div class="d-flex align-items-center" style="width: 50%;">
+                    <label for="fleetSelect" class="fw-bold mb-0" style="min-width: 60px;">Frota</label>
+                    <select id="fleetSelect" class="form-select w-100"
+                            @bind="selectedFleetId"
+                            @bind:after="OnFleetChanged"
+                            style="border: 1px solid grey;">
+                        <option value="">Selecione uma frota</option>
+                        @foreach (var fleet in fleets)
+                        {
+                            <option value="@fleet.Id">@fleet.Name</option>
+                        }
                     </select>
                 </div>
 
-                <div class="d-flex flex-column">
-                    <label for="hibernationOrder" style="font-size: 18px; font-weight: bold;">Hibernação</label>
-                    <select id="hibernationOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Hibernation")'>
-                        <option value="everything">Tudo</option>
-                        <option value="yes">Sim</option>
-                        <option value="no">Não</option>
-                    </select>
-                </div>
-
-                <div class="d-flex flex-column">
-                    <label for="hourOrder" style="font-size: 18px; font-weight: bold;">Data de Criação</label>
-                    <select id="hourOrder" class="form-select" @onchange='e => OnOrderChanged(e, "CreatedAt")'>
-                        <option value="relevance">Relevância</option>
-                        <option value="ascendent">Ascendente</option>
-                        <option value="descendent">Descendente</option>
-                    </select>
-                </div>
-
-                <div class="d-flex flex-column">
-                    <label for="statusOrder" style="font-size: 18px; font-weight: bold;">Estado</label>
-                    <select id="statusOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Status")'>
+                <div class="d-flex align-items-center" style="width: 50%;">
+                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 60px;">Estado</label>
+                    <select id="statusOrder" class="form-select w-100"
+                            @onchange='e => OnOrderChanged(e, "Status")'>
                         <option value="all">Tudo</option>
                         <option value="uptodate">Atualizado</option>
                         <option value="error">Erro</option>
@@ -80,17 +69,53 @@ else
         </div>
 
         <div class="table-responsive">
-            <table class="table table-custom mt-3" style="min-width: 2000px;">
+            <table class="table table-custom mt-3" style="min-width: 2200px;">
                 <thead>
                     <tr>
                         <th style="width: 250px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
                                    border-right: 1px solid white;">ID</th>
-                        <th style="width: 250px; text-align: center; border-right: 1px solid white;">Nome</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Hibernação</th>
-                        <th style="width: 170px; text-align: center; border-right: 1px solid white;">Notas</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Data de Criação</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Data de Ativação</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Última Vez Visto</th>
+                        <th @onclick="@(() => SortByColumn("DeviceName"))"
+                            style="width: 250px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Nome
+                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "DeviceName" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "DeviceName" ? (sortAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th @onclick="@(() => SortByColumn("Hibernated"))"
+                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Hibernação
+                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "Hibernated" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "Hibernated" ? (sortAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th @onclick="@(() => SortByColumn("Notes"))"
+                            style="width: 170px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Notas
+                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "Notes" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "Notes" ? (sortAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th @onclick="@(() => SortByColumn("CreatedAt"))"
+                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Data de Criação
+                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "CreatedAt" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "CreatedAt" ? (sortAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th @onclick="@(() => SortByColumn("ActivatedAt"))"
+                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Data de Ativação
+                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "ActivatedAt" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "ActivatedAt" ? (sortAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
+                        <th @onclick="@(() => SortByColumn("LastSeen"))"
+                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Última Vez Visto
+                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "LastSeen" ? "white" : "rgba(255,255,255,0.5)")">
+                                @(currentSortColumn == "LastSeen" ? (sortAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </th>
                         <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado</th>
                         <th style="width: 180px; text-align: center; border-top-right-radius: 5px;">Estado de atualização</th>
                     </tr>
@@ -144,27 +169,19 @@ else
 @code {
     private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
     private List<DetailedDevice> devices = new List<DetailedDevice>();
-    private List<DetailedDevice> paginatedDevices = new List<DetailedDevice>();
-    private WindowDimension? dimension;
+    private List<Fleet> fleets = new List<Fleet>();
 
-    private int actualPage = 1;
-    private int devicesPerPage = 4;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredDevices.Count() / devicesPerPage);
+    private string currentSortColumn = "DeviceName";
 
-    private bool isOnline = false;
     private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    private bool sortAscending = true;
+
+    private string selectedFleetId = string.Empty;
 
     private IEnumerable<DetailedDevice> FilteredDevices =>
     string.IsNullOrWhiteSpace(searchTerm)
         ? devices
         : devices.Where(d => d.DeviceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
-
-    private IEnumerable<DetailedDevice> PaginatedDevices =>
-    FilteredDevices
-        .Skip((actualPage - 1) * devicesPerPage)
-        .Take(devicesPerPage);
 
     private string _searchTerm = string.Empty;
     private string searchTerm
@@ -175,7 +192,6 @@ else
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                actualPage = 1;
             }
         }
     }
@@ -183,6 +199,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
+        var fleetDevicesUrl = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
 
         bool authOk = await TorizonService.AuthenticateAsync();
         if (authOk)
@@ -192,37 +209,59 @@ else
             originalDevices = new List<DetailedDevice>(apiDevices);
             devices = new List<DetailedDevice>(originalDevices);
 
-            Console.WriteLine($"DISPOSITIVOS: {originalDevices.Count}");
+            using var context = DbContextFactory.CreateDbContext();
+            fleets = await context.Fleets.ToListAsync();
 
             isLoading = false;
         }
 
-        UpdatePage();
+        StateHasChanged();
     }
 
-    private void UpdatePage()
+    private async Task OnFleetChanged()
     {
-        paginatedDevices = devices.Skip((actualPage - 1) * devicesPerPage)
-                                 .Take(devicesPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
+        if (string.IsNullOrWhiteSpace(selectedFleetId))
         {
-            actualPage++;
-            UpdatePage();
+            var allDevices = await TorizonService.GetItemsAsync<DetailedDevice>("https://app.torizon.io/api/v2beta/devices?limit=200&offset=0");
+            devices = allDevices?.ToList() ?? new();
         }
+        else
+        {
+            var url = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
+            var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url);
+            devices = fleetDevices?.ToList() ?? new();
+        }
+
+        StateHasChanged();
     }
 
-    private void PrevPage()
+    private void SortByColumn(string columnName)
     {
-        if (CanGoPrev)
+        if (currentSortColumn == columnName)
         {
-            actualPage--;
-            UpdatePage();
+            sortAscending = !sortAscending;
         }
+        else
+        {
+            currentSortColumn = columnName;
+            sortAscending = true;
+        }
+
+        SortDevices();
+    }
+
+    private void SortDevices()
+    {
+        devices = currentSortColumn switch
+        {
+            "DeviceName" => (sortAscending ? devices.OrderBy(d => d.DeviceName) : devices.OrderByDescending(d => d.DeviceName)).ToList(),
+            "Hibernated" => (sortAscending ? devices.OrderBy(d => d.Hibernated) : devices.OrderByDescending(d => d.Hibernated)).ToList(),
+            "Notes" => (sortAscending ? devices.OrderBy(d => d.Notes) : devices.OrderByDescending(d => d.Notes)).ToList(),
+            "CreatedAt" => (sortAscending ? devices.OrderBy(d => d.CreatedAt) : devices.OrderByDescending(d => d.CreatedAt)).ToList(),
+            "ActivatedAt" => (sortAscending ? devices.OrderBy(d => d.ActivatedAt) : devices.OrderByDescending(d => d.ActivatedAt)).ToList(),
+            "LastSeen" => (sortAscending ? devices.OrderBy(d => d.LastSeen) : devices.OrderByDescending(d => d.LastSeen)).ToList(),
+            _ => devices
+        };
     }
 
     private MarkupString GetStatusIcon(string status)
@@ -286,44 +325,12 @@ else
 
     private void OnOrderChanged(ChangeEventArgs e, string orderByField)
     {
-        var selectedOrder = e.Value?.ToString() ?? "relevance";
-        var selectedHibernationOrder = e.Value?.ToString() ?? "everything";
         var selectedStatusOrder = e.Value?.ToString() ?? "uptodate";
 
         switch (orderByField)
         {
-            case "CreatedAt":
-                devices = selectedOrder switch
-                {
-                    "ascendent" => originalDevices.OrderBy(d => d.CreatedAt).ToList(),
-                    "descendent" => originalDevices.OrderByDescending(d => d.CreatedAt).ToList(),
-                    "relevance" => originalDevices.ToList(),
-                    _ => devices
-                };
-                break;
-
-            case "DeviceName":
-                devices = selectedOrder switch
-                {
-                    "ascendent" => originalDevices.OrderBy(d => d.DeviceName).ToList(),
-                    "descendent" => originalDevices.OrderByDescending(d => d.DeviceName).ToList(),
-                    "relevance" => originalDevices.ToList(),
-                    _ => devices
-                };
-                break;
-
-            case "Hibernation":
-                devices = selectedHibernationOrder switch
-                {
-                    "yes" => originalDevices.Where(d => d.Hibernated).ToList(),
-                    "no" => originalDevices.Where(d => !d.Hibernated).ToList(),
-                    "everything" => originalDevices.ToList(),
-                    _ => devices
-                };
-                break;
-
             case "Status":
-                devices = selectedHibernationOrder switch
+                devices = selectedStatusOrder switch
                 {
                     "uptodate" => originalDevices.Where(d => d.DeviceStatus == "UpToDate").ToList(),
                     "error" => originalDevices.Where(d => d.DeviceStatus == "Error").ToList(),
@@ -337,7 +344,6 @@ else
                 break;
         }
 
-        actualPage = 1;
-        UpdatePage();
+        StateHasChanged();
     }
 }
