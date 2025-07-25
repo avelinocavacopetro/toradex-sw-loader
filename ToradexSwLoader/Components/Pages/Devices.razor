@@ -73,7 +73,7 @@ else
                 <thead>
                     <tr>
                         <th style="width: 250px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                   border-right: 1px solid white;">ID</th>
+                                       border-right: 1px solid white;">ID</th>
                         <th @onclick="@(() => SortByColumn("DeviceName"))"
                             style="width: 250px; text-align: center; border-right: 1px solid white; cursor: pointer;">
                             Nome
@@ -151,7 +151,6 @@ else
                                         </div>
                                     }
                                 </td>
-
                                 <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @device.DeviceName
                                 </td>
@@ -200,17 +199,10 @@ else
 @code {
     private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
     private List<DetailedDevice> devices = new List<DetailedDevice>();
-    private List<DetailedDevice> paginatedDevices = new List<DetailedDevice>();
-    private WindowDimension? dimension;
-    private Modal modalUpdate;
-    private Modal modalAcess;
-    private int actualPage = 1;
-    private int devicesPerPage = 4;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredDevices.Count() / devicesPerPage);
-    private string? openMenuDeviceId = null;
-    private bool isOnline = false;
     private List<Fleet> fleets = new List<Fleet>();
-
+    private string? openMenuDeviceId = null;
+    private Modal modalAcess;
+    private Modal modalUpdate;
     private string currentSortColumn = "DeviceName";
 
     private bool isLoading = true;
@@ -258,22 +250,7 @@ else
         StateHasChanged();
     }
 
-    private async Task OnFleetChanged()
-    {
-        if (string.IsNullOrWhiteSpace(selectedFleetId))
-        {
-            var allDevices = await TorizonService.GetItemsAsync<DetailedDevice>("https://app.torizon.io/api/v2beta/devices?limit=200&offset=0");
-            devices = allDevices?.ToList() ?? new();
-        }
-        else
-        {
-            var url = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
-            var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url);
-            devices = fleetDevices?.ToList() ?? new();
-        }
-
-        StateHasChanged();
-    void ToggleMenu(string deviceId)
+    private void ToggleMenu(string deviceId)
     {
         if (openMenuDeviceId == deviceId)
             openMenuDeviceId = null;
@@ -294,11 +271,21 @@ else
         openMenuDeviceId = null;
     }
 
-    private void UpdatePage()
+    private async Task OnFleetChanged()
     {
-        paginatedDevices = devices.Skip((actualPage - 1) * devicesPerPage)
-                                 .Take(devicesPerPage)
-                                 .ToList();
+        if (string.IsNullOrWhiteSpace(selectedFleetId))
+        {
+            var allDevices = await TorizonService.GetItemsAsync<DetailedDevice>("https://app.torizon.io/api/v2beta/devices?limit=200&offset=0");
+            devices = allDevices?.ToList() ?? new();
+        }
+        else
+        {
+            var url = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
+            var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url);
+            devices = fleetDevices?.ToList() ?? new();
+        }
+
+        StateHasChanged();
     }
 
     private void SortByColumn(string columnName)
@@ -378,7 +365,8 @@ else
                         <i class='bi bi-circle-fill text-success fs-4'></i>
                         <span>Online</span>
                      </div>";
-        } else
+        }
+        else
         {
             iconHtml = @"<div class='state'>
                         <i class='bi bi-x-circle text-danger fs-4'></i>
