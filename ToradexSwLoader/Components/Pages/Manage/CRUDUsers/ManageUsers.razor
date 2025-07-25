@@ -21,39 +21,54 @@
 }
 else
 {
-    <div class="center-customization">
-        <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <div class="w-50 position-relative">
-                    <input type="text"
-                           class="form-control py-2 ps-5"
-                           placeholder="Pesquisar utilizador pelo nome..."
-                           @bind="searchTerm"
-                           @bind:event="oninput" />
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
-                </div>
+    <div class="custom-container">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Gerir Utilizadores</h3>
+        </div>
 
-                <div>
-                    <button class="btn btn-color btn-lg py-2"
-                            style="font-size: 1.25rem;"
-                            @onclick="NavigateToAddUser">
-                        + Novo
-                    </button>
-                </div>
-
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="w-50 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar utilizador pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
             </div>
 
-            <div class="pb-5">
-                <table class="table mt-3 w-100">
-                    <thead style="background-color: #0c6527; color: white;">
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-color btn-lg py-2"
+                        style="font-size: 1.25rem;"
+                        @onclick="NavigateToAddUser">
+                    <i class="bi bi-plus"></i> Novo
+                </button>
+            </div>
+        </div>
+
+        <div class="pb-5">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                       border-right: 1px solid white;">Nome do Utilizador</th>
+                        <th style="width: 40%; text-align: center; border-right: 1px solid white;">User</th>
+                        <th style="width: 25%; text-align: center; border-right: 1px solid white;">Função</th>
+                        <th style="width: 35%;"></th>
+                        <th style="width: 35%; border-top-right-radius: 5px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (PaginatedUsers is null || !PaginatedUsers.Any())
+                    {
                         <tr>
-                            <th style="width: 40%; text-align: left; padding-left: 20px;">Nome do Utilizador</th>
-                            <th style="width: 40%; text-align: center;">User</th>
-                            <th style="width: 25%; text-align: center;">Função</th>
-                            <th style="width: 35%;"></th>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
+                    }
+                    else
+                    {
                         @foreach (var user in PaginatedUsers)
                         {
                             <tr class="table-light" style="height: 50px;">
@@ -81,42 +96,64 @@ else
                                     }
                                 </td>
                                 <td class="text-center align-middle">
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <button class="btn btn-outline-success btn-sm py-1 px-2"
-                                                title="Editar"
-                                                @onclick="() => NavigateToEditUser(user.Id)"
-                                                style="border-radius: 5px;">
-                                            <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger btn-sm py-1 px-2"
-                                                title="Desativar"
-                                                @onclick="() => DisableUser(user.Id)"
-                                                style="border-radius: 5px;">
-                                            <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
-                                        </button>
-                                    </div>
+                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                            title="Editar"
+                                            @onclick="() => NavigateToEditUser(user.Id)"
+                                            style="border-radius: 5px;">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                            title="Desativar"
+                                            @onclick="() => DisableUser(user.Id)"
+                                            style="border-radius: 5px;">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                    </button>
                                 </td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-                <div class="d-flex justify-content-between align-items-center gap-3">
-                    <span>@actualPage - @TotalPages de @TotalPages</span>
-                    <div class="d-flex gap-2">
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                            &lt;
-                        </button>
+                    }
+                </tbody>
+            </table>
 
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="NextPage" disabled="@(!CanGoNext)">
-                            &gt;
-                        </button>
-                    </div>
+        </div>
+
+        <div class="sticky-footer-right">
+            <div class="d-flex justify-content-end align-items-center gap-3">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 <style>

@@ -27,34 +27,15 @@
             </button>
         </div>
     </div>
-  
+
     <div class="edit-form mt-4">
         <div class="w-50">
             <div class="d-flex align-items-center gap-3 mb-3">
-                <label for="stackSelect" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">Stack</label>
+                <label for="stackSelect" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Stack</label>
                 <div class="flex-grow-1">
-                    <select id="stackSelect" class="form-control w-100" @bind="selectedStackId">
+                    <select id="stackSelect" class="form-control w-100" @bind="selectedStackId" style="border: 1px solid grey">
                         <option value="0">Selecione um stack</option>
                         @foreach (var stack in FilterService.SelectedStacks)
-            <label for="packageInput" class="pt-4" style="font-size: 18px; font-weight: bold;">Nome</label>
-            <div class="position-relative">
-                <input id="packageInput" class="form-control pe-5" type="text"
-                       @bind="searchTerm"
-                       @oninput="FilterPackageNames"
-                       @onfocus="() => showSuggestions = true"
-                       @onblur="HideSuggestions"
-                       disabled="@packageDisabled"
-                       placeholder="Selecione ou escreva o pacote..." />
-
-                <span class="position-absolute top-50 end-0 translate-middle-y pe-3 text-muted" style="pointer-events: none; font-size: 0.9rem;">
-                    <i class="bi bi-chevron-down"></i>
-                </span>
-
-                @if (showSuggestions && filteredPackageNames.Any())
-                {
-                    <ul class="list-group position-absolute w-100 shadow"
-                        style="z-index: 1000; max-height: 200px; overflow-y: auto;">
-                        @foreach (var name in filteredPackageNames)
                         {
                             <option value="@stack.Id">@stack.Name</option>
                         }
@@ -63,9 +44,9 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 mb-3">
-                <label for="packageInput" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">Nome</label>
+                <label for="packageInput" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Nome</label>
                 <div class="flex-grow-1 position-relative">
-                    <input id="packageInput" class="form-control w-100" type="text"
+                    <input id="packageInput" class="form-control w-100" type="text" style="border: 1px solid grey"
                            @bind="searchTerm"
                            @oninput="FilterPackageNames"
                            @onfocus="() => showSuggestions = true"
@@ -90,9 +71,9 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <label for="versionInput" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">Versão</label>
+                <label for="versionInput" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Versão</label>
                 <div class="flex-grow-1 position-relative">
-                    <input id="versionInput" class="form-control w-100" type="text"
+                    <input id="versionInput" class="form-control w-100" type="text" style="border: 1px solid grey"
                            @bind="versionSearchTerm"
                            @oninput="FilterVersions"
                            @onfocus="() => showVersionSuggestions = true"

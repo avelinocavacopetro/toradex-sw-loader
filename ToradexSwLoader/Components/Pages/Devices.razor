@@ -7,8 +7,6 @@
 
 <PageTitle>Dispositivos</PageTitle>
 
-<WindowDimensions OnChange="OnDimensionsChanged" />
-
 @if (isLoading)
 {
     <div class="center">
@@ -22,113 +20,125 @@
 }
 else
 {
-    <a href="/home" class="text-black">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
-
-    <br />
-    <br />
-
-    <div class="w-50">
-        <input type="text" class="form-control" placeholder="Pesquisar dispositivo pelo nome..."
-               @bind="searchTerm" @bind:event="oninput" />
-    </div>
-
-    <br />
-
-    <div class="d-flex justify-content-between align-items-center mt-2">
-        <div class="d-flex gap-4">
-
-            <div class="d-flex flex-column">
-                <label for="nameOrder" style="font-size: 18px; font-weight: bold;">Nome</label>
-                <select id="nameOrder" class="form-select" @onchange='e => OnOrderChanged(e, "DeviceName")'>
-                    <option value="relevance">Relevância</option>
-                    <option value="ascendent">Ascendente</option>
-                    <option value="descendent">Descendente</option>
-                </select>
-            </div>
-
-            <div class="d-flex flex-column">
-                <label for="hibernationOrder" style="font-size: 18px; font-weight: bold;">Hibernação</label>
-                <select id="hibernationOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Hibernation")'>
-                    <option value="everything">Tudo</option>
-                    <option value="yes">Sim</option>
-                    <option value="no">Não</option>
-                </select>
-            </div>
-
-            <div class="d-flex flex-column">
-                <label for="hourOrder" style="font-size: 18px; font-weight: bold;">Data de Criação</label>
-                <select id="hourOrder" class="form-select" @onchange='e => OnOrderChanged(e, "CreatedAt")'>
-                    <option value="relevance">Relevância</option>
-                    <option value="ascendent">Ascendente</option>
-                    <option value="descendent">Descendente</option>
-                </select>
-            </div>
-
-            <div class="d-flex flex-column">
-                <label for="statusOrder" style="font-size: 18px; font-weight: bold;">Estado</label>
-                <select id="statusOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Status")'>
-                    <option value="all">Tudo</option>
-                    <option value="uptodate">UpToDate</option>
-                    <option value="error">Error</option>
-                    <option value="notseen">NotSeen</option>
-                    <option value="updatepending">UpdatePending</option>
-                    <option value="updatescheduled">UpdateScheduled</option>
-                    <option value="outdated">Outdated</option>
-                </select>
-            </div>
-
+    <div class="custom-container d-flex flex-column">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Dispositivos</h3>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="w-25 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar dispositivo pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
+            </div>
 
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
+            <div class="d-flex justify-content-end align-items-center gap-2">
+                <div class="d-flex flex-column">
+                    <label for="nameOrder" style="font-size: 18px; font-weight: bold;">Nome</label>
+                    <select id="nameOrder" class="form-select" @onchange='e => OnOrderChanged(e, "DeviceName")'>
+                        <option value="relevance">Relevância</option>
+                        <option value="ascendent">Ascendente</option>
+                        <option value="descendent">Descendente</option>
+                    </select>
+                </div>
+
+                <div class="d-flex flex-column">
+                    <label for="hibernationOrder" style="font-size: 18px; font-weight: bold;">Hibernação</label>
+                    <select id="hibernationOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Hibernation")'>
+                        <option value="everything">Tudo</option>
+                        <option value="yes">Sim</option>
+                        <option value="no">Não</option>
+                    </select>
+                </div>
+
+                <div class="d-flex flex-column">
+                    <label for="hourOrder" style="font-size: 18px; font-weight: bold;">Data de Criação</label>
+                    <select id="hourOrder" class="form-select" @onchange='e => OnOrderChanged(e, "CreatedAt")'>
+                        <option value="relevance">Relevância</option>
+                        <option value="ascendent">Ascendente</option>
+                        <option value="descendent">Descendente</option>
+                    </select>
+                </div>
+
+                <div class="d-flex flex-column">
+                    <label for="statusOrder" style="font-size: 18px; font-weight: bold;">Estado</label>
+                    <select id="statusOrder" class="form-select" @onchange='e => OnOrderChanged(e, "Status")'>
+                        <option value="all">Tudo</option>
+                        <option value="uptodate">Atualizado</option>
+                        <option value="error">Erro</option>
+                        <option value="notseen">Não Visto</option>
+                        <option value="updatepending">Pendente</option>
+                        <option value="updatescheduled">Agendado</option>
+                        <option value="outdated">Desatualizado</option>
+                    </select>
+                </div>
             </div>
         </div>
+
+        <div class="table-responsive">
+            <table class="table table-custom mt-3" style="min-width: 2000px;">
+                <thead>
+                    <tr>
+                        <th style="width: 250px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                   border-right: 1px solid white;">ID</th>
+                        <th style="width: 250px; text-align: center; border-right: 1px solid white;">Nome</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Hibernação</th>
+                        <th style="width: 170px; text-align: center; border-right: 1px solid white;">Notas</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Data de Criação</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Data de Ativação</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Última Vez Visto</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado</th>
+                        <th style="width: 180px; text-align: center; border-top-right-radius: 5px;">Estado de atualização</th>
+                    </tr>
+
+                </thead>
+                <tbody style="max-height: 350px;">
+                    @if (FilteredDevices is null || !FilteredDevices.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var device in FilteredDevices)
+                        {
+                            <tr>
+                                <td title="@device.DeviceId" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    @device.DeviceId
+                                </td>
+                                <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    @device.DeviceName
+                                </td>
+
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">@(device.Hibernated ? "Sim" : "Não")</td>
+                                <td style="width: 170px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    @(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)
+                                </td>
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">@(device.LastSeen?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">
+                                    @(device.LastSeen?.ToString("dd/MM/yyyy HH:mm") ?? "-")
+                                </td>
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">
+                                    @CheckOnlineStatus(device)
+                                </td>
+                                <td style="width: 170px; text-align: center;">
+                                    @GetStatusIcon(device.DeviceStatus!)
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <table class="table custom-table mt-5">
-        <thead style="background-color: #0c6527; color: white;">
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th style="text-align: center;">Hibernação</th>
-                <th style="text-align: center;">Notas</th>
-                <th>Data de Criação</th>
-                <th style="text-align: center;">Estado de atualização</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var device in PaginatedDevices)
-            {
-                <tr>
-                    <td title="@device.DeviceId" style="word-break: break-word; white-space: normal; vertical-align: middle;">
-                        @device.DeviceId
-                    </td>
-                    <td title="@device.DeviceName" style="word-break: break-word; white-space: normal; vertical-align: middle;">
-                        @device.DeviceName
-                    </td>
-
-                    <td style="text-align: center; vertical-align: middle;">@(device.Hibernated ? "Sim" : "Não")</td>
-                    <td style="text-align: center; vertical-align: middle;">@(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)</td>
-                    <td style="vertical-align: middle;">@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td style="text-align: center;">
-                        @GetStatusIcon(device.DeviceStatus!)
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
 }
 
 @code {
@@ -141,6 +151,7 @@ else
     private int devicesPerPage = 4;
     private int TotalPages => (int)Math.Ceiling((double)FilteredDevices.Count() / devicesPerPage);
 
+    private bool isOnline = false;
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
@@ -169,12 +180,6 @@ else
         }
     }
 
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        StateHasChanged();
-    }
-
     protected override async Task OnInitializedAsync()
     {
         var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
@@ -186,6 +191,8 @@ else
 
             originalDevices = new List<DetailedDevice>(apiDevices);
             devices = new List<DetailedDevice>(originalDevices);
+
+            Console.WriteLine($"DISPOSITIVOS: {originalDevices.Count}");
 
             isLoading = false;
         }
@@ -222,14 +229,57 @@ else
     {
         var iconHtml = status.ToLower() switch
         {
-            "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
-            "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
-            "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
-            "notseen" => "<i class='bi bi-eye-slash text-muted fs-4'></i>",
-            "outdated" => "<i class='bi bi-exclamation-circle text-danger fs-4'></i>",
-            "updatescheduled" => "<i class='bi bi-calendar-check text-primary fs-4'></i>",
-            _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
+            "uptodate" => @"<div class='state'>
+                               <i class='bi bi-check-circle text-success fs-4'></i>
+                               <span>Atualizado</span>
+                            </div>",
+            "error" => @"<div class='state'>
+                            <i class='bi bi-x-circle text-danger fs-4'></i>
+                            <span>Erro</span>
+                         </div>",
+            "updatepending" => @"<div class='state'>
+                                    <i class='bi bi-clock text-warning fs-4'></i>
+                                    <span>Pendente</span>
+                                 </div>",
+            "notseen" => @"<div class='state'>
+                              <i class='bi bi-eye-slash text-muted fs-4'></i>
+                              <span>Não Visto</span>
+                           </div>",
+            "outdated" => @"<div class='state'>
+                               <i class='bi bi-exclamation-circle text-danger fs-4'></i>
+                               <span>Desatualizado</span>
+                            </div>",
+            "updatescheduled" => @"<div class='state'>
+                                      <i class='bi bi-calendar-check text-primary fs-4'></i>
+                                      <span>Agendado</span>
+                                   </div>",
+            _ => @"<div class='state'>
+                      <i class='bi bi-question-circle text-secondary fs-4'></i>
+                      <span>Scheduled</span>
+                   </div>",
         };
+
+        return new MarkupString(iconHtml);
+    }
+
+    private MarkupString CheckOnlineStatus(DetailedDevice device)
+    {
+        bool isOnline = device.LastSeen.HasValue && (DateTime.UtcNow - device.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+        string iconHtml = string.Empty;
+
+        if (isOnline)
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-circle-fill text-success fs-4'></i>
+                        <span>Online</span>
+                     </div>";
+        } else
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-x-circle text-danger fs-4'></i>
+                        <span>Offline</span>
+                     </div>";
+        }
 
         return new MarkupString(iconHtml);
     }

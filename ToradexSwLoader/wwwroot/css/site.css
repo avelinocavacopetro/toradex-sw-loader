@@ -25,40 +25,94 @@
 }
 
 .table-responsive {
-    overflow-x: auto;
-    overflow-y: auto; 
+    width: 100%;
+    overflow: hidden; /* impede scroll duplo */
+}
+
+.table-custom {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .table-custom thead {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+        position: sticky;
+        top: 0;
+        background-color: #0c6527;
+        color: white;
+        z-index: 10;
+    }
+
+    .table-custom tbody {
+        display: block;
+        overflow-y: auto;
+        width: 100%;
+    }
+
+        .table-custom tbody tr {
+            display: table;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+
+
+/* Mantenha seus outros estilos... */
+
+/*.table-responsive {
+    overflow: hidden;
     flex: 1;
     min-height: 0;
-    max-height: 500px;
-    height: 650px;
     display: flex;
     flex-direction: column;
 }
 
 .table-custom {
     width: 100%;
-    min-width: 800px;
     white-space: nowrap;
     border-collapse: separate;
     border-spacing: 0;
     border-radius: 5px;
 }
 
-.table-custom thead {
-    background-color: #0c6527;
-    color: white;
-}
+    .table-custom thead {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+        background-color: #0c6527;
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
 
-.table-custom tbody {
-    flex: 1 1 auto;
-    overflow-y: auto; 
-    max-height: calc(650px - 60px);
-}
+    .table-custom tbody {
+        display: block;
+        max-height: 500px;
+        overflow-y: auto;
+        width: 100%;
+    }
 
-.table-custom tr {  
-    table-layout: fixed;
-    width: 100%;
-}
+        .table-custom tbody tr {
+            display: table;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+    .table-custom th,
+    .table-custom td {
+        padding: 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .table-custom tr {
+        table-layout: fixed;
+        width: 100%;
+    }*/
 
 .table-footer {
     height: 60px;
@@ -87,17 +141,17 @@ table thead th {
     border: 1px black solid;
 }
 
-.state span {
-    color: black; 
-    font-size: 1rem;
-}
+    .state span {
+        color: black;
+        font-size: 1rem;
+    }
 
 .icon-align {
-    display: inline-flex; 
-    align-items: center; 
+    display: inline-flex;
+    align-items: center;
     line-height: 1;
-    font-size: 1.25rem; 
-    vertical-align: middle; 
+    font-size: 1.25rem;
+    vertical-align: middle;
 }
 
 .align-text {
@@ -163,7 +217,7 @@ table thead th {
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    border: 4px solid #0B5120 !important; 
+    border: 4px solid #0B5120 !important;
     background-color: #0B5120 !important;
     display: flex;
     align-items: center;
@@ -219,7 +273,7 @@ table thead th {
 
         .user-dropdown .dropdown-item:hover {
             background-color: #f0f0f0;
-            color:black;
+            color: black;
         }
 
 /* 
@@ -245,9 +299,8 @@ input.largerCheckbox {
     color: white;
     text-align: center;
     display: flex;
-    align-items: center; 
-    justify-content: center; 
-
+    align-items: center;
+    justify-content: center;
     padding: 30px 15px;
     font-size: 22px;
     border-radius: 5px;
@@ -292,9 +345,9 @@ input.largerCheckbox {
     width: 100%;
 }
 
-.custom-table td {
-    padding: 8px;
-}
+    .custom-table td {
+        padding: 8px;
+    }
 
 .custom-table1 {
     border-spacing: 0 10px;
@@ -302,13 +355,13 @@ input.largerCheckbox {
     width: 100%;
 }
 
-.custom-table1 tbody {
-    vertical-align: initial !important;
-}
+    .custom-table1 tbody {
+        vertical-align: initial !important;
+    }
 
-.custom-table1 td {
-    padding: 10px;
-}
+    .custom-table1 td {
+        padding: 10px;
+    }
 
 .package-table td {
     padding: 15px;
@@ -333,7 +386,7 @@ input.largerCheckbox {
 }
 
 .status-updatepending {
-    color: #FFA500; 
+    color: #FFA500;
 }
 
 .status-error {
@@ -377,10 +430,10 @@ input.largerCheckbox {
     transition: transform 0.2s ease;
 }
 
-.bi-pencil-square:hover {
-    transform: scale(1.2);
-    color: #06501c;
-}
+    .bi-pencil-square:hover {
+        transform: scale(1.2);
+        color: #06501c;
+    }
 
 .custom-h4 {
     background-color: #f1f1f1;
@@ -417,16 +470,16 @@ td, th {
     transition: background-color 0.2s, color 0.2s;
 }
 
-.custom-outline-button:hover {
-    background-color: darkgrey;
-    color: white;
-}
+    .custom-outline-button:hover {
+        background-color: darkgrey;
+        color: white;
+    }
 
-.custom-outline-button:active {
-    background-color: #6c757d;
-    color: white;
-    border-color: #6c757d;
-}
+    .custom-outline-button:active {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
 
 .center {
     display: flex;
@@ -521,7 +574,7 @@ td, th {
 .sidebar-content {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding-right: 0.5rem; 
+    padding-right: 0.5rem;
 }
 
 .sidebar-footer {
@@ -531,11 +584,11 @@ td, th {
     text-align: center;
 }
 
-.sidebar-footer small {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+    .sidebar-footer small {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
 .nav {
     height: 100%;
@@ -548,7 +601,7 @@ td, th {
 }
 
     .nav::-webkit-scrollbar {
-        display: none; 
+        display: none;
     }
 
 @media (max-height: 768px) and (max-width: 1024px) {

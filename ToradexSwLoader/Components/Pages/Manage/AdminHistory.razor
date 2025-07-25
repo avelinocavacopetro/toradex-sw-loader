@@ -20,71 +20,85 @@
 }
 else
 {
-    <h3 class="text-center">Histórico de Carregamentos</h3>
-
-    <a href="#"
-       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-       class="text-black"
-       style="cursor: @(isLoading ? "default" : "pointer");">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
-
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <div class="d-flex gap-3 align-items-center w-50">
-            <input type="text" class="form-control" placeholder="Pesquisar placa pelo nome..."
-                   @bind="searchTerm" @bind:event="oninput" />
-
-            <label>Início</label>
-            <input type="date" class="form-control w-25" @bind="startDate" max="@today"/>
-
-            <label>Fim</label>
-            <input type="date" class="form-control w-25" @bind="endDate" max="@today"/>
+    <div class="custom-container d-flex flex-column">
+        <div class="page-title">
+            <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+            <h3 class="pt-2">Histórico de Carregamentos</h3>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="w-50 position-relative">
+                <input type="text"
+                       class="form-control py-2 ps-5"
+                       placeholder="Pesquisar produto pelo nome..."
+                       @bind="searchTerm"
+                       @bind:event="oninput" />
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
+            </div>
 
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
+            <div class="d-flex justify-content-end align-items-center gap-2">
+                <label class="mb-0 fw-bold">Início</label>
+                <input type="date" class="form-control w-50" @bind="startDate" max="@today" />
+
+                <label class="mb-0 fw-bold">Fim</label>
+                <input type="date" class="form-control w-50" @bind="endDate" max="@today" />
             </div>
         </div>
-    </div>
 
-    <div class="pb-5">
-        <table class="table mt-3 w-100" style="table-layout: fixed;">
-            <thead style="background-color: #0c6527; color: white;">
-                <tr>
-                    <th style="width: 35%; text-align: left; padding-left: 20px;">Placa</th>
-                    <th style="width: 25%; text-align: center;">Data</th>
-                    <th style="width: 25%; text-align: center;">Colaborador</th>
-                    <th style="width: 15%; text-align: center;">Estado de atualização</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var finalProduct in paginatedFinalProducts)
-                {
-                    <tr class="table-light" style="height: 50px;">
-                        <td style="text-align: left; vertical-align: middle; padding-left: 20px;">@finalProduct.Name</td>
-                        <td class="text-center" style="vertical-align: middle;">@finalProduct.CreatedAt</td>
-                        <td class="text-center" style="vertical-align: middle;">@finalProduct.UserPetrotec?.UserName</td>
-                        <td style="text-align: center;">
-                            @GetStatusIcon(finalProduct.Status)
-                        </td>
+        <div class="table-responsive">
+            <table class="table table-custom mt-3">
+                <thead>
+                    <tr>
+                        <th style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                               border-right: 1px solid white;">Placa</th>
+                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Data</th>
+                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Colaborador</th>
+                        <th style="width: 20%; text-align: center; border-top-right-radius: 5px;">Estado de atualização</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @if (paginatedFinalProducts is null || !paginatedFinalProducts.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                                Sem dados disponíveis
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var finalProduct in paginatedFinalProducts)
+                        {
+                            <tr class="table-light" style="height: 50px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">@finalProduct.Name</td>
+                                <td class="text-center" style="vertical-align: middle;">@finalProduct.CreatedAt</td>
+                                <td class="text-center" style="vertical-align: middle;">@finalProduct.UserPetrotec?.UserName</td>
+                                <td style="text-align: center;">
+                                    @GetStatusIcon(finalProduct.Status)
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
 
-    <div class="text-center fixed-bottom pb-3 mt-3 text-muted">
-        Última atualização: @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
+            <div class="sticky-footer-right">
+            <div class="d-flex justify-content-end align-items-center gap-3">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
     </div>
 }
 
@@ -95,7 +109,7 @@ else
     private string today = DateTime.Today.ToString("yyyy-MM-dd");
 
     private int actualPage = 1;
-    private int finalProductsPerPage = 7;
+    private int finalProductsPerPage = 6;
     private int TotalPages => (int)Math.Ceiling((double)FilteredPages.Count() / finalProductsPerPage);
 
     private bool isLoading = true;
@@ -191,13 +205,34 @@ else
     {
         var iconHtml = status.ToLower() switch
         {
-            "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
-            "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
-            "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
-            "notseen" => "<i class='bi bi-eye-slash text-muted fs-4'></i>",         
-            "outdated" => "<i class='bi bi-exclamation-circle text-danger fs-4'></i>", 
-            "updatescheduled" => "<i class='bi bi-calendar-check text-primary fs-4'></i>", 
-            _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
+            "uptodate" => @"<div class='state'>
+                               <i class='bi bi-check-circle text-success fs-4'></i>
+                               <span>Atualizado</span>
+                            </div>",
+            "error" => @"<div class='state'>
+                            <i class='bi bi-x-circle text-danger fs-4'></i>
+                            <span>Erro</span>
+                         </div>",
+            "updatepending" => @"<div class='state'>
+                                    <i class='bi bi-clock text-warning fs-4'></i>
+                                    <span>Pendente</span>
+                                 </div>",
+            "notseen" => @"<div class='state'>
+                              <i class='bi bi-eye-slash text-muted fs-4'></i>
+                              <span>Não Visto</span>
+                           </div>",
+            "outdated" => @"<div class='state'>
+                               <i class='bi bi-exclamation-circle text-danger fs-4'></i>
+                               <span>Desatualizado</span>
+                            </div>",
+            "updatescheduled" => @"<div class='state'>
+                                      <i class='bi bi-calendar-check text-primary fs-4'></i>
+                                      <span>Agendado</span>
+                                   </div>",
+            _ => @"<div class='state'>
+                      <i class='bi bi-question-circle text-secondary fs-4'></i>
+                      <span>Scheduled</span>
+                   </div>",
         };
 
         return new MarkupString(iconHtml);
