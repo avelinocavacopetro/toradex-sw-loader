@@ -135,9 +135,23 @@ else
                         @foreach (var device in FilteredDevices)
                         {
                             <tr>
-                                <td title="@device.DeviceId" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                <td style="position: relative; width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    <i @onclick="() => ToggleMenu(device.DeviceId)" class="bi bi-three-dots-vertical px-3" style="font-size: 1.2rem; cursor: pointer;"></i>
                                     @device.DeviceId
+
+                                    @if (openMenuDeviceId == device.DeviceId)
+                                    {
+                                        <div class="actions-dropdown">
+                                            <button @onclick="UpdateDevice" class="dropdown-item">
+                                                <i class="bi bi-arrow-clockwise"></i> Atualizar
+                                            </button>
+                                            <button @onclick="RemoteAcess" class="dropdown-item">
+                                                <i class="bi bi-broadcast"></i> Acesso remoto
+                                            </button>
+                                        </div>
+                                    }
                                 </td>
+
                                 <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @device.DeviceName
                                 </td>
@@ -162,6 +176,23 @@ else
                     }
                 </tbody>
             </table>
+
+            <Modal @ref="modalUpdate" Title="Atualizar dispositivo" IsVerticallyCentered="true">
+                <BodyTemplate>
+                    <div style="width: 450px;">
+                        <span> TESTE ATUALIZAR DISPOSITIVO </span>
+                    </div>
+                </BodyTemplate>
+            </Modal>
+
+            <Modal @ref="modalAcess" Title="Acesso Remoto" IsVerticallyCentered="true">
+                <BodyTemplate>
+                    <div style="width: 450px;">
+                        <span> TESTE ACESSO REMOTO </span>
+                    </div>
+                </BodyTemplate>
+            </Modal>
+
         </div>
     </div>
 }
@@ -169,6 +200,15 @@ else
 @code {
     private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
     private List<DetailedDevice> devices = new List<DetailedDevice>();
+    private List<DetailedDevice> paginatedDevices = new List<DetailedDevice>();
+    private WindowDimension? dimension;
+    private Modal modalUpdate;
+    private Modal modalAcess;
+    private int actualPage = 1;
+    private int devicesPerPage = 4;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredDevices.Count() / devicesPerPage);
+    private string? openMenuDeviceId = null;
+    private bool isOnline = false;
     private List<Fleet> fleets = new List<Fleet>();
 
     private string currentSortColumn = "DeviceName";
@@ -233,6 +273,32 @@ else
         }
 
         StateHasChanged();
+    void ToggleMenu(string deviceId)
+    {
+        if (openMenuDeviceId == deviceId)
+            openMenuDeviceId = null;
+        else
+            openMenuDeviceId = deviceId;
+    }
+
+
+    private async Task UpdateDevice()
+    {
+        await modalUpdate?.ShowAsync();
+        openMenuDeviceId = null;
+    }
+
+    private async Task RemoteAcess()
+    {
+        await modalAcess?.ShowAsync();
+        openMenuDeviceId = null;
+    }
+
+    private void UpdatePage()
+    {
+        paginatedDevices = devices.Skip((actualPage - 1) * devicesPerPage)
+                                 .Take(devicesPerPage)
+                                 .ToList();
     }
 
     private void SortByColumn(string columnName)
