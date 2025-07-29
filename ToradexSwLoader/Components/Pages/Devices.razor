@@ -53,7 +53,7 @@ else
                 </div>
 
                 <div class="d-flex align-items-center" style="width: 50%;">
-                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 60px;">Estado</label>
+                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 185px;">Estado de atualização</label>
                     <select id="statusOrder" class="form-select w-100"
                             @onchange='e => OnOrderChanged(e, "Status")'>
                         <option value="all">Tudo</option>
@@ -176,19 +176,15 @@ else
                 </tbody>
             </table>
 
-            <Modal @ref="modalUpdate" Title="Atualizar dispositivo" IsVerticallyCentered="true">
+            <Modal @ref="modalUpdate" Title="Atualizar dispositivo" IsVerticallyCentered="true" Size="ModalSize.Large">
                 <BodyTemplate>
-                    <div style="width: 450px;">
-                        <span> TESTE ATUALIZAR DISPOSITIVO </span>
-                    </div>
+                    <UpdateImageModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal"/>
                 </BodyTemplate>
             </Modal>
 
-            <Modal @ref="modalAcess" Title="Acesso Remoto" IsVerticallyCentered="true">
+            <Modal @ref="modalAcess" Title="Criar sessão de acesso remoto" IsVerticallyCentered="true">
                 <BodyTemplate>
-                    <div style="width: 450px;">
-                        <span> TESTE ACESSO REMOTO </span>
-                    </div>
+                    <RemoteAcess DeviceUuid="@currentDeviceUuid" />
                 </BodyTemplate>
             </Modal>
 
@@ -200,10 +196,12 @@ else
     private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
     private List<DetailedDevice> devices = new List<DetailedDevice>();
     private List<Fleet> fleets = new List<Fleet>();
+    private DetailedDevice currentDevice;
     private string? openMenuDeviceId = null;
-    private Modal modalAcess;
-    private Modal modalUpdate;
-    private string currentSortColumn = "DeviceName";
+    private Modal? modalAcess;
+    private Modal? modalUpdate;
+    private string? currentSortColumn = "DeviceName";
+    private string? currentDeviceUuid;
 
     private bool isLoading = true;
     private bool sortAscending = true;
@@ -250,14 +248,29 @@ else
         StateHasChanged();
     }
 
+    private async Task CloseModal()
+    {
+        if (modalAcess != null & modalUpdate != null)
+        {
+            await modalAcess.HideAsync(); 
+            await modalUpdate.HideAsync();
+        }
+    }
+
     private void ToggleMenu(string deviceId)
     {
         if (openMenuDeviceId == deviceId)
+        {
             openMenuDeviceId = null;
+        }
         else
+        {
             openMenuDeviceId = deviceId;
+            currentDevice = devices.FirstOrDefault(d => d.DeviceId == deviceId);
+            currentDeviceUuid = currentDevice.DeviceUuid;
+            Console.WriteLine($"id:{currentDevice.DeviceId} uuid:{currentDeviceUuid}");
+        }
     }
-
 
     private async Task UpdateDevice()
     {
