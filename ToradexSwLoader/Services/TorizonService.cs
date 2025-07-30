@@ -1,4 +1,6 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using ToradexSwLoader.Models;
 
@@ -149,6 +151,46 @@ namespace ToradexSwLoader.Services
         {
             return await _httpClient.PostAsJsonAsync("https://app.torizon.io/api/v2beta/updates", deviceDto);
         }
+
+        public async Task<HttpResponseMessage> SendCreateSession(string deviceUuid, int durationMinutes)
+        {
+            var getUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
+            var getResponse = await _httpClient.GetAsync(getUrl);
+
+            if (!getResponse.IsSuccessStatusCode)
+            {
+                return getResponse;
+            }
+
+            var getContent = await getResponse.Content.ReadAsStringAsync();
+            var sessionInfo = JsonSerializer.Deserialize<RemoteSessionInfo>(getContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            var sshPubKey = sessionInfo?.Ssh?.RaServerSshPubKey;
+
+            if (string.IsNullOrWhiteSpace(sshPubKey))
+            {
+                return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                {
+                    Content = new StringContent("Chave pública SSH inválida ou não encontrada.")
+                };
+            }
+
+            var postUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
+
+            var payload = new
+            {
+                publicKeys = new[] { sshPubKey },
+                sessionDuration = TimeSpan.FromMinutes(durationMinutes).ToString(@"hh\:mm\:ss")
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var postResponse = await _httpClient.PostAsync(postUrl, content);
+
+            return postResponse;
+        }
+
 
         public async Task<HttpResponseMessage> SendCancelAsync(List<string> deviceUuid)
         {

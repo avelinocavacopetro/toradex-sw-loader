@@ -273,7 +273,7 @@ else
 
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = "Produto final criado com sucesso!",
+                    Title = "Pedido efetuado com sucesso!",
                     Icon = SweetAlertIcon.Success,
                     ConfirmButtonColor = "#0B5120"
                 });
@@ -284,7 +284,7 @@ else
             {
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = "Erro ao criar produto",
+                    Title = "Erro ao efetuar pedido",
                     Icon = SweetAlertIcon.Warning,
                     Text = $"{response.StatusCode}",
                     ConfirmButtonColor = "#0B5120"
