@@ -1,7 +1,6 @@
 ﻿@page "/manageEntities/edit/{EntityId:int}"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -50,7 +49,8 @@ else
                 </label>
                 <input type="text" @bind="entityName"
                        class="form-control"
-                       style="font-size: 1.2rem; border: 1px solid grey;" />
+                       style="font-size: 1.2rem; border: 1px solid grey;" 
+                       maxlength="50"/>
             </div>
             <div class="d-flex align-items-center gap-3 mt-3">
                 <label for="text" class="pb-4" style="font-size: 1.5rem;">Observações</label>
@@ -202,6 +202,29 @@ else
             await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (entityName.Length > 50)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome da entidade deve ter no máximo 50 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (selectedFleets.Count < 1)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deve selecionar pelo menos 1 frota!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });

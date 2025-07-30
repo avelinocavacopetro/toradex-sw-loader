@@ -1,10 +1,8 @@
 ﻿@page "/manageUsers"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
-
 
 <PageTitle>Gerir Utilizadores</PageTitle>
 
@@ -32,6 +30,7 @@ else
                 <input type="text"
                        class="form-control py-2 ps-5"
                        placeholder="Pesquisar utilizador pelo nome..."
+                       style="border: 1px solid grey;"
                        @bind="searchTerm"
                        @bind:event="oninput" />
                 <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>

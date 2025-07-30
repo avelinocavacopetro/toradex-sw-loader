@@ -1,8 +1,6 @@
 ﻿@page "/adminHistory"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject LoginService LoginService
-@inject TorizonService TorizonService
 @inject FinalProductStateService ProductState
 
 <PageTitle>Histórico de Carregamentos</PageTitle>
@@ -31,6 +29,7 @@ else
                 <input type="text"
                        class="form-control py-2 ps-5"
                        placeholder="Pesquisar produto pelo nome..."
+                       style="border: 1px solid grey;"
                        @bind="searchTerm"
                        @bind:event="oninput" />
                 <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
@@ -38,26 +37,33 @@ else
 
             <div class="d-flex justify-content-end align-items-center gap-2">
                 <label class="mb-0 fw-bold">Início</label>
-                <input type="date" class="form-control w-50" @bind="startDate" max="@today" />
+                <input type="date" class="form-control w-50" style="border: 1px solid grey;" @bind="startDate" max="@today" />
 
                 <label class="mb-0 fw-bold">Fim</label>
-                <input type="date" class="form-control w-50" @bind="endDate" max="@today" />
+                <input type="date" class="form-control w-50" style="border: 1px solid grey;" @bind="endDate" max="@today" />
             </div>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-custom mt-3">
+            <table class="table table-custom mt-3" style="min-width: 1300px;">
                 <thead>
                     <tr>
-                        <th style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                               border-right: 1px solid white;">Placa</th>
-                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Data</th>
-                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Colaborador</th>
-                        <th style="width: 20%; text-align: center; border-top-right-radius: 5px;">Estado de atualização</th>
+                        <th style="width: 350px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                               border-right: 1px solid white;">Placa</th>
+                        <th style="width: 180px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Data de Criação
+                        </th>
+                        <th style="width: 170px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Colaborador
+                        </th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
+                            Estado de Atualização
+                        </th>
                     </tr>
+
                 </thead>
-                <tbody>
-                    @if (paginatedFinalProducts is null || !paginatedFinalProducts.Any())
+                <tbody style="max-height: 350px;">
+                    @if (FilteredPages is null || !FilteredPages.Any())
                     {
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
@@ -67,14 +73,19 @@ else
                     }
                     else
                     {
-                        @foreach (var finalProduct in paginatedFinalProducts)
+                        @foreach (var finalProduct in FilteredPages)
                         {
-                            <tr class="table-light" style="height: 50px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">@finalProduct.Name</td>
-                                <td class="text-center" style="vertical-align: middle;">@finalProduct.CreatedAt</td>
-                                <td class="text-center" style="vertical-align: middle;">@finalProduct.UserPetrotec?.UserName</td>
-                                <td style="text-align: center;">
-                                    @GetStatusIcon(finalProduct.Status)
+                            <tr>
+                                <td style="position: relative; width: 350px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    @finalProduct.Name
+                                </td>
+                                <td style="width: 180px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    @finalProduct.CreatedAt
+                                </td>
+
+                                <td style="width: 170px; text-align: center; vertical-align: middle;">@finalProduct.UserPetrotec?.UserName</td>
+                                <td style="width: 150px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    @GetStatusIcon(finalProduct.Status!)
                                 </td>
                             </tr>
                         }
@@ -82,7 +93,7 @@ else
                 </tbody>
             </table>
 
-            <div class="sticky-footer-right">
+            @* <div class="sticky-footer-right">
             <div class="d-flex justify-content-end align-items-center gap-3">
                 <span>@actualPage - @TotalPages de @TotalPages</span>
                 <div class="d-flex gap-2">
@@ -97,7 +108,7 @@ else
                     </button>
                 </div>
             </div>
-        </div>
+        </div> *@
         </div>
     </div>
 }

@@ -1,4 +1,5 @@
 ﻿@page "/managePackages/edit/{StackId:int}/{PackageId}"
+
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject FilterService FilterService
@@ -153,7 +154,6 @@ else
 
         await FilterService.LoadFilterAsync();
 
-        // Load existing data
         var existingPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == PackageId);
         if (existingPackage != null)
         {

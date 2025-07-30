@@ -1,8 +1,6 @@
 ﻿@page "/managePatterns/add"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
-@inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
 
@@ -32,12 +30,13 @@
     <div class="edit-form mt-4">
         <div class="d-flex align-items-center gap-3">
             <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
-                Nome do produto
+                Nome da pattern
                 <span style="font-size: 15px;"> (máx. 50 caracteres)</span> :
             </label>
             <input type="text" @bind="pattern"
                    class="form-control"
-                   style="font-size: 1.2rem;" />
+                   style="font-size: 1.2rem;" 
+                   maxlength="50"/>
         </div>
     </div>
 </div>
@@ -52,6 +51,18 @@
             await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (pattern.Length > 50)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Pattern muito comprida!",
+                Text = "A pattern deve ter no máximo 50 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });

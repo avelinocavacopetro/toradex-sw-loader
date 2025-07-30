@@ -1,0 +1,26 @@
+﻿.actions-dropdown {
+    position: absolute;
+    top: 90px;
+    left: 25px;
+    background-color: white;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    min-width: 160px;
+    z-index: 9999;
+    padding: 0;
+    transform: translateY(-50%);
+}
+
+.actions-dropdown .dropdown-item {
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none !important;
+    white-space: nowrap;
+    display: block;
+}
+
+    .actions-dropdown .dropdown-item:hover {
+        background-color: #f0f0f0;
+        color: black;
+    }

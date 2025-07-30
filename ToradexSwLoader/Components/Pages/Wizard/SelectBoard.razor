@@ -23,64 +23,60 @@
 } 
 else
 {
-    <a href="#"
-       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-       class="text-black"
-       style="cursor: @(isLoading ? "default" : "pointer");">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
+    <div class="custom-container d-flex flex-column">
+        <a href="#"
+           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+           class="text-black"
+           style="cursor: @(isLoading ? "default" : "pointer");">
+            <i class="bi bi-arrow-left fs-1"></i>
+        </a>
 
-    <h3 class="text-center pb-5">Placas Disponíveis</h3>
- 
-    <br />
+        <h3 class="text-center pb-5">Placas Disponíveis</h3>
 
-    <div class="d-flex justify-content-end pe-5">
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
+        <table class="table mt-3 w-100">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th style="width: 30%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">ID</th>
+                    <th style="width: 30%; padding-left: 20px; border-right: 1px solid white;">Nome</th>
+                    <th style="width: 25%; border-right: 1px solid white; text-align: center;">Data de Criação</th>
+                    <th style="width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado</th>
+                </tr>
+            </thead>
+            <tbody style="height: 60px">
+                @foreach (var board in paginatedBoards)
+                {
+                    <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
+                        <td title="@board.DeviceUuid" style="width: 30%; padding-left: 20px; vertical-align: middle;">
+                            @board.DeviceId
+                        </td>
+                        <td title="@board.DeviceName" style="width: 20%; padding-left: 20px; vertical-align: middle;">
+                            @board.DeviceName
+                        </td>
+                        <td style="width: 20%; vertical-align: middle; text-align: center;">@board.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td style="width: 20%;">
+                            @GetStatusIcon(board.DeviceStatus)
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
 
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
+        <div class="sticky-footer-right">
+            <div class="d-flex align-items-center gap-3 justify-content-end">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-
-    <table class="table mt-3 w-100">
-        <thead style="background-color: #0c6527; color: white;">
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Data de Criação</th>
-                <th style="text-align: center;">Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var board in paginatedBoards)
-            {
-                <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
-                    <td title="@board.DeviceUuid" style="word-break: break-word; white-space: normal; vertical-align: middle;">
-                        @board.DeviceId
-                    </td>
-                    <td title="@board.DeviceName" style="word-break: break-word; white-space: normal; vertical-align: middle;">
-                        @board.DeviceName
-                    </td>
-                    <td style="vertical-align: middle;">@board.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td style="text-align: center;">
-                        @GetStatusIcon(board.DeviceStatus)
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <div class="text-center fixed-bottom pb-5">
-        <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Seguinte</button>
     </div>
 }
 
@@ -140,9 +136,11 @@ else
         UpdatePage();
     }
 
-    private void SelectRow(DetailedDevice board)
+    private async Task SelectRow(DetailedDevice board)
     {
         selectedBoard = board;
+
+        await OnClick();
     }
 
     private string GetRowClass(DetailedDevice board)
@@ -210,13 +208,34 @@ else
     {
         var iconHtml = status.ToLower() switch
         {
-            "uptodate" => "<i class='bi bi-check-circle text-success fs-4'></i>",
-            "error" => "<i class='bi bi-x-circle text-danger fs-4'></i>",
-            "updatepending" => "<i class='bi bi-clock text-warning fs-4'></i>",
-            "notseen" => "<i class='bi bi-eye-slash text-muted fs-4'></i>",
-            "outdated" => "<i class='bi bi-exclamation-circle text-danger fs-4'></i>",
-            "updatescheduled" => "<i class='bi bi-calendar-check text-primary fs-4'></i>",
-            _ => "<i class='bi bi-question-circle text-secondary fs-4'></i>"
+            "uptodate" => @"<div class='state'>
+                               <i class='bi bi-check-circle text-success fs-4'></i>
+                               <span>Atualizado</span>
+                            </div>",
+            "error" => @"<div class='state'>
+                            <i class='bi bi-x-circle text-danger fs-4'></i>
+                            <span>Erro</span>
+                         </div>",
+            "updatepending" => @"<div class='state'>
+                                    <i class='bi bi-clock text-warning fs-4'></i>
+                                    <span>Pendente</span>
+                                 </div>",
+            "notseen" => @"<div class='state'>
+                              <i class='bi bi-eye-slash text-muted fs-4'></i>
+                              <span>Não Visto</span>
+                           </div>",
+            "outdated" => @"<div class='state'>
+                               <i class='bi bi-exclamation-circle text-danger fs-4'></i>
+                               <span>Desatualizado</span>
+                            </div>",
+            "updatescheduled" => @"<div class='state'>
+                                      <i class='bi bi-calendar-check text-primary fs-4'></i>
+                                      <span>Agendado</span>
+                                   </div>",
+            _ => @"<div class='state'>
+                      <i class='bi bi-question-circle text-secondary fs-4'></i>
+                      <span>Scheduled</span>
+                   </div>",
         };
 
         return new MarkupString(iconHtml);

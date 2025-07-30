@@ -1,7 +1,6 @@
 ﻿@page "/manageStacks/add"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -37,7 +36,8 @@
             </label>
             <input type="text" @bind="stackName"
                    class="form-control"
-                   style="font-size: 1.2rem; border: 1px solid grey;" />
+                   style="font-size: 1.2rem; border: 1px solid grey;" 
+                   maxlength="50"/>
         </div>
 
         <br />
@@ -131,6 +131,29 @@
             await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (stackName.Length > 50)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome da stack deve ter no máximo 50 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (selectedProducts.Count < 1)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deve selecionar pelo menos 1 produto!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });

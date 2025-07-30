@@ -153,283 +153,6 @@ table thead th {
     right: 40px;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* 
-    CSS para login
-*/
-.center-login {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    min-height: 50vh;
-}
-
-.user-icon-login {
-    position: absolute;
-    top: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 4px solid #0B5120 !important;
-    background-color: #0B5120 !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 6.5rem;
-    color: #ffffff;
-}
-
-/* 
-    CSS para perfil
-*/
-.user-menu-wrapper {
-    position: relative;
-    display: inline-block;
-}
-
-.user-icon-navbar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: white;
-    border: 2px solid #0B5120;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: #0B5120;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-.user-dropdown {
-    position: absolute;
-    right: 0;
-    background-color: white;
-    border: 1px solid #ddd;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    border-radius: 6px;
-    min-width: 160px;
-    overflow: hidden;
-    z-index: 1000;
-}
-
-    .user-dropdown .dropdown-item {
-        padding: 10px 15px;
-        color: #333;
-        text-decoration: none !important;
-        white-space: nowrap;
-        display: block;
-        width: 100%;
-        margin: 0;
-    }
-
-        .user-dropdown .dropdown-item:hover {
-            background-color: #f0f0f0;
-            color: black;
-        }
-
-/* 
-    CSS para a gestor
-*/
-input.largerCheckbox {
-    width: 25px;
-    height: 25px;
-}
-
-/* 
-    CSS para a página de seleção de frotas
-*/
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 25px;
-    padding: 10px;
-}
-
-.grid-item {
-    background-color: #0c6527;
-    color: white;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 30px 15px;
-    font-size: 22px;
-    border-radius: 5px;
-    white-space: normal;
-}
-
-.grid-container-action {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
-    padding: 10vh;
-}
-
-.grid-item-action {
-    background-color: #0c6527;
-    color: white;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 40px;
-    font-size: 26px;
-    border-radius: 5px;
-    white-space: normal;
-}
-
-.pag-bts {
-    visibility: hidden;
-}
-
-/*
-    CSS para as tabelas e seus respetivos elementos
-*/
-
-/*
-    Tabela da página dos dispositivos, de seleção de dispositivos e pacotes
-*/
-.custom-table {
-    border-collapse: separate;
-    border-spacing: 0 10px;
-    table-layout: fixed;
-    width: 100%;
-}
-
-    .custom-table td {
-        padding: 8px;
-    }
-
-.custom-table1 {
-    border-spacing: 0 10px;
-    table-layout: fixed;
-    width: 100%;
-}
-
-    .custom-table1 tbody {
-        vertical-align: initial !important;
-    }
-
-    .custom-table1 td {
-        padding: 10px;
-    }
-
-.package-table td {
-    padding: 15px;
-}
-
-/*
-    CSS para as caixas de estado dos dispositivos
-*/
-.status-box {
-    display: inline-block;
-    width: 120px;
-    text-align: center;
-    padding: 6px 10px;
-    font-size: 14px;
-    font-weight: bold;
-    white-space: nowrap;
-    border: none;
-}
-
-.status-uptodate {
-    color: #63AA5B;
-}
-
-.status-updatepending {
-    color: #FFA500;
-}
-
-.status-error {
-    color: #D90000;
-}
-
-.status-notseen {
-    color: #B0B0B0;
-}
-
-.status-outdated {
-    color: #0092ff;
-}
-
-.status-default {
-    color: #000000;
-}
-
-/*
-    CSS para a página de customização das placas
-*/
-.edit-form {
-    display: flex;
-    flex-direction: column;
-    justify-content: start;
-    width: 100%;
-    height: 750px;
-    padding: 1.5rem;
-    background-color: #d7d7d7;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.btn-edit-custom {
-    width: 20vw;
-}
-
-.bi-pencil-square {
-    font-size: 28px;
-    color: #0c6527;
-    transition: transform 0.2s ease;
-}
-
-    .bi-pencil-square:hover {
-        transform: scale(1.2);
-        color: #06501c;
-    }
-
-.custom-h4 {
-    background-color: #f1f1f1;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    max-width: 90vw;
-    word-break: break-word;
-    justify-content: center;
-}
-
-.custom-input {
-    font-size: 1.2rem;
-    padding: 0.75rem;
-    width: 100%;
-}
-
 /*
     CSS para classes globais
 */
@@ -466,49 +189,6 @@ td, th {
     min-height: 80vh;
 }
 
-.center-bar {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-
-.center-customization {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    min-height: 30vh;
-}
-
-.center-edit {
-    display: grid;
-    place-items: center;
-    height: 80vh;
-}
-
-.swal2-title,
-.swal2-html-container {
-    color: black !important;
-}
-
-.btn-color {
-    background-color: #0B5120 !important;
-    color: white !important;
-}
-
-    .btn-color:hover {
-        background-color: #0B5120 !important;
-        color: white !important;
-    }
-
-/* CSS para as tabelas de gestão */
-.largerCheckbox {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
 .table th {
     font-weight: 500;
     letter-spacing: 0.5px;
@@ -518,67 +198,21 @@ td, th {
     background-color: #f8f9fa;
 }
 
-.btn-action {
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    padding: 0;
+
+.largerCheckbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
 }
 
-/*
-    Para a sidenav
-
-*/
-
-.sidebar-container {
-    position: fixed;
-    top: 4rem;
-    left: 0;
-    width: 275px;
-    height: calc(100vh - 6rem);
-    background-color: #0c6527;
-    z-index: 1030;
-    border-radius: 5px;
-    margin: 1rem 0 1rem 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
+.btn-color {
+    background-color: #0B5120 !important;
+    color: white !important;
 }
 
-.sidebar-content {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-}
-
-.sidebar-footer {
-    flex-shrink: 0;
-    color: white;
-    font-size: 1.25rem;
-    text-align: center;
-}
-
-    .sidebar-footer small {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-.nav {
-    height: 100%;
-    padding: 0;
-    margin: 0;
-    overflow-y: auto;
-    padding-bottom: 1rem;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-    .nav::-webkit-scrollbar {
-        display: none;
+    .btn-color:hover {
+        background-color: #1e6823 !important;
+        color: white !important;
     }
 
 @media (max-height: 768px) and (max-width: 1024px) {
@@ -612,38 +246,10 @@ td, th {
         right: 5px;
         bottom: 35px;
     }
-
-    .edit-form {
-        height: 590px;
-    }
 }
 
 @media (max-width: 1024px) {
-    /*
-        Media Querie para a páginad de seleção de frotas
-    */
-    .pag-bts {
-        visibility: visible;
-    }
-
-    .grid-container {
-        grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: repeat(2, 150px);
-        gap: 15px;
-    }
-
-    .grid-item {
-        font-size: 22px;
-        padding: 15px;
-    }
-
     .custom-container {
         padding: 0rem;
-    }
-
-    .sidebar-container {
-        left: 0.5rem;
-        margin: 0.5rem;
-        width: 260px;
     }
 }

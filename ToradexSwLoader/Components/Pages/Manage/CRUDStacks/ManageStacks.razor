@@ -1,7 +1,6 @@
 ﻿@page "/manageStacks"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -32,6 +31,7 @@ else
                 <input type="text"
                        class="form-control py-2 ps-5"
                        placeholder="Pesquisar stack pelo nome..."
+                       style="border: 1px solid grey;"
                        @bind="searchTerm"
                        @bind:event="oninput" />
                 <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
