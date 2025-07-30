@@ -21,23 +21,25 @@
 }
 else
 {
-    <a href="#"
-       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-       class="text-black"
-       style="cursor: @(isLoading ? "default" : "pointer");">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
+    <div class="custom-container d-flex flex-column">
+        <a href="#"
+           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+           class="text-black"
+           style="cursor: @(isLoading ? "default" : "pointer");">
+            <i class="bi bi-arrow-left fs-1"></i>
+        </a>
 
-    <h3 class="text-center pb-5">Selecionar Ação</h3>
+        <h3 class="text-center pb-5">Selecionar Ação</h3>
 
-    <div class="grid-container-action d-flex justify-content-center">
-        <div class="grid-item-action" @onclick="UpdateImage">
-            Atualizar imagem
-        </div>
-        <div class="grid-item-action @(hasVersion ? "" : "disabled")"
-             @onclick="UpdateVersion"
-             style="cursor:@(hasVersion ? "pointer" : "not-allowed"); opacity:@(hasVersion ? "1" : "0.5")">
-            Atualizar versão
+        <div class="grid-container-action d-flex justify-content-center">
+            <div class="grid-item-action" @onclick="UpdateImage">
+                Atualizar pacote
+            </div>
+            <div class="grid-item-action @(hasVersion ? "" : "disabled")"
+                 @onclick="UpdateVersion"
+                 style="cursor:@(hasVersion ? "pointer" : "not-allowed"); opacity:@(hasVersion ? "1" : "0.5")">
+                Atualizar versão
+            </div>
         </div>
     </div>
 }

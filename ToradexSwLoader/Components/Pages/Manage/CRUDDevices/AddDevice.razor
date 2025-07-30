@@ -1,8 +1,6 @@
 ﻿@page "/manageDevices/add"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
-@inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
 
@@ -37,7 +35,8 @@
             </label>
             <input type="text" @bind="deviceName"
                    class="form-control"
-                   style="font-size: 1.2rem; border: 1px solid grey;" />
+                   style="font-size: 1.2rem; border: 1px solid grey;"
+                   maxlength="30"/>
         </div>
     </div>
 </div>
@@ -52,6 +51,18 @@
             await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if(deviceName.Length > 30)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome do dispositivo deve ter no máximo 30 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });

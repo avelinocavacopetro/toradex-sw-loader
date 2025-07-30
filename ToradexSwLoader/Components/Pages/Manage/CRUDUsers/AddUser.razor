@@ -1,7 +1,6 @@
 ﻿@page "/manageUsers/add"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
 
@@ -34,7 +33,8 @@
             <input type="text" 
                 @bind="userName"
                 class="form-control w-50 mx-auto" 
-                style="font-size: 1.2rem; text-align: center; border: 1px solid grey" />
+                style="font-size: 1.2rem; text-align: center; border: 1px solid grey" 
+                maxlength="30"/>
         </div>
 
         <div class="d-flex align-items-center gap-3 mb-3">
@@ -42,7 +42,8 @@
             <input type="email"
                    @bind="userEmail"
                    class="form-control w-50 mx-auto"
-                   style="font-size: 1.2rem; text-align: center; border: 1px solid grey" />
+                   style="font-size: 1.2rem; text-align: center; border: 1px solid grey" 
+                   maxlength="50"/>
         </div>
 
         <div class="d-flex align-items-center gap-3 mb-3">
@@ -50,7 +51,8 @@
             <input type="password" 
                 @bind="userPassword" 
                 class="form-control w-50 mx-auto" 
-                style="font-size: 1.2rem; text-align: center; border: 1px solid grey" />
+                style="font-size: 1.2rem; text-align: center; border: 1px solid grey" 
+                maxlength="15"/>
         </div>
 
         <div class="d-flex align-items-center gap-3 mb-3">
@@ -94,6 +96,42 @@
             await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira dados válidos!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (userName.Length > 30)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome de utilizador deve ter no máximo 30 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (userEmail.Length > 50)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Email muito comprido!",
+                Text = "O email deve ter no máximo 50 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (userPassword.Length > 15)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Palavra-passe muito comprida!",
+                Text = "A palavra-passe deve ter no máximo 15 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });

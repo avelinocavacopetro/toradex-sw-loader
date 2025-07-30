@@ -1,4 +1,5 @@
 ﻿@page "/managePackages"
+
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -16,6 +17,7 @@
             <input type="text"
                    class="form-control py-2 ps-5"
                    placeholder="Pesquisar pacote pela stack..."
+                   style="border: 1px solid grey;"
                    @bind="searchTerm"
                    @bind:event="oninput" />
             <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
@@ -108,15 +110,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    .truncate-text {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-    }
-</style>
 
 @code {
     private List<StackPackage> stacksPackages = new();

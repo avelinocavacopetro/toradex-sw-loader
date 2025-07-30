@@ -27,51 +27,53 @@
 }
 else
 {
-    <a href="#"
-       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-       class="text-black"
-       style="cursor: @(isLoading ? "default" : "pointer");">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
+    <div class="custom-container d-flex flex-column">
+        <a href="#"
+           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+           class="text-black"
+           style="cursor: @(isLoading ? "default" : "pointer");">
+            <i class="bi bi-arrow-left fs-1"></i>
+        </a>
 
-    <h3 class="text-center pb-5">Selecionar Equipamento</h3>
+        <h3 class="text-center pb-5">Selecionar Equipamento</h3>
 
-    <div class="d-flex justify-content-end pe-5">
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
+        @if (FilterService.SelectedDevices.Count == 0)
+        {
+            <div class="d-flex justify-content-center align-items-center" style="min-height:50vh;">
+                <div class="alert alert-dark text-center w-75" role="alert">
+                    Não existem equipamentos disponíveis.
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="grid-container">
+                @foreach (var device in FilterService.SelectedDevices)
+                {
+                    <div class="grid-item" @onclick="() => ChooseDevice(device)">
+                        @device.Name
+                    </div>
+                }
+            </div>
+        }
 
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
+        <div class="sticky-footer-right">
+            <div class="d-flex align-items-center gap-3 justify-content-end">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-
-    @if (FilterService.SelectedDevices.Count == 0)
-    {
-        <div class="d-flex justify-content-center align-items-center" style="min-height:50vh;">
-            <div class="alert alert-dark text-center w-75" role="alert">
-                Não existem equipamentos disponíveis.
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="grid-container">
-            @foreach (var device in FilterService.SelectedDevices)
-            {
-                <div class="grid-item" @onclick="() => ChooseDevice(device)">
-                    @device.Name
-                </div>
-            }
-        </div>
-    }
 }
 
 @code {

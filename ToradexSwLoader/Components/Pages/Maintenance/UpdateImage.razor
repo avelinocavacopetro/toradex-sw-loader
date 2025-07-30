@@ -14,8 +14,6 @@
 
 <PageTitle>Atualizar Imagem</PageTitle>
 
-<WindowDimensions OnChange="OnDimensionsChanged" />
-
 @if (isLoading)
 {
     <div class="center">
@@ -29,57 +27,55 @@
 }
 else
 {
-    <a href="#"
-       onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-       class="text-black"
-       style="cursor: @(isLoading ? "default" : "pointer");">
-        <i class="bi bi-arrow-left fs-1"></i>
-    </a>
+    <div class="custom-container d-flex flex-column">
+        <a href="#"
+           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+           class="text-black"
+           style="cursor: @(isLoading ? "default" : "pointer");">
+            <i class="bi bi-arrow-left fs-1"></i>
+        </a>
 
-    <h3 class="text-center pb-5">Atualizar Imagem</h3>
+        <h3 class="text-center pb-5">Atualizar Pacote</h3>
 
-    <div class="d-flex justify-content-end pe-5">
-        <div class="d-flex justify-content-between align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
+        <table class="table mt-3 w-100">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th style="width: 50%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">Nome</th>
+                    <th style="width: 50%; border-top-right-radius: 5px; text-align: center;">Versão</th>
+                </tr>
+            </thead>
+            <tbody style="height: 60px;">
+                @foreach (var package in paginatedPackages)
+                {
+                    if (package?.Package != null)
+                    {
+                        <tr class="@GetRowClass(package.Package)" @onclick="() => SelectRow(package.Package)">
+                            <td title="@package.Package.Name" style="width: 50%; padding-left: 20px; vertical-align: middle;">
+                                @package.Package.Name
+                            </td>
+                            <td style="width: 50%; text-align: center; vertical-align: middle;">@package.Package.Version</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
 
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
+        <div class="sticky-footer-right">
+            <div class="d-flex align-items-center gap-3 justify-content-end">
+                <span>@actualPage - @TotalPages de @TotalPages</span>
+                <div class="d-flex gap-2">
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                        &lt;
+                    </button>
+
+                    <button class="btn custom-outline-button btn-lg"
+                            @onclick="NextPage" disabled="@(!CanGoNext)">
+                        &gt;
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-
-    <table class="table mt-3 w-100">
-        <thead style="background-color: #0c6527; color: white;">
-            <tr>
-                <th>Nome</th>
-                <th style="text-align: center;">Versão</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var package in paginatedPackages)
-            {
-                if (package?.Package != null)
-                {
-                    <tr class="@GetRowClass(package.Package)" @onclick="() => SelectRow(package.Package)">
-                        <td title="@package.Package.Name" style="word-break: break-word; white-space: normal;">
-                            @package.Package.Name
-                        </td>
-                        <td style="text-align: center;">@package.Package.Version</td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
-
-    <div class="text-center fixed-bottom pb-5">
-        <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Atualizar</button>
     </div>
 }
 
@@ -94,7 +90,7 @@ else
     private WindowDimension? dimension;
 
     private int actualPage = 1;
-    private int packagesPerPage = 8;
+    private int packagesPerPage = 6;
     private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
 
     private bool isLoading = true;
@@ -138,9 +134,11 @@ else
         StateHasChanged();
     }
 
-    private void SelectRow(Package package)
+    private async Task SelectRow(Package package)
     {
         selectedPackage = package;
+
+        await OnClick();
     }
 
     private async Task OnClick()

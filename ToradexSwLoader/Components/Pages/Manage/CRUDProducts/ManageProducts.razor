@@ -1,7 +1,6 @@
 ﻿@page "/manageProducts"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject IJSRuntime JS
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -32,6 +31,7 @@ else
                 <input type="text"
                        class="form-control py-2 ps-5"
                        placeholder="Pesquisar produto pelo nome..."
+                       style="border: 1px solid grey;"
                        @bind="searchTerm"
                        @bind:event="oninput" />
                 <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
@@ -65,7 +65,7 @@ else
                             </span>
                         </th>
 
-                        <th style="width: 30%; text-align: left; padding-left: 10px; border-right: 1px solid white;">Dispositivos Associados</th>
+                        <th style="width: 30%; text-align: center; padding-left: 10px; border-right: 1px solid white;">Dispositivos Associados</th>
                         <th style="width: 15%; text-align: center; border-right: 1px solid white;">Ativo</th>
                         <th style="width: 12.5%;"></th>
                         <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
@@ -88,7 +88,7 @@ else
                                 <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
                                     @product.Name
                                 </td>
-                                <td style="text-align: left; padding-left: 10px; vertical-align: middle;">
+                                <td style="text-align: center; padding-left: 10px; vertical-align: middle;">
                                     @if (product.DeviceProducts?.Any() == true)
                                     {
                                         <ul class="mb-0 ps-3">

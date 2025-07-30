@@ -110,7 +110,7 @@
     private string? currentTime;
     private System.Timers.Timer? timer;
     private string? username;
-    private Modal modal;
+    private Modal? modal;
 
     private bool sidebarVisible = false;
 
@@ -140,7 +140,7 @@
         openMenu = !openMenu;
     }
 
-    private async Task Logout()
+    private void Logout()
     {
         Navigation.NavigateTo("");
         openMenu = !openMenu;
