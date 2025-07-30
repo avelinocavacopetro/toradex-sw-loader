@@ -53,7 +53,7 @@ else
                 </div>
 
                 <div class="d-flex align-items-center" style="width: 50%;">
-                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 60px;">Estado</label>
+                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 185px;">Estado de atualização</label>
                     <select id="statusOrder" class="form-select w-100"
                             @onchange='e => OnOrderChanged(e, "Status")'>
                         <option value="all">Tudo</option>
@@ -73,7 +73,7 @@ else
                 <thead>
                     <tr>
                         <th style="width: 250px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                   border-right: 1px solid white;">ID</th>
+                                       border-right: 1px solid white;">ID</th>
                         <th @onclick="@(() => SortByColumn("DeviceName"))"
                             style="width: 250px; text-align: center; border-right: 1px solid white; cursor: pointer;">
                             Nome
@@ -135,8 +135,21 @@ else
                         @foreach (var device in FilteredDevices)
                         {
                             <tr>
-                                <td title="@device.DeviceId" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                <td style="position: relative; width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    <i @onclick="() => ToggleMenu(device.DeviceId)" class="bi bi-three-dots-vertical px-3" style="font-size: 1.2rem; cursor: pointer;"></i>
                                     @device.DeviceId
+
+                                    @if (openMenuDeviceId == device.DeviceId)
+                                    {
+                                        <div class="actions-dropdown">
+                                            <button @onclick="UpdateDevice" class="dropdown-item">
+                                                <i class="bi bi-arrow-clockwise"></i> Atualizar
+                                            </button>
+                                            <button @onclick="RemoteAcess" class="dropdown-item">
+                                                <i class="bi bi-broadcast"></i> Acesso remoto
+                                            </button>
+                                        </div>
+                                    }
                                 </td>
                                 <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @device.DeviceName
@@ -162,6 +175,19 @@ else
                     }
                 </tbody>
             </table>
+
+            <Modal @ref="modalUpdate" Title="Atualizar dispositivo" IsVerticallyCentered="true" Size="ModalSize.Large">
+                <BodyTemplate>
+                    <UpdateImageModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal"/>
+                </BodyTemplate>
+            </Modal>
+
+            <Modal @ref="modalAcess" Title="Criar sessão de acesso remoto" IsVerticallyCentered="true">
+                <BodyTemplate>
+                    <RemoteAcess DeviceUuid="@currentDeviceUuid" />
+                </BodyTemplate>
+            </Modal>
+
         </div>
     </div>
 }
@@ -170,8 +196,12 @@ else
     private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
     private List<DetailedDevice> devices = new List<DetailedDevice>();
     private List<Fleet> fleets = new List<Fleet>();
-
-    private string currentSortColumn = "DeviceName";
+    private DetailedDevice currentDevice;
+    private string? openMenuDeviceId = null;
+    private Modal? modalAcess;
+    private Modal? modalUpdate;
+    private string? currentSortColumn = "DeviceName";
+    private string? currentDeviceUuid;
 
     private bool isLoading = true;
     private bool sortAscending = true;
@@ -216,6 +246,42 @@ else
         }
 
         StateHasChanged();
+    }
+
+    private async Task CloseModal()
+    {
+        if (modalAcess != null & modalUpdate != null)
+        {
+            await modalAcess.HideAsync(); 
+            await modalUpdate.HideAsync();
+        }
+    }
+
+    private void ToggleMenu(string deviceId)
+    {
+        if (openMenuDeviceId == deviceId)
+        {
+            openMenuDeviceId = null;
+        }
+        else
+        {
+            openMenuDeviceId = deviceId;
+            currentDevice = devices.FirstOrDefault(d => d.DeviceId == deviceId);
+            currentDeviceUuid = currentDevice.DeviceUuid;
+            Console.WriteLine($"id:{currentDevice.DeviceId} uuid:{currentDeviceUuid}");
+        }
+    }
+
+    private async Task UpdateDevice()
+    {
+        await modalUpdate?.ShowAsync();
+        openMenuDeviceId = null;
+    }
+
+    private async Task RemoteAcess()
+    {
+        await modalAcess?.ShowAsync();
+        openMenuDeviceId = null;
     }
 
     private async Task OnFleetChanged()
@@ -312,7 +378,8 @@ else
                         <i class='bi bi-circle-fill text-success fs-4'></i>
                         <span>Online</span>
                      </div>";
-        } else
+        }
+        else
         {
             iconHtml = @"<div class='state'>
                         <i class='bi bi-x-circle text-danger fs-4'></i>
