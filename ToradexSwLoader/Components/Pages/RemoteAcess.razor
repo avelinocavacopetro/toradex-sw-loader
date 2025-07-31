@@ -32,7 +32,6 @@
 
     [Parameter]
     public SshKey? SelectedKey { get; set; }
-
     private int duration = 90;
     private Modal modalAcess;
 
@@ -111,7 +110,6 @@
                         ConfirmButtonColor = "#0B5120"
                     });
 
-                    await modalAcess.HideAsync();
                 }
                 else
                 {

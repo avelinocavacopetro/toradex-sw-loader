@@ -187,15 +187,20 @@ namespace ToradexSwLoader.Services
             return await _httpClient.PostAsJsonAsync("https://app.torizon.io/api/v2beta/updates", deviceDto);
         }
 
+        private string FormatDuration(int durationMinutes)
+        {
+            var ts = TimeSpan.FromMinutes(durationMinutes);
+
+            if (ts.Hours > 0 && ts.Minutes > 0)
+                return $"{ts.Hours}h{ts.Minutes}m";
+            else if (ts.Hours > 0)
+                return $"{ts.Hours}h";
+            else
+                return $"{ts.Minutes}m";
+        }
 
         public async Task<HttpResponseMessage> SendCreateSession(string deviceUuid, int durationMinutes, string? publicKey = null)
         {
-            if (string.IsNullOrWhiteSpace(deviceUuid))
-                throw new ArgumentException("deviceUuid não pode ser nulo ou vazio.", nameof(deviceUuid));
-
-            if (durationMinutes <= 0)
-                throw new ArgumentException("durationMinutes deve ser maior que zero.", nameof(durationMinutes));
-
             string sshPubKey = publicKey?.Trim() ?? "";
 
             if (string.IsNullOrWhiteSpace(sshPubKey))
@@ -224,20 +229,10 @@ namespace ToradexSwLoader.Services
                 sshPubKey = sessionInfo?.Ssh?.RaServerSshPubKey?.Trim() ?? "";
             }
 
-            if (string.IsNullOrWhiteSpace(sshPubKey))
-            {
-                return new HttpResponseMessage(HttpStatusCode.BadRequest)
-                {
-                    Content = new StringContent("Chave pública SSH inválida ou não encontrada.")
-                };
-            }
-
-            var sessionDuration = TimeSpan.FromMinutes(durationMinutes).ToString(@"hh\:mm\:ss");
-
             var payload = new
             {
                 publicKeys = new[] { sshPubKey },
-                sessionDuration = sessionDuration
+                sessionDuration = FormatDuration(durationMinutes),
             };
 
             var json = JsonSerializer.Serialize(payload);

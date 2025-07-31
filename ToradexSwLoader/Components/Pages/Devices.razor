@@ -179,7 +179,7 @@ else
 
             <Modal @ref="modalSelect" Title="Selecionar Utilizador" IsVerticallyCentered="true" Size="ModalSize.Large">
                 <BodyTemplate>
-                    <SelectUserModel DeviceUuid="@currentDeviceUuid" OnNextModal="@(key => NextModal(selectedSshKey))" />
+                    <SelectUserModel DeviceUuid="@currentDeviceUuid" OnNextModal="NextModal" />
                 </BodyTemplate>
             </Modal>
 
