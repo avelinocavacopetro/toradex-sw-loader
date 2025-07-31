@@ -67,6 +67,7 @@ namespace ToradexSwLoader.Services
 
             return null;
         }
+
         public async Task<T?> GetItemAsync<T>(string url)
         {
             Console.WriteLine($"[HTTP] GET {url}");
@@ -91,6 +92,40 @@ namespace ToradexSwLoader.Services
             return JsonSerializer.Deserialize<T>(content, options);
         }
 
+        public async Task<List<SshKey>> GetFlatSshKeysAsync(string url)
+        {
+            var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                return new List<SshKey>();
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+
+            var result = new List<SshKey>();
+
+            if (root.TryGetProperty("keys", out var keysElement))
+            {
+                foreach (var property in keysElement.EnumerateObject())
+                {
+                    var id = property.Name;
+                    var entry = property.Value;
+
+                    var pubkey = entry.GetProperty("pubkey").GetString() ?? string.Empty;
+                    var name = entry.GetProperty("meta").GetProperty("name").GetString() ?? string.Empty;
+
+                    result.Add(new SshKey
+                    {
+                        Id = id,
+                        Pubkey = pubkey,
+                        Name = name
+                    });
+                }
+            }
+
+            return result;
+        }
 
         public async Task ChangeSecretAndSave(string newSecret)
         {
@@ -152,20 +187,42 @@ namespace ToradexSwLoader.Services
             return await _httpClient.PostAsJsonAsync("https://app.torizon.io/api/v2beta/updates", deviceDto);
         }
 
-        public async Task<HttpResponseMessage> SendCreateSession(string deviceUuid, int durationMinutes)
+
+        public async Task<HttpResponseMessage> SendCreateSession(string deviceUuid, int durationMinutes, string? publicKey = null)
         {
-            var getUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
-            var getResponse = await _httpClient.GetAsync(getUrl);
+            if (string.IsNullOrWhiteSpace(deviceUuid))
+                throw new ArgumentException("deviceUuid não pode ser nulo ou vazio.", nameof(deviceUuid));
 
-            if (!getResponse.IsSuccessStatusCode)
+            if (durationMinutes <= 0)
+                throw new ArgumentException("durationMinutes deve ser maior que zero.", nameof(durationMinutes));
+
+            string sshPubKey = publicKey?.Trim() ?? "";
+
+            if (string.IsNullOrWhiteSpace(sshPubKey))
             {
-                return getResponse;
+                var baseUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
+                var getResponse = await _httpClient.GetAsync(baseUrl).ConfigureAwait(false);
+
+                if (!getResponse.IsSuccessStatusCode)
+                    return getResponse;
+
+                var getContent = await getResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                RemoteSessionInfo? sessionInfo;
+                try
+                {
+                    sessionInfo = JsonSerializer.Deserialize<RemoteSessionInfo>(getContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                }
+                catch (JsonException ex)
+                {
+                    return new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                    {
+                        Content = new StringContent($"Erro ao desserializar resposta: {ex.Message}")
+                    };
+                }
+
+                sshPubKey = sessionInfo?.Ssh?.RaServerSshPubKey?.Trim() ?? "";
             }
-
-            var getContent = await getResponse.Content.ReadAsStringAsync();
-            var sessionInfo = JsonSerializer.Deserialize<RemoteSessionInfo>(getContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            var sshPubKey = sessionInfo?.Ssh?.RaServerSshPubKey;
 
             if (string.IsNullOrWhiteSpace(sshPubKey))
             {
@@ -175,22 +232,22 @@ namespace ToradexSwLoader.Services
                 };
             }
 
-            var postUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
+            var sessionDuration = TimeSpan.FromMinutes(durationMinutes).ToString(@"hh\:mm\:ss");
 
             var payload = new
             {
                 publicKeys = new[] { sshPubKey },
-                sessionDuration = TimeSpan.FromMinutes(durationMinutes).ToString(@"hh\:mm\:ss")
+                sessionDuration = sessionDuration
             };
 
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var postResponse = await _httpClient.PostAsync(postUrl, content);
+            var postUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
+            var postResponse = await _httpClient.PostAsync(postUrl, content).ConfigureAwait(false);
 
             return postResponse;
         }
-
 
         public async Task<HttpResponseMessage> SendCancelAsync(List<string> deviceUuid)
         {

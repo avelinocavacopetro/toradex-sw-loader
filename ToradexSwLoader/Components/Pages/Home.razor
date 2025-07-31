@@ -33,6 +33,7 @@ else
                         <th style="width: 350px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
                                                        border-right: 1px solid white;">Placa</th>
                         <th style="width: 180px; text-align: center; border-right: 1px solid white;">Hora</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado</th>
                         <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado de atualização</th>
                         <th style="width: 180px; text-align: center; border-top-right-radius: 5px;"></th>
                     </tr>
@@ -54,9 +55,12 @@ else
                                 <td style="width: 350px; text-align: left; vertical-align: middle; padding-left: 20px;">@finalProduct.Name</td>
                                 <td style="width: 180px; text-align: center; vertical-align: middle;">@finalProduct.CreatedAt</td>
                                 <td style="width: 150px; text-align: center; vertical-align: middle;">
+                                    @CheckOnlineStatus(finalProduct)
+                                </td>
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">
                                     @GetStatusIcon(finalProduct.Status!)
                                 </td>
-                                <td style="width: 170px; text-align: center; vertical-align: middle;">
+                                <td style="width: 180px; text-align: center; vertical-align: middle;">
                                     @if (finalProduct.Status?.Equals("Outdated", StringComparison.OrdinalIgnoreCase) == true)
                                     {
                                         <button class="btn btn-danger btn-sm" style="width: 75%;"
@@ -209,6 +213,29 @@ else
                       <span>Scheduled</span>
                    </div>",
         };
+
+        return new MarkupString(iconHtml);
+    }
+
+    private MarkupString CheckOnlineStatus(FinalProduct product)
+    {
+        bool isOnline = product.LastSeen.HasValue && (DateTime.UtcNow - product.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+        string iconHtml = string.Empty;
+
+        if (isOnline)
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-circle-fill text-success fs-4'></i>
+                        <span>Online</span>
+                     </div>";
+        }
+        else
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-x-circle text-danger fs-4'></i>
+                        <span>Offline</span>
+                     </div>";
+        }
 
         return new MarkupString(iconHtml);
     }

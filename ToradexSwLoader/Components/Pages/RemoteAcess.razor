@@ -29,6 +29,10 @@
     [Parameter]
     public string? DeviceUuid { get; set; }
     private DetailedDevice? selectedDevice = new DetailedDevice();
+
+    [Parameter]
+    public SshKey? SelectedKey { get; set; }
+
     private int duration = 90;
     private Modal modalAcess;
 
@@ -93,7 +97,7 @@
 
                 var sessionUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{DeviceUuid}/sessions";
 
-                var response = await TorizonService.SendCreateSession(DeviceUuid, duration);
+                var response = await TorizonService.SendCreateSession(DeviceUuid, duration, SelectedKey.Pubkey);
 
                 if (response.IsSuccessStatusCode)
                 {
