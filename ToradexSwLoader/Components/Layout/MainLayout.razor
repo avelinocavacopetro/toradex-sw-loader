@@ -7,6 +7,8 @@
 @inject NavigationManager Navigation
 @inject LoginService LoginService
 @inject FinalProductStateService ProductState
+@inject SweetAlertService Swal
+
 
 <div class="layout-container">
     @if (!IsRootPage())
@@ -28,27 +30,26 @@
             <div class="container-fluid d-flex align-items-center justify-content-between">
                 <a class="navbar-brand" style="color: white; font-size: 1.5rem;" href="/home">ToradexSwLoader</a>
                 <span style="font-size: 1.5rem;">@currentTime</span>
+                <div class="user-menu-wrapper">
+                    <button @onclick="ToggleMenu" class="user-icon-navbar">
+                        <i class="bi bi-person-fill"></i>
+                    </button>
 
-                @if (IsHomePage())
-                {
-                    <div class="user-menu-wrapper">
-                        <button @onclick="ToggleMenu" class="user-icon-navbar">
-                            <i class="bi bi-person-fill"></i>
-                        </button>
-
-                        @if (openMenu)
-                        {
-                            <div class="user-dropdown">
-                                <button @onclick="OnShowModalClick" class="dropdown-item">
-                                    <i class="bi bi-question-circle mx-1"></i> Sobre
-                                </button>
-                                <button @onclick="Logout" class="dropdown-item">
-                                    <i class="bi bi-box-arrow-right mx-1"></i> Terminar Sessão
-                                </button>
-                            </div>
-                        }
-                    </div>
-                }
+                    @if (openMenu)
+                    {
+                        <div class="user-dropdown">
+                            <button @onclick="ChangePassword" class="dropdown-item">
+                                <i class="bi bi-lock mx-1"></i> Mudar Palavra-Passe
+                            </button>
+                            <button @onclick="OnShowModalClick" class="dropdown-item">
+                                <i class="bi bi-question-circle mx-1"></i> Sobre
+                            </button>
+                            <button @onclick="Logout" class="dropdown-item">
+                                <i class="bi bi-box-arrow-right mx-1"></i> Terminar Sessão
+                            </button>
+                        </div>
+                    }
+                </div>
             </div>
         </header>
     }
@@ -64,7 +65,7 @@
         <main class="content-area">
             @Body
 
-            <Modal @ref="modal" Title="Sobre" IsVerticallyCentered="true">
+            <Modal @ref="modalAbout" Title="Sobre" IsVerticallyCentered="true">
                 <BodyTemplate>
                     <div style="width: 450px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
@@ -77,6 +78,29 @@
                                 https://172.16.50.146:7023/
                             </div>
                         </div>
+                    </div>
+                </BodyTemplate>
+            </Modal>
+
+            <Modal @ref="modalPassword" Title="Alterar Palavra-Passe" IsVerticallyCentered="true" OnHidden="ResetPasswordForm">
+                <BodyTemplate>
+                    <div class="form-floating mb-3 position-relative">
+                        <input type="password" class="form-control pe-5" @bind="currentPassword" autocomplete="current-password" aria-required="true" placeholder="Palavra-passe atual" id="password" />
+                        <label for="password" class="form-label">Palavra-passe atual</label>
+                        <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-3"></i>
+                    </div>
+                    <div class="form-floating mb-3 position-relative">
+                        <input type="password" class="form-control pe-5" @bind="newPassword" autocomplete="current-password" aria-required="true" placeholder="Nova Palavra-passe" id="password" />
+                        <label for="password" class="form-label">Nova Palavra-passe</label>
+                        <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-3"></i>
+                    </div>
+                    <div class="form-floating mb-5 position-relative">
+                        <input type="password" class="form-control pe-5" @bind="confirmPassword" autocomplete="current-password" aria-required="true" placeholder="Confirmar Palavra-passe" id="password" />
+                        <label for="password" class="form-label">Confirmar Palavra-passe</label>
+                        <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-3"></i>
+                    </div>
+                    <div class="text-center">
+                        <a class="w-50 btn btn-custom btn-lg btn-color" @onclick="ChangeNewPassword">Alterar</a>
                     </div>
                 </BodyTemplate>
             </Modal>
@@ -110,7 +134,11 @@
     private string? currentTime;
     private System.Timers.Timer? timer;
     private string? username;
-    private Modal? modal;
+    private Modal modalAbout;
+    private Modal modalPassword;
+    private string currentPassword = string.Empty;
+    private string newPassword = string.Empty;
+    private string confirmPassword = string.Empty;
 
     private bool sidebarVisible = false;
 
@@ -136,11 +164,75 @@
 
     private async Task OnShowModalClick()
     {
-        await modal?.ShowAsync();
+        await modalAbout?.ShowAsync();
         openMenu = !openMenu;
     }
 
-    private void Logout()
+    private async Task ChangePassword()
+    {
+        await modalPassword?.ShowAsync();
+        openMenu = !openMenu;
+    }
+
+    private async Task ChangeNewPassword()
+    {
+        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Todos os campos são obrigatórios.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "As novas palavras-passe não coincidem.!",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
+
+        var success = await LoginService.ChangePasswordAsync(username!, currentPassword, newPassword);
+
+        if (success)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Palavra-passe alterada com sucesso!",
+                Icon = SweetAlertIcon.Success,
+                ConfirmButtonColor = "#0B5120"
+            });
+
+            ResetPasswordForm();
+
+            await modalPassword?.HideAsync();
+        }
+        else
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao alterar a palavra-passe. Verifique a palavra-passe atual.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
+    }
+
+    private void ResetPasswordForm()
+    {
+        currentPassword = string.Empty;
+        newPassword = string.Empty;
+        confirmPassword = string.Empty;
+    }
+
+
+    private async Task Logout()
     {
         Navigation.NavigateTo("");
         openMenu = !openMenu;
