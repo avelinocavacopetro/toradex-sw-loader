@@ -241,8 +241,27 @@ namespace ToradexSwLoader.Services
             var postUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
             var postResponse = await _httpClient.PostAsync(postUrl, content).ConfigureAwait(false);
 
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromMinutes(durationMinutes));
+                await CancelSessionAsync(deviceUuid);
+            });
+
             return postResponse;
         }
+
+        public async Task CancelSessionAsync(string deviceUuid)
+        {
+            var deleteUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{deviceUuid}/sessions";
+            var deleteResponse = await _httpClient.DeleteAsync(deleteUrl).ConfigureAwait(false);
+
+            if (!deleteResponse.IsSuccessStatusCode)
+            {
+                var error = await deleteResponse.Content.ReadAsStringAsync();
+                Console.WriteLine($"Erro ao cancelar sessão: {deleteResponse.StatusCode} - {error}");
+            }
+        }
+
 
         public async Task<HttpResponseMessage> SendCancelAsync(List<string> deviceUuid)
         {

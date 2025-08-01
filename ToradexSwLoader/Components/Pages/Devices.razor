@@ -122,7 +122,7 @@ else
                     </tr>
 
                 </thead>
-                <tbody style="max-height: 350px;">
+                <tbody style="max-height: 350px; padding-bottom: 60px;">
                     @if (FilteredDevices is null || !FilteredDevices.Any())
                     {
                         <tr>
@@ -155,7 +155,6 @@ else
                                 <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @device.DeviceName
                                 </td>
-
                                 <td style="width: 150px; text-align: center; vertical-align: middle;">@(device.Hibernated ? "Sim" : "Não")</td>
                                 <td style="width: 170px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)
@@ -185,7 +184,7 @@ else
 
             <Modal @ref="modalAcess" Title="Criar sessão de acesso remoto" IsVerticallyCentered="true" Size="ModalSize.Large">
                 <BodyTemplate>
-                    <RemoteAcess DeviceUuid="@currentDeviceUuid" SelectedKey="selectedSshKey"/>
+                    <RemoteAcess DeviceUuid="@currentDeviceUuid" SelectedKey="selectedSshKey" OnCloseModal="CloseModal"/>
                 </BodyTemplate>
             </Modal>
 
