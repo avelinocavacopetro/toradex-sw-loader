@@ -23,17 +23,15 @@
 else
 {
     <div class="custom-container d-flex flex-column">
-        <a href="#"
-           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-           class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
-            <i class="bi bi-arrow-left fs-1"></i>
-        </a>
-
-        <h3 class="text-center pb-4">Placa Final</h3>
-
         @if (!isEditing)
         {
+             <a href="#"
+               onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+               class="text-black"
+               style="cursor: @(isLoading ? "default" : "pointer");">
+                <i class="bi bi-arrow-left fs-1"></i>
+            </a>
+
             <div style="display:flex; justify-content:center;">
                 <div class="text-center">
                     <table class="summary w-75" style="border-collapse: collapse;">
@@ -65,20 +63,20 @@ else
                 </div>
             </div>
 
-            <div class="center-customization">
+            <div class="center-customization" style="min-height: 30vh;">
                 <h4 class="custom-h4 text-center px-5">
                     @finalBoard
                     <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
                 </h4>
+            </div>
 
-                <div class="text-center fixed-bottom pb-5">
-                    <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
-                </div>
+            <div class="sticky-footer-center">
+                <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
             </div>
         }
         else
         {
-            <div class="center-customization" style="min-height:60vh;">
+            <div class="center-customization">
                 <div class="edit-form">
                     <label for="text" class="pb-4" style="font-size: 1.5rem;">Alterar tag</label>
                     <input type="text" @bind="editableTag" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
@@ -236,6 +234,7 @@ else
                 Name = finalBoard,
                 Status = selectedBoard.DeviceStatus,
                 CreatedAt = DateTime.Now,
+                LastSeen = selectedBoard.LastSeen,
                 DeviceId = deviceId,
                 ProductId = productId,
                 StackId = stackId,

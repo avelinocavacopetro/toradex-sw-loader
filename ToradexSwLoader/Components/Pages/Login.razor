@@ -156,9 +156,9 @@
         using var context = DbContextFactory.CreateDbContext();
         var user = await context.Users.FirstOrDefaultAsync(u => u.Email == inputEmail);
 
-        if (user == null)
+        if (user == null || user.Password != inputPassword)
         {
-            errorMessage = "Email ou password inválidos";
+            errorMessage = "Email ou palavra-passe inválidos";
             return;
         }
 

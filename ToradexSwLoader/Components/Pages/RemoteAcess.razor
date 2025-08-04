@@ -29,8 +29,15 @@
     [Parameter]
     public string? DeviceUuid { get; set; }
     private DetailedDevice? selectedDevice = new DetailedDevice();
+
+    [Parameter]
+    public SshKey? SelectedKey { get; set; }
+
     private int duration = 90;
+
     private Modal modalAcess;
+    [Parameter]
+    public EventCallback OnCloseModal { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -71,7 +78,7 @@
 
         if (duration != 0)
         {
-            var result = await Swal.FireAsync(new SweetAlertOptions
+            var resultClick = await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Deseja continuar?",
                 Icon = SweetAlertIcon.Warning,
@@ -81,7 +88,7 @@
                 CancelButtonText = "Cancelar"
             });
 
-            if (result.IsConfirmed)
+            if (resultClick.IsConfirmed)
             {
                 var userAct = new UserActivity
                 {
@@ -93,7 +100,7 @@
 
                 var sessionUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{DeviceUuid}/sessions";
 
-                var response = await TorizonService.SendCreateSession(DeviceUuid, duration);
+                var response = await TorizonService.SendCreateSession(DeviceUuid, duration, SelectedKey.Pubkey);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -107,18 +114,50 @@
                         ConfirmButtonColor = "#0B5120"
                     });
 
-                    await modalAcess.HideAsync();
+                    if (OnCloseModal.HasDelegate)
+                    {
+                        await OnCloseModal.InvokeAsync(null);
+                    }
+
                 }
                 else
                 {
-                    await Swal.FireAsync(new SweetAlertOptions
+                    if ((int)response.StatusCode == 409)
                     {
-                        Title = "Erro ao criar sessão",
-                        Icon = SweetAlertIcon.Warning,
-                        Text = $"{response.StatusCode}",
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                        var result = await Swal.FireAsync(new SweetAlertOptions
+                        {
+                            Title = "Já existe uma sessão",
+                            Icon = SweetAlertIcon.Error,
+                            Text = $"Deseja apagar a sessão atual?",
+                            ShowDenyButton = true, 
+                            ConfirmButtonColor = "#0B5120",
+                            ConfirmButtonText = "Sim",
+                            DenyButtonText = "Não"
+                        });
 
+                        if (result.IsConfirmed)
+                        {
+                            await TorizonService.CancelSessionAsync(DeviceUuid);
+
+                            await Swal.FireAsync(new SweetAlertOptions
+                            {
+                                Title = "Sessão removida com sucesso!",
+                                Icon = SweetAlertIcon.Success,
+                                ConfirmButtonColor = "#0B5120"
+                            });
+                        }
+                    }
+                    else
+                    {
+                        await Swal.FireAsync(new SweetAlertOptions
+                        {
+                            Title = "Erro ao criar sessão",
+                            Icon = SweetAlertIcon.Error,
+                            Text = $"{response.StatusCode}",
+                            ConfirmButtonColor = "#0B5120"
+                        });
+                    }
+                    
                     var errorContent = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
                     Console.WriteLine($"Conteúdo do erro: {errorContent}");

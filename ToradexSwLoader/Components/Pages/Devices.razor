@@ -122,7 +122,7 @@ else
                     </tr>
 
                 </thead>
-                <tbody style="max-height: 350px;">
+                <tbody style="max-height: 350px; padding-bottom: 60px;">
                     @if (FilteredDevices is null || !FilteredDevices.Any())
                     {
                         <tr>
@@ -155,7 +155,6 @@ else
                                 <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @device.DeviceName
                                 </td>
-
                                 <td style="width: 150px; text-align: center; vertical-align: middle;">@(device.Hibernated ? "Sim" : "Não")</td>
                                 <td style="width: 170px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)
@@ -177,18 +176,23 @@ else
                 </tbody>
             </table>
 
+            <Modal @ref="modalSelect" Title="Selecionar Utilizador" IsVerticallyCentered="true" Size="ModalSize.Large">
+                <BodyTemplate>
+                    <SelectUserModel DeviceUuid="@currentDeviceUuid" OnNextModal="NextModal" />
+                </BodyTemplate>
+            </Modal>
+
+            <Modal @ref="modalAcess" Title="Criar sessão de acesso remoto" IsVerticallyCentered="true" Size="ModalSize.Large">
+                <BodyTemplate>
+                    <RemoteAcess DeviceUuid="@currentDeviceUuid" SelectedKey="selectedSshKey" OnCloseModal="CloseModal"/>
+                </BodyTemplate>
+            </Modal>
+
             <Modal @ref="modalUpdate" Title="Atualizar dispositivo" IsVerticallyCentered="true" Size="ModalSize.Large">
                 <BodyTemplate>
                     <UpdateImageModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal"/>
                 </BodyTemplate>
             </Modal>
-
-            <Modal @ref="modalAcess" Title="Criar sessão de acesso remoto" IsVerticallyCentered="true">
-                <BodyTemplate>
-                    <RemoteAcess DeviceUuid="@currentDeviceUuid" />
-                </BodyTemplate>
-            </Modal>
-
         </div>
     </div>
 }
@@ -197,10 +201,14 @@ else
     private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
     private List<DetailedDevice> devices = new List<DetailedDevice>();
     private List<Fleet> fleets = new List<Fleet>();
+
     private DetailedDevice currentDevice;
-    private string? openMenuDeviceId = null;
+    private SshKey selectedSshKey = new SshKey();
+    private Modal? modalSelect;
     private Modal? modalAcess;
     private Modal? modalUpdate;
+
+    private string? openMenuDeviceId = null;
     private string? currentSortColumn = "DeviceName";
     private string? currentDeviceUuid;
 
@@ -249,6 +257,13 @@ else
         StateHasChanged();
     }
 
+    private async Task NextModal(SshKey key)
+    {
+        selectedSshKey = key;
+        await modalSelect?.HideAsync();
+        await modalAcess?.ShowAsync();
+    }
+
     private async Task CloseModal()
     {
         if (modalAcess != null & modalUpdate != null)
@@ -281,7 +296,7 @@ else
 
     private async Task RemoteAcess()
     {
-        await modalAcess?.ShowAsync();
+        await modalSelect?.ShowAsync();
         openMenuDeviceId = null;
     }
 
