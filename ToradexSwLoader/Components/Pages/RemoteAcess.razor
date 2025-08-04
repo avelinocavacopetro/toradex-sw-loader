@@ -32,7 +32,10 @@
 
     [Parameter]
     public SshKey? SelectedKey { get; set; }
+
     private int duration = 90;
+
+    private Modal modalAcess;
     [Parameter]
     public EventCallback OnCloseModal { get; set; }
 

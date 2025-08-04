@@ -43,32 +43,43 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var board in paginatedBoards)
+                @if (paginatedBoards is null || !paginatedBoards.Any())
                 {
-                    <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
-                        <td title="@board.DeviceName" style="width: 25%; padding-left: 20px; vertical-align: middle;">
-                            @board.DeviceName
-                        </td>
-                        <td style="width: 25%; padding: 20px; vertical-align: middle;">@board?.Packages?[1].Name</td>
-                        <td style="width: 25%; text-align: center; vertical-align: middle;">
-                            @if (deviceEntityNames.TryGetValue(board.DeviceUuid, out var entityList) && entityList.Any())
-                            {
-                                <ul class="mb-0 ps-3" style="list-style-type: none;">
-                                    @foreach (var entityName in entityList)
-                                    {
-                                        <li>@entityName</li>
-                                    }
-                                </ul>
-                            }
-                            else
-                            {
-                                <span class="text-muted" style="font-size: 18px;">Sem entidade</span>
-                            }
-                        </td>
-                        <td style="width: 25%; text-align: center;">
-                            @GetStatusIcon(board.DeviceStatus)
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                            Sem dados disponíveis
                         </td>
                     </tr>
+                }
+                else
+                {
+                    @foreach (var board in paginatedBoards)
+                    {
+                        <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
+                            <td title="@board.DeviceName" style="width: 25%; padding-left: 20px; vertical-align: middle;">
+                                @board.DeviceName
+                            </td>
+                            <td style="width: 25%; padding: 20px; vertical-align: middle;">@board?.Packages?[1].Name</td>
+                            <td style="width: 25%; text-align: center; vertical-align: middle;">
+                                @if (deviceEntityNames.TryGetValue(board.DeviceUuid, out var entityList) && entityList.Any())
+                                {
+                                    <ul class="mb-0 ps-3" style="list-style-type: none;">
+                                        @foreach (var entityName in entityList)
+                                        {
+                                            <li>@entityName</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size: 18px;">Sem entidade</span>
+                                }
+                            </td>
+                            <td style="width: 25%; text-align: center;">
+                                @GetStatusIcon(board.DeviceStatus)
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>

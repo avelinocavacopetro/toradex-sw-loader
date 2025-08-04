@@ -72,15 +72,18 @@ else
 
 @code {
     [Parameter]
+
     public string? DeviceUuid { get; set; }
     [Parameter] 
     public EventCallback OnCloseModal { get; set; }
+
     private DetailedDevice? selectedDevice = new DetailedDevice();
 
     private List<StackPackage> paginatedPackages = new List<StackPackage>();
     private List<StackPackage> stacksPackages = new List<StackPackage>();
     private Package? selectedPackage;
     private WindowDimension? dimension;
+
     private int actualPage = 1;
     private int packagesPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
