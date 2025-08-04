@@ -249,16 +249,6 @@ else
             var deviceDto = new DeviceDTO
             {
                 PackageIds = new List<string> { finalProduct.PackageId.ToString() },
-                Custom = new Dictionary<string, PackageUri>
-            {
-                {
-                    finalProduct.PackageId,
-                    new PackageUri
-                    {
-                        Uri = packageUri?.Uri
-                    }
-                }
-            },
                 Devices = new List<string> { finalProduct.DeviceUuid.ToString() },
             };
 

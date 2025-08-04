@@ -37,9 +37,10 @@ else
             <thead style="background-color: #0c6527; color: white;">
                 <tr>
                     <th style="width: 30%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">ID</th>
-                    <th style="width: 30%; padding-left: 20px; border-right: 1px solid white;">Nome</th>
-                    <th style="width: 25%; border-right: 1px solid white; text-align: center;">Data de Criação</th>
-                    <th style="width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado</th>
+                    <th style="width: 25%; padding-left: 20px; border-right: 1px solid white;">Nome</th>
+                    <th style="width: 15%; border-right: 1px solid white; text-align: center;">Data de Criação</th>
+                    <th style="width: 15%; border-right: 1px solid white; text-align: center;">Estado</th>
+                    <th style="width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado de Atualização</th>
                 </tr>
             </thead>
             <tbody style="height: 60px">
@@ -49,11 +50,14 @@ else
                         <td title="@board.DeviceUuid" style="width: 30%; padding-left: 20px; vertical-align: middle;">
                             @board.DeviceId
                         </td>
-                        <td title="@board.DeviceName" style="width: 20%; padding-left: 20px; vertical-align: middle;">
+                        <td title="@board.DeviceName" style="width: 25%; padding-left: 20px; vertical-align: middle;">
                             @board.DeviceName
                         </td>
-                        <td style="width: 20%; vertical-align: middle; text-align: center;">@board.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td style="width: 20%;">
+                        <td style="width: 15%; vertical-align: middle; text-align: center;">@board.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td style="width: 15%; vertical-align: middle; text-align: center;">
+                            @CheckOnlineStatus(board)
+                        </td>
+                        <td style="width: 15%;">
                             @GetStatusIcon(board.DeviceStatus)
                         </td>
                     </tr>
@@ -237,6 +241,29 @@ else
                       <span>Scheduled</span>
                    </div>",
         };
+
+        return new MarkupString(iconHtml);
+    }
+
+    private MarkupString CheckOnlineStatus(DetailedDevice board)
+    {
+        bool isOnline = board.LastSeen.HasValue && (DateTime.UtcNow - board.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+        string iconHtml = string.Empty;
+
+        if (isOnline)
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-circle-fill text-success fs-4'></i>
+                        <span>Online</span>
+                     </div>";
+        }
+        else
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-x-circle text-danger fs-4'></i>
+                        <span>Offline</span>
+                     </div>";
+        }
 
         return new MarkupString(iconHtml);
     }

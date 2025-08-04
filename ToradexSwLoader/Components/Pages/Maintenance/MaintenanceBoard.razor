@@ -38,8 +38,9 @@ else
                 <tr>
                     <th style="width: 20%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">Nome</th>
                     <th style="width: 30%; padding-left: 20px; border-right: 1px solid white;">Software</th>
-                    <th style="width: 30%; border-right: 1px solid white; text-align: center;">Entidade</th>
-                    <th style=" width: 20%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado</th>
+                    <th style="width: 20%; border-right: 1px solid white; text-align: center;">Entidade</th>
+                    <th style="width: 15%; border-right: 1px solid white; text-align: center;">Estado</th>
+                    <th style=" width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado de Atualização</th>
                 </tr>
             </thead>
             <tbody>
@@ -56,11 +57,11 @@ else
                     @foreach (var board in paginatedBoards)
                     {
                         <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
-                            <td title="@board.DeviceName" style="width: 25%; padding-left: 20px; vertical-align: middle;">
+                            <td title="@board.DeviceName" style="width: 20%; padding-left: 20px; vertical-align: middle;">
                                 @board.DeviceName
                             </td>
-                            <td style="width: 25%; padding: 20px; vertical-align: middle;">@board?.Packages?[1].Name</td>
-                            <td style="width: 25%; text-align: center; vertical-align: middle;">
+                            <td style="width: 30%; padding: 20px; vertical-align: middle;">@board?.Packages?[1].Name</td>
+                            <td style="width: 20%; text-align: center; vertical-align: middle;">
                                 @if (deviceEntityNames.TryGetValue(board.DeviceUuid, out var entityList) && entityList.Any())
                                 {
                                     <ul class="mb-0 ps-3" style="list-style-type: none;">
@@ -75,7 +76,10 @@ else
                                     <span class="text-muted" style="font-size: 18px;">Sem entidade</span>
                                 }
                             </td>
-                            <td style="width: 25%; text-align: center;">
+                            <td style="width: 15%; text-align: center;">
+                                @CheckOnlineStatus(board)
+                            </td>
+                            <td style="width: 15%; text-align: center;">
                                 @GetStatusIcon(board.DeviceStatus)
                             </td>
                         </tr>
@@ -294,6 +298,29 @@ else
                       <span>Scheduled</span>
                    </div>",
         };
+
+        return new MarkupString(iconHtml);
+    }
+
+    private MarkupString CheckOnlineStatus(DetailedDevice board)
+    {
+        bool isOnline = board.LastSeen.HasValue && (DateTime.UtcNow - board.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+        string iconHtml = string.Empty;
+
+        if (isOnline)
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-circle-fill text-success fs-4'></i>
+                        <span>Online</span>
+                     </div>";
+        }
+        else
+        {
+            iconHtml = @"<div class='state'>
+                        <i class='bi bi-x-circle text-danger fs-4'></i>
+                        <span>Offline</span>
+                     </div>";
+        }
 
         return new MarkupString(iconHtml);
     }
