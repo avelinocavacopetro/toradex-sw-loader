@@ -79,18 +79,18 @@ else
                         @foreach (var finalProduct in FilteredPages)
                         {
                             <tr>
-                                <td style="position: relative; width: 350px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                <td style="position: relative; width: 350px; padding-left: 20px; vertical-align: middle;">
                                     @finalProduct.Name
                                 </td>
-                                <td style="width: 180px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                <td style="width: 180px; text-align: center; vertical-align: middle;">
                                     @finalProduct.CreatedAt
                                 </td>
 
                                 <td style="width: 170px; text-align: center; vertical-align: middle;">@finalProduct.UserPetrotec?.UserName</td>
-                                <td style="width: 150px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">
                                     @CheckOnlineStatus(finalProduct)
                                 </td>
-                                <td style="width: 150px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                <td style="width: 150px; text-align: center; vertical-align: middle;">
                                     @GetStatusIcon(finalProduct.Status!)
                                 </td>
                             </tr>
@@ -103,18 +103,10 @@ else
 }
 
 @code {
+    // Object Variables
     private List<FinalProduct> finalProducts = new List<FinalProduct>();
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
 
-    private string today = DateTime.Today.ToString("yyyy-MM-dd");
-
-    private int actualPage = 1;
-    private int finalProductsPerPage = 6;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredPages.Count() / finalProductsPerPage);
-
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
     private DateTime? _startDate = DateTime.Now.AddDays(-30);
     private DateTime? startDate
     {
@@ -158,6 +150,9 @@ else
         .Skip((actualPage - 1) * finalProductsPerPage)
         .Take(finalProductsPerPage);
 
+    // String Variables
+    private string today = DateTime.Today.ToString("yyyy-MM-dd");
+
     private string _searchTerm = string.Empty;
     private string searchTerm
     {
@@ -172,6 +167,16 @@ else
             }
         }
     }
+    
+    // Integer Variables
+    private int actualPage = 1;
+    private int finalProductsPerPage = 6;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredPages.Count() / finalProductsPerPage);
+
+    // Boolean Variables
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override void OnInitialized()
     {

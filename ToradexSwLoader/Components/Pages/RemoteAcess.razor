@@ -26,37 +26,34 @@
 </div>
 
 @code {
+    // Parameters
     [Parameter]
     public string? DeviceUuid { get; set; }
-    private DetailedDevice? selectedDevice = new DetailedDevice();
 
     [Parameter]
     public SshKey? SelectedKey { get; set; }
 
-    private int duration = 90;
-
-    private Modal modalAcess;
     [Parameter]
-    public EventCallback OnCloseModal { get; set; }
+    public EventCallback<SessionSsh> OnNextModal { get; set; }
+
+    // Object Variables
+    private DetailedDevice? selectedDevice = new();
+    private Modal modalAcess = new();
+
+    // Integer Variables
+    private int duration = 90;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-
-        if (!authOk)
+        if(await TorizonService.AuthenticateAsync())
         {
-            Console.WriteLine("Falha na autenticação.");
-            return;
+            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{DeviceUuid}";
+            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+
+            StateHasChanged();
         }
-
-        var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{DeviceUuid}";
-        selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
-
-        StateHasChanged();
-
-        Console.WriteLine($"{selectedDevice.DeviceName}");
     }
 
     private string FormatDuration(int minutes)
@@ -114,11 +111,7 @@
                         ConfirmButtonColor = "#0B5120"
                     });
 
-                    if (OnCloseModal.HasDelegate)
-                    {
-                        await OnCloseModal.InvokeAsync(null);
-                    }
-
+                    await OnNextModal.InvokeAsync();
                 }
                 else
                 {
@@ -159,8 +152,6 @@
                     }
                     
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
-                    Console.WriteLine($"Conteúdo do erro: {errorContent}");
                 }
             }
         }

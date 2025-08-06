@@ -77,28 +77,20 @@ else
 }
 
 @code {
-    private List<Device> allDevices = new List<Device>();
-    private List<Device> paginatedDevices = new List<Device>();
+    // Object Variables
     private Device? selectedDevice;
-    private WindowDimension? dimension;
-
+    private List<Device> allDevices = new();
+    private List<Device> paginatedDevices = new();
+    
+    // Integer Variables
     private int actualPage = 1;
     private int devicesPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)allDevices.Count / devicesPerPage);
-    private int OnlineTime => FilterService.OnlineTime;
 
+    // Boolean Variables
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
-
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        devicesPerPage = dimension.Width <= 1024 ? 8 : allDevices.Count;
-
-        UpdatePage();
-        StateHasChanged();
-    }
 
     protected override async Task OnInitializedAsync()
     {

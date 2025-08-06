@@ -13,6 +13,8 @@ namespace ToradexSwLoader.Services
 
         public event Action? OnLoginChanged;
 
+        public bool IsLoggedIn => !string.IsNullOrEmpty(Username);
+
         public LoginService(IDbContextFactory<AppDbContext> dbContextFactory)
         {
             _dbContextFactory = dbContextFactory;
@@ -22,6 +24,13 @@ namespace ToradexSwLoader.Services
         {
             UserId = userId;
             Username = username;
+            OnLoginChanged?.Invoke();
+        }
+
+        public void Logout()
+        {
+            UserId = 0;
+            Username = string.Empty;
             OnLoginChanged?.Invoke();
         }
 

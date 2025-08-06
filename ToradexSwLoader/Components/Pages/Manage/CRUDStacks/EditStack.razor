@@ -104,23 +104,28 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int StackId { get; set; }
 
+    // Object Variables
     private List<Product> selectedProducts = new List<Product>();
-
-    private string stackName = string.Empty;
-
-    private bool isLoading = true;
-
-    private int currentProductPage = 1;
-    private int productsPerPage = 3;
-    private int TotalProductPages => (int)Math.Ceiling((double)FilterService.SelectedProducts.Count / productsPerPage);
 
     private IEnumerable<Product> PaginatedProducts =>
         FilterService.SelectedProducts
             .Skip((currentProductPage - 1) * productsPerPage)
             .Take(productsPerPage);
+
+    // String Variables
+    private string stackName = string.Empty;
+
+    // Boolean Variables
+    private bool isLoading = true;
+
+    // Integer Variables
+    private int currentProductPage = 1;
+    private int productsPerPage = 3;
+    private int TotalProductPages => (int)Math.Ceiling((double)FilterService.SelectedProducts.Count / productsPerPage);
 
     protected override async Task OnInitializedAsync()
     {
@@ -159,42 +164,65 @@ else
 
     private async Task SaveChanges()
     {
+        if(!ValidateStack())
+            return;
+
+        if(!ValidateProductCount())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await ChangeStack(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageStacks");
+    }
+
+    private bool ValidateStack()
+    {
         if (string.IsNullOrWhiteSpace(stackName))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (stackName.Length > 50)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Nome muito comprido!",
                 Text = "O nome da stack deve ter no máximo 50 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
+        return true;
+    }
+
+    private bool ValidateProductCount()
+    {
         if (selectedProducts.Count < 1)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Deve selecionar pelo menos 1 produto!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
+    private async Task ChangeStack(AppDbContext context)
+    {
         var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == StackId);
         if (stackDb == null) return;
 
@@ -213,15 +241,16 @@ else
         }
 
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Stack editado com sucesso!",
+            Title = "Stack editada com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageStacks");
     }
 
     private void Cancel()

@@ -101,23 +101,27 @@
 </div>
 
 @code {
+    // Object Variables
+    private Package? selectedPackage;
     private List<Package> packages = new();
     private HashSet<string> packageNames = new();
     private List<string> filteredPackageNames = new();
     private List<string> filteredVersionList = new();
     private List<string> filteredVersions = new();
-    private Package? selectedPackage;
 
+    // String Variables
     private string searchTerm = "";
     private string versionSearchTerm = "";
     private string? selectedPackageName;
     private string? selectedPackageVersion;
 
+    // Boolean Variables
     private bool showSuggestions = false;
     private bool showVersionSuggestions = false;
     private bool versionDisabled = true;
     private bool packageDisabled = true;
 
+    // Integer Variables
     private int _selectedStackId;
     private int selectedStackId
     {
@@ -220,33 +224,55 @@
 
     private async Task Save()
     {
+        if (!ValidateStack())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await PackagesExistsAsync(context))
+        {
+            await ShowPackageExistsAlert();
+            return;
+        }
+
+        await AddPackageAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/managePackages");
+    }
+
+    private bool ValidateStack()
+    {
         if (selectedStackId == 0 || selectedPackage == null)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor selecione um stack e um pacote válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
+        return true;
+    }
 
-        using var context = DbContextFactory.CreateDbContext();
-
-        bool exists = await context.StackPackages.AnyAsync(sp =>
+    private async Task<bool> PackagesExistsAsync(AppDbContext context)
+    {
+        return await context.StackPackages.AnyAsync(sp =>
             sp.StackId == selectedStackId && sp.PackageId == selectedPackage.Id);
+    }
 
-        if (exists)
+    private async Task ShowPackageExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Esta combinação já existe!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+            Title = "Esta combinação já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
 
+    private async Task AddPackageAsync(AppDbContext context)
+    {
         var newStackPackage = new StackPackage
         {
             StackId = selectedStackId,
@@ -255,15 +281,16 @@
 
         context.StackPackages.Add(newStackPackage);
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Pacote adicionado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/managePackages");
     }
 
     private void Cancel()

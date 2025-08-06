@@ -120,19 +120,13 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int EntityId { get; set; }
 
-    private List<Fleet> fleets = new List<Fleet>();
-    private List<Fleet> selectedFleets = new List<Fleet>();
-    private string entityName = string.Empty;
-    private string observations = string.Empty;
-
-    private bool isLoading = true;
-
-    private int currentFleetPage = 1;
-    private int fleetsPerPage = 3;
-    private int TotalFleetPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
+    // Object Variables
+    private List<Fleet> fleets = new();
+    private List<Fleet> selectedFleets = new();
 
     private IEnumerable<Fleet> FilteredFleets =>
     string.IsNullOrWhiteSpace(searchTerm)
@@ -143,6 +137,10 @@ else
     FilteredFleets
         .Skip((currentFleetPage - 1) * fleetsPerPage)
         .Take(fleetsPerPage);
+
+    // String Variables 
+    private string entityName = string.Empty;
+    private string observations = string.Empty;
 
     private string _searchTerm = string.Empty;
     private string searchTerm
@@ -157,6 +155,14 @@ else
             }
         }
     }
+
+    // Boolean Variables
+    private bool isLoading = true;
+
+    // Integer Variables
+    private int currentFleetPage = 1;
+    private int fleetsPerPage = 3;
+    private int TotalFleetPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
 
     protected override async Task OnInitializedAsync()
     {
@@ -197,42 +203,65 @@ else
 
     private async Task SaveChanges()
     {
+        if (!ValidateEntityName())
+            return;
+
+        if (!ValidateFleetCount())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await ChangeEntity(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageEntities");
+    }
+
+    private bool ValidateEntityName()
+    {
         if (string.IsNullOrWhiteSpace(entityName))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (entityName.Length > 50)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Nome muito comprido!",
                 Text = "O nome da entidade deve ter no máximo 50 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
+        return true;
+    }
+
+    private bool ValidateFleetCount()
+    {
         if (selectedFleets.Count < 1)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Deve selecionar pelo menos 1 frota!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
+    private async Task ChangeEntity(AppDbContext context)
+    {
         var entityDb = await context.Entities.FirstOrDefaultAsync(e => e.Id == EntityId);
         if (entityDb == null) return;
 
@@ -252,15 +281,16 @@ else
         }
 
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Entidade editada com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageEntities");
     }
 
     private void Cancel()

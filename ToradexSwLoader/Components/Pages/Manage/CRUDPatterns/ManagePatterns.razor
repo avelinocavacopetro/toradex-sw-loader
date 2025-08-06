@@ -66,7 +66,7 @@ else
                         </th>
                         <th style="width: 30%; text-align: center; padding-left: 10px; border-right: 1px solid white;">Ativo</th>
                         <th style="width: 20%;"></th>
-                        <th style="width: 20%;"></th>
+                        <th style="width: 20%; border-top-right-radius: 5px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,7 +83,7 @@ else
                         @foreach (var pattern in PaginatedPatterns)
                         {
                             <tr class="table-light" style="height: 60px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
                                     @pattern.NameContains
                                 </td>
                                 <td class="text-center align-middle p-0">
@@ -134,34 +134,10 @@ else
 }
 
 @code {
-    private List<Pattern> patterns = new List<Pattern>();
-    private List<Pattern> selectedPatterns = new List<Pattern>();
-    private List<Pattern> paginatedPatterns = new List<Pattern>();
-   
-    private string currentSortColumn = "NameContains";
-
-    private int actualPage = 1;
-    private int patternsPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredPatterns.Count() / patternsPerPage);
-
-    private bool isLoading = true;
-    private bool isNameContainsAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
-    {
-        get => _searchTerm;
-        set
-        {
-            if (_searchTerm != value)
-            {
-                _searchTerm = value;
-                actualPage = 1;
-            }
-        }
-    }
+    // Object Variables
+    private List<Pattern> patterns = new();
+    private List<Pattern> selectedPatterns = new();
+    private List<Pattern> paginatedPatterns = new();
 
     private IEnumerable<Pattern> FilteredPatterns
     {
@@ -186,6 +162,34 @@ else
     FilteredPatterns
         .Skip((actualPage - 1) * patternsPerPage)
         .Take(patternsPerPage);
+   
+    // String Variables
+    private string currentSortColumn = "NameContains";
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
+
+    // Integer Variables
+    private int actualPage = 1;
+    private int patternsPerPage = 8;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredPatterns.Count() / patternsPerPage);
+
+    // Boolean Variables
+    private bool isLoading = true;
+    private bool isNameContainsAscending = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {

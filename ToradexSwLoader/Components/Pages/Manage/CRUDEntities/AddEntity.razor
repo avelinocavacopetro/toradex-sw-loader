@@ -105,15 +105,9 @@
 </div>
 
 @code {
+    // Object Variables
     private List<Fleet> fleets = new List<Fleet>();
     private List<Fleet> selectedFleets = new List<Fleet>();
-
-    private string entityName = string.Empty;
-    private string observations = string.Empty;
-
-    private int currentFleetPage = 1;
-    private int fleetsPerPage = 3;
-    private int TotalFleetPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
 
     private IEnumerable<Fleet> FilteredFleets =>
     string.IsNullOrWhiteSpace(searchTerm)
@@ -124,6 +118,10 @@
     FilteredFleets
         .Skip((currentFleetPage - 1) * fleetsPerPage)
         .Take(fleetsPerPage);
+
+    // String Variables
+    private string entityName = string.Empty;
+    private string observations = string.Empty;
 
     private string _searchTerm = string.Empty;
     private string searchTerm
@@ -138,6 +136,11 @@
             }
         }
     }
+
+    // Integer Variables
+    private int currentFleetPage = 1;
+    private int fleetsPerPage = 3;
+    private int TotalFleetPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,55 +165,86 @@
 
     private async Task SaveEntity()
     {
+        if (!ValidateEntityName())
+            return;
+
+        if (!ValidateFleetCount())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await EntityExistsAsync(context))
+        {
+            await ShowEntityExistsAlert();
+            return;
+        }
+
+        await AddEntityAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageEntities");
+    }
+
+    private bool ValidateEntityName()
+    {
         if (string.IsNullOrWhiteSpace(entityName))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (entityName.Length > 50)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Nome muito comprido!",
                 Text = "O nome da entidade deve ter no máximo 50 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
+        return true;
+    }
+
+    private bool ValidateFleetCount()
+    {
         if (selectedFleets.Count < 1)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Deve selecionar pelo menos 1 frota!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
-        bool exists = await context.Entities.AnyAsync(e => e.Name.ToLower() == entityName.Trim().ToLower());
+    private async Task<bool> EntityExistsAsync(AppDbContext context)
+    {
+        return await context.Entities.AnyAsync(e => e.Name.ToLower() == entityName.Trim().ToLower());
+    }
 
-        if (exists)
+    private async Task ShowEntityExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Esta entidade já existe!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+            Title = "Esta entidade já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
 
+    private async Task AddEntityAsync(AppDbContext context)
+    {
         var newEntity = new Entity
         {
             Name = entityName,
@@ -238,15 +272,16 @@
             FleetId = f.Id,
             Fleet = f
         }).ToList();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Entidade adicionada com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageEntities");
     }
 
     private void Cancel()

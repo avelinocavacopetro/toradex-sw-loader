@@ -103,21 +103,28 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int ProductId { get; set; }
 
-    private List<Device> selectedDevices = new List<Device>();
-    private string productName = string.Empty;
-    private bool isLoading = true;
-
-    private int currentDevicePage = 1;
-    private int devicesPerPage = 3;
-    private int TotalDevicePages => (int)Math.Ceiling((double)FilterService.SelectedDevices.Count / devicesPerPage);
+    // Object Variables
+    private List<Device> selectedDevices = new();
 
     private IEnumerable<Device> PaginatedDevices =>
         FilterService.SelectedDevices
             .Skip((currentDevicePage - 1) * devicesPerPage)
             .Take(devicesPerPage);
+
+    // String Variables
+    private string productName = string.Empty;
+
+    // Boolean Variables
+    private bool isLoading = true;
+
+    // Integer Variables
+    private int currentDevicePage = 1;
+    private int devicesPerPage = 3;
+    private int TotalDevicePages => (int)Math.Ceiling((double)FilterService.SelectedDevices.Count / devicesPerPage);
 
     protected override async Task OnInitializedAsync()
     {
@@ -156,42 +163,65 @@ else
 
     private async Task SaveChanges()
     {
+        if (!ValidateProduct())
+            return;
+
+        if (!ValidateDeviceCount())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await ChangeProduct(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageProducts");
+    }
+
+    private bool ValidateProduct()
+    {
         if (string.IsNullOrWhiteSpace(productName))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (productName.Length > 30)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Nome muito comprido!",
                 Text = "O nome do produto deve ter no máximo 30 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
+        return true;
+    }
+
+    private bool ValidateDeviceCount()
+    {
         if (selectedDevices.Count < 1)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Deve selecionar pelo menos 1 dispositivo!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
+    private async Task ChangeProduct(AppDbContext context)
+    {
         var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == ProductId);
         if (productDb == null) return;
 
@@ -210,15 +240,16 @@ else
         }
 
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Produto editado com sucesso!",
+            Title = "Produto editadp com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageProducts");
     }
 
     private void Cancel()

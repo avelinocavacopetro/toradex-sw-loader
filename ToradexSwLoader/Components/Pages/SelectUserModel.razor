@@ -1,6 +1,5 @@
 ﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
-@inject PackageService PackageService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
@@ -9,8 +8,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <PageTitle>Atualizar pacote</PageTitle>
-
-<WindowDimensions OnChange="OnDimensionsChanged" />
 
 @if (isLoading)
 {
@@ -60,23 +57,25 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public string? DeviceUuid { get; set; }
 
     [Parameter] 
     public EventCallback<SshKey> OnNextModal { get; set; }
 
-    private DetailedDevice? selectedDevice = new DetailedDevice();
-
-    private List<SshKey> sshKeys = new List<SshKey>();
-    private List<SshKey> paginatedKeys = new List<SshKey>();
+    // Object Variables
+    private DetailedDevice? selectedDevice = new();
+    private List<SshKey> sshKeys = new();
+    private List<SshKey> paginatedKeys = new();
     private SshKey? selectedKey;
-    private WindowDimension? dimension;
 
+    // Integer Variables
     private int actualPage = 1;
     private int keysPerPage = 5;
     private int TotalPages => (int)Math.Ceiling((double)sshKeys.Count / keysPerPage);
 
+    // Boolean Variables
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
@@ -85,31 +84,16 @@ else
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-
-        if (!authOk)
+        if (await TorizonService.AuthenticateAsync())
         {
-            Console.WriteLine("Falha na autenticação.");
+            var keyUrl = $"https://app.torizon.io/api/v2beta/remote-access/user/public-keys";
+            sshKeys = await TorizonService.GetFlatSshKeysAsync(keyUrl);
+
+            UpdatePage();
+
             isLoading = false;
-            return;
+            StateHasChanged();
         }
-
-        var keyUrl = $"https://app.torizon.io/api/v2beta/remote-access/user/public-keys";
-        sshKeys = await TorizonService.GetFlatSshKeysAsync(keyUrl);
-
-        UpdatePage();
-
-        isLoading = false;
-        StateHasChanged();
-    }
-
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        keysPerPage = dimension.Width <= 1024 ? 3 : 5;
-
-        UpdatePage();
-        StateHasChanged();
     }
 
     private async Task OnClick(SshKey key)

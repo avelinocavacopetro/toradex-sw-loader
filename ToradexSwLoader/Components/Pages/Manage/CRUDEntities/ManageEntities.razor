@@ -150,34 +150,10 @@ else
 }
 
 @code {
-    private List<Entity> entities = new List<Entity>();
-    private List<Entity> selectedEntities = new List<Entity>();
-    private List<Entity> paginatedEntities = new List<Entity>();
-
-    private string currentSortColumn = "Name";
-
-    private int actualPage = 1;
-    private int entitiesPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredEntities.Count() / entitiesPerPage);
-
-    private bool isLoading = true;
-    private bool isNameAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
-    {
-        get => _searchTerm;
-        set
-        {
-            if (_searchTerm != value)
-            {
-                _searchTerm = value;
-                actualPage = 1;
-            }
-        }
-    }
+    // Object Variables
+    private List<Entity> entities = new();
+    private List<Entity> selectedEntities = new();
+    private List<Entity> paginatedEntities = new();
 
     private IEnumerable<Entity> FilteredEntities
     {
@@ -202,6 +178,34 @@ else
     FilteredEntities
         .Skip((actualPage - 1) * entitiesPerPage)
         .Take(entitiesPerPage);
+
+    // String Variables
+    private string currentSortColumn = "Name";
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
+
+    // Integer Variables 
+    private int actualPage = 1;
+    private int entitiesPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredEntities.Count() / entitiesPerPage);
+
+    // Boolean Variables
+    private bool isLoading = true;
+    private bool isNameAscending = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {

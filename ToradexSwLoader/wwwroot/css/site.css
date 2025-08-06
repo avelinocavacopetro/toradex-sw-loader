@@ -134,7 +134,6 @@ table thead th {
 .sticky-footer-center, .sticky-footer-right {
     position: fixed;
     bottom: 30px;
-    width: 100%;
     z-index: 1000;
     padding: 0 20px;
     box-sizing: border-box;
@@ -142,10 +141,12 @@ table thead th {
 
 .sticky-footer-center {
     text-align: center;
+    width: 90%;
 }
 
 .sticky-footer-right {
     right: 40px;
+    width: 100%;
 }
 
 /*

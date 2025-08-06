@@ -112,33 +112,9 @@
 </div>
 
 @code {
+    // Object Variables
     private List<StackPackage> stacksPackages = new();
-    private List<StackPackage> paginatedPackages = new List<StackPackage>();
-
-    private int actualPage = 1;
-    private int packagesPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)(string.IsNullOrWhiteSpace(searchTerm) ? 
-    stacksPackages.Count : FilteredPackages.Count()) / packagesPerPage);
-
-    private string currentSortColumn = "Name";
-
-    private bool isNameAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
-    {
-        get => _searchTerm;
-        set
-        {
-            if (_searchTerm != value)
-            {
-                _searchTerm = value;
-                actualPage = 1;
-            }
-        }
-    }
+    private List<StackPackage> paginatedPackages = new();
 
     private IEnumerable<StackPackage> FilteredPackages
     {
@@ -164,6 +140,33 @@
         .Skip((actualPage - 1) * packagesPerPage)
         .Take(packagesPerPage);
 
+    // Integer Variables
+    private int actualPage = 1;
+    private int packagesPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)(string.IsNullOrWhiteSpace(searchTerm) ? 
+    stacksPackages.Count : FilteredPackages.Count()) / packagesPerPage);
+
+    // String Variables
+    private string currentSortColumn = "Name";
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
+
+    // Boolean Variables
+    private bool isNameAscending = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {

@@ -65,7 +65,7 @@ else
                             </span>
                         </th>
 
-                        <th style="width: 30%; text-align: center; padding-left: 10px; border-right: 1px solid white;">Dispositivos Associados</th>
+                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">Dispositivos Associados</th>
                         <th style="width: 15%; text-align: center; border-right: 1px solid white;">Ativo</th>
                         <th style="width: 12.5%;"></th>
                         <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
@@ -88,7 +88,7 @@ else
                                 <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
                                     @product.Name
                                 </td>
-                                <td style="text-align: center; padding-left: 10px; vertical-align: middle;">
+                                <td style="text-align: center; vertical-align: middle;">
                                     @if (product.DeviceProducts?.Any() == true)
                                     {
                                         <ul class="mb-0 ps-3">
@@ -154,34 +154,10 @@ else
 }
 
 @code {
-    private List<Product> products = new List<Product>();
-    private List<Product> selectedProducts = new List<Product>();
-    private List<Product> paginatedProducts = new List<Product>();
-
-    private string currentSortColumn = "Name";
-
-    private int actualPage = 1;
-    private int productsPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredProducts.Count() / productsPerPage);
-
-    private bool isLoading = true;
-    private bool isNameAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
-    {
-        get => _searchTerm;
-        set
-        {
-            if (_searchTerm != value)
-            {
-                _searchTerm = value;
-                actualPage = 1;
-            }
-        }
-    }
+    // Object Variables
+    private List<Product> products = new();
+    private List<Product> selectedProducts = new();
+    private List<Product> paginatedProducts = new();
 
     private IEnumerable<Product> FilteredProducts
     {
@@ -206,6 +182,34 @@ else
         FilteredProducts
             .Skip((actualPage - 1) * productsPerPage)
             .Take(productsPerPage);
+
+    // String Variables
+    private string currentSortColumn = "Name";
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
+
+    // Integer Variables
+    private int actualPage = 1;
+    private int productsPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredProducts.Count() / productsPerPage);
+
+    // Boolean Variables
+    private bool isLoading = true;
+    private bool isNameAscending = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {

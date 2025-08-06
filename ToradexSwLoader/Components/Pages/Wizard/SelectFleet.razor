@@ -5,7 +5,6 @@
 @inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject FleetService FleetService
-@inject WindowService WindowService
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
 @inject LoginService LoginService
@@ -72,41 +71,36 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int deviceId { get; set; }
-    private Device? selectedDevice = new Device();
 
     [Parameter]
     public int stackId { get; set; }
-    private Stack? selectedStack = new Stack();
+
+    [Parameter]
+    public int productId { get; set; }
 
     [Parameter]
     public string packageId { get; set; } = string.Empty;
 
-    [Parameter]
-    public int productId { get; set; }
-    public Product? selectedProduct = new Product();
-
-    private List<Fleet> fleets = new List<Fleet>();
-    private List<Fleet> paginatedFleets = new List<Fleet>();
+    // Object Variables
+    private Device? selectedDevice;
+    private Stack? selectedStack;
+    private Product? selectedProduct;
     private Fleet? selectedFleet;
-    private WindowDimension? dimension;
-
+    private List<Fleet> fleets = new();
+    private List<Fleet> paginatedFleets = new();
+    
+    // Integer Variables
     private int actualPage = 1;
     private int fleetsPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)fleets.Count / fleetsPerPage);
+
+    // Boolean Variables
     private bool isLoading = false;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
-
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        fleetsPerPage = dimension.Width <= 1024 ? 8 : fleets.Count;
-
-        UpdatePage();
-        StateHasChanged();
-    }
 
     protected override async Task OnInitializedAsync()
     {

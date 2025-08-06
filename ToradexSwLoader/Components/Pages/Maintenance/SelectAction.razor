@@ -45,51 +45,59 @@ else
 }
 
 @code {
-    [Parameter]
-    public string? deviceUuid { get; set; }
-    private bool isLoading = false;
-    private bool hasVersion = true;
+    // Object Variables
     private DetailedDevice? selectedDevice = new();
     private List<StackPackage> stacksPackages = new();
+
+    // String Variables
+    [Parameter]
+    public string? deviceUuid { get; set; }
+
+    // Boolean Variables
+    private bool isLoading = false;
+    private bool hasVersion = true;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-
-        if (!authOk)
+        if(await TorizonService.AuthenticateAsync())
         {
-            Console.WriteLine("Falha na autenticação.");
-            isLoading = false;
-            return;
-        }
+            await LoadSelectedDeviceAsync();
+            await LoadStackPackagesAsync(context);
+            CheckIfDeviceHasPackage();
+            await FilterService.LoadFilterAsync();
 
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadSelectedDeviceAsync()
+    {
         var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
         selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+    }
 
+    private async Task LoadStackPackagesAsync(AppDbContext context)
+    {
         stacksPackages = await context.StackPackages
             .Include(pp => pp.Package)
             .ToListAsync();
-
-        var devicePackage = selectedDevice.Packages[1].Name.ToString();
-        var hasPackage = stacksPackages.Any(sp => sp.PackageId == devicePackage);
-
-        Console.WriteLine($"\n Pacote do dispositivo: {devicePackage} \n");
-        Console.WriteLine($"\n Tem pacote: {hasPackage} \n");
-
-        if (hasPackage){
-            hasVersion = true;
-        }
-        else
-        {
-            hasVersion = false;
-        }
-
-        await FilterService.LoadFilterAsync();
     }
 
-    private async Task UpdateImage()
+    private void CheckIfDeviceHasPackage()
+    {
+        if (selectedDevice?.Packages == null || selectedDevice.Packages.Count < 2)
+        {
+            hasVersion = false;
+            return;
+        }
+
+        var devicePackage = selectedDevice.Packages[1].Name;
+        hasVersion = stacksPackages.Any(sp => sp.PackageId == devicePackage);
+    }
+
+    private void UpdateImage()
     {
         UriHelper.NavigateTo($"/updateImage/{deviceUuid}");
     }

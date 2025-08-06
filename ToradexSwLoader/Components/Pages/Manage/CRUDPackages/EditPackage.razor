@@ -114,29 +114,34 @@ else
 
 
 @code {
+    // Parameters
     [Parameter]
     public int StackId { get; set; }
 
     [Parameter]
     public string PackageId { get; set; }
 
-    private List<Package> packages = new();
+    // Object Variables
+    private Package? selectedPackage;
     private HashSet<string> packageNames = new();
+    private List<Package> packages = new();
     private List<string> filteredPackageNames = new();
     private List<string> filteredVersionList = new();
     private List<string> filteredVersions = new();
 
+    // String Variables
     private string searchTerm = "";
     private string versionSearchTerm = "";
     private string? selectedPackageName;
     private string? selectedPackageVersion;
-    private Package? selectedPackage;
     private string? oldPackageId;
 
+    // Boolean Variables
     private bool showSuggestions = false;
     private bool showVersionSuggestions = false;
     private bool isLoading = true;
 
+    // Integer Variables
     private int selectedStackId;
 
     protected override async Task OnInitializedAsync()
@@ -251,19 +256,42 @@ else
 
     private async Task Save()
     {
+        if (!ValidadePackage())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await RemoveCombination(context);
+
+        if (await PackagesExistsAsync(context))
+        {
+            await ShowPackageExistsAlert();
+            return;
+        }
+
+        await ChangePackage(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/managePackages");
+    }
+
+    private bool ValidadePackage()
+    {
         if (selectedPackage == null)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor selecione um pacote válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
+    private async Task RemoveCombination(AppDbContext context)
+    {
         var oldEntry = await context.StackPackages
             .FirstOrDefaultAsync(sp => sp.StackId == StackId && sp.PackageId == oldPackageId);
 
@@ -271,21 +299,26 @@ else
         {
             context.StackPackages.Remove(oldEntry);
         }
+    }
 
-        bool exists = await context.StackPackages.AnyAsync(sp =>
+    private async Task<bool> PackagesExistsAsync(AppDbContext context)
+    {
+        return await context.StackPackages.AnyAsync(sp =>
             sp.StackId == StackId && sp.PackageId == selectedPackage.Id);
+    }
 
-        if (exists)
+    private async Task ShowPackageExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Esta combinação já existe!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+            Title = "Esta combinação já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
 
+    private async Task ChangePackage(AppDbContext context)
+    {
         var newEntry = new StackPackage
         {
             StackId = StackId,
@@ -294,15 +327,16 @@ else
 
         context.StackPackages.Add(newEntry);
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Editado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/managePackages");
     }
 
     private void Cancel()
