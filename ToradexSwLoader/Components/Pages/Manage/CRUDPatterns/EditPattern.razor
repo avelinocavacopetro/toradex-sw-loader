@@ -1,0 +1,146 @@
+﻿@page "/managePatterns/edit/{PatternId:int}"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Editar Padrão</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="custom-container">
+        <div class="page-title d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+                <h3 class="ms-2 mb-0">Editar Pattern</h3>
+            </div>
+
+            <div class="d-flex gap-3">
+                <button class="btn btn-outline-light border border-white border-2"
+                        style="width: 100px;"
+                        @onclick="Cancel">
+                    <i class="bi bi-arrow-left fs-5"></i>
+                </button>
+                <button class="btn btn-outline-light border border-white border-2 fs-5"
+                        style="width: 150px;"
+                        @onclick="SaveChanges">
+                    <i class="bi bi-floppy"></i> Salvar
+                </button>
+            </div>
+        </div>
+
+        <div class="edit-form mt-4">
+            <div class="d-flex align-items-center gap-3">
+                <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
+                    Nome da pattern
+                    <span style="font-size: 15px;"> (máx. 50 caracteres)</span> :
+                </label>
+                <input type="text" @bind="patternString"
+                       class="form-control"
+                       style="font-size: 1.2rem;" 
+                       maxlength="50"/>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Parameters
+    [Parameter]
+    public int PatternId { get; set; }
+
+    // String Variables
+    private string patternString = string.Empty;
+
+    // Boolean Variables
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        var pattern = await context.Patterns.FirstOrDefaultAsync(p => p.Id == PatternId);
+
+        if (pattern != null)
+        {
+            patternString = pattern.NameContains;
+        }
+
+        isLoading = false;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (!ValidadePattern())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await ChangePattern(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/managePatterns");
+    }
+
+    private bool ValidadePattern()
+    {
+        if (string.IsNullOrWhiteSpace(patternString))
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        if (patternString.Length > 50)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Pattern muito comprida!",
+                Text = "A pattern deve ter no máximo 50 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task ChangePattern(AppDbContext context)
+    {
+        var patternDb = await context.Patterns.FirstOrDefaultAsync(p => p.Id == PatternId);
+        if (patternDb == null) return;
+
+        patternDb.NameContains = patternString;
+
+        await context.SaveChangesAsync();
+    }
+
+    private async Task ShowSuccessAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Pattern editado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/managePatterns");
+    }
+}

@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace ToradexSwLoader.Models
 {
-    //[Table("DetailedDevice")]
     public class DetailedDevice
     {
         [Key]
@@ -32,5 +32,11 @@ namespace ToradexSwLoader.Models
         public string? Notes { get; set; }
 
         public bool Hibernated { get; set; }
+
+        [JsonPropertyName("deviceFleets")]
+        public List<DeviceFleet>? Fleets { get; set; }
+
+        [JsonPropertyName("devicePackages")]
+        public List<DevicePackage>? Packages { get; set; }
     }
 }

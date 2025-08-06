@@ -1,0 +1,259 @@
+﻿@page "/managePackages"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Gerir Pacotes</PageTitle>
+
+<div class="custom-container">
+    <div class="page-title">
+        <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
+        <h3 class="pt-2">Gerir Pacotes</h3>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="w-50 position-relative">
+            <input type="text"
+                   class="form-control py-2 ps-5"
+                   placeholder="Pesquisar pacote pela stack..."
+                   style="border: 1px solid grey;"
+                   @bind="searchTerm"
+                   @bind:event="oninput" />
+            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button class="btn btn-color btn-lg py-2"
+                    style="font-size: 1.25rem;"
+                    @onclick="NavigateToAdd">
+                <i class="bi bi-plus"></i> Novo
+            </button>
+        </div>
+    </div>
+
+    <div class="pb-5">
+        <table class="table mt-3 w-100" style="table-layout: fixed;">
+            <thead style="background-color: #0c6527; color: white;">
+                <tr>
+                    <th onclick="@(() => SortByColumn("Name"))"
+                        style="width: 25%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                   border-right: 1px solid white; cursor: pointer;">
+                        Stack
+                        <span style="font-size: 0.9rem; margin-left: 5px;
+                                                         color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                            @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                        </span>
+                    </th>
+                    <th style="width: 30%; text-align: center; border-right: 1px solid white;">Pacote</th>
+                    <th style="width: 15%; text-align: center; border-right: 1px solid white;">Versão</th>
+                    <th style="width: 15%;"></th>
+                    <th style="width: 15%;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (PaginatedPackages is null || !PaginatedPackages.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                            Sem dados disponíveis
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var stackPackage in PaginatedPackages)
+                    {
+                        @if (stackPackage?.Stack != null && stackPackage?.Package != null)
+                        {
+                            <tr class="table-light" style="height: 60px;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">@stackPackage.Stack.Name</td>
+                                <td class="text-center truncate-text" style="vertical-align: middle;">@stackPackage.Package.Name</td>
+                                <td class="text-center" style="vertical-align: middle;">@stackPackage.Package.Version</td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                            title="Editar"
+                                            @onclick="() => NavigateToEdit(stackPackage.StackId, stackPackage.PackageId)">
+                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                            title="Remover"
+                                            @onclick="() => RemoveStack(stackPackage.StackId, stackPackage.PackageId)">
+                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+
+    </div>
+
+    <div class="sticky-footer-right">
+        <div class="d-flex justify-content-end align-items-center gap-3">
+            <span>@actualPage - @TotalPages de @TotalPages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextPage" disabled="@(!CanGoNext)">
+                    &gt;
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Object Variables
+    private List<StackPackage> stacksPackages = new();
+    private List<StackPackage> paginatedPackages = new();
+
+    private IEnumerable<StackPackage> FilteredPackages
+    {
+        get
+        {
+            var filtered = string.IsNullOrWhiteSpace(searchTerm)
+                ? stacksPackages
+                : stacksPackages.Where(sp => sp.Stack?.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
+
+            if (currentSortColumn == "Name")
+            {
+                filtered = isNameAscending
+                    ? filtered.OrderBy(sp => sp.Stack?.Name)
+                    : filtered.OrderByDescending(sp => sp.Stack?.Name);
+            }
+
+            return filtered;
+        }
+    }
+
+    private IEnumerable<StackPackage> PaginatedPackages =>
+        FilteredPackages
+        .Skip((actualPage - 1) * packagesPerPage)
+        .Take(packagesPerPage);
+
+    // Integer Variables
+    private int actualPage = 1;
+    private int packagesPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)(string.IsNullOrWhiteSpace(searchTerm) ? 
+    stacksPackages.Count : FilteredPackages.Count()) / packagesPerPage);
+
+    // String Variables
+    private string currentSortColumn = "Name";
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                actualPage = 1;
+            }
+        }
+    }
+
+    // Boolean Variables
+    private bool isNameAscending = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        stacksPackages = await context.StackPackages
+            .Include(sp => sp.Stack)
+            .Include(sp => sp.Package)
+            .ToListAsync();
+
+        UpdatePage();
+    }
+
+    private void NavigateToAdd()
+    {
+        NavigationManager.NavigateTo("/managePackages/add");
+    }
+
+    private void NavigateToEdit(int stackId, string packageId)
+    {
+        NavigationManager.NavigateTo($"/managePackages/edit/{stackId}/{packageId}");
+    }
+
+    private void SortByColumn(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            isNameAscending = !isNameAscending;
+        }
+        else
+        {
+            currentSortColumn = columnName;
+            isNameAscending = true;
+        }
+
+        actualPage = 1;
+    }
+
+    private async Task RemoveStack(int stackId, string packageId)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Deseja remover?",
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = true,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = "Cancelar"
+        });
+
+        if (result.IsConfirmed)
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var toRemove = await context.StackPackages
+                .FirstOrDefaultAsync(sp => sp.StackId == stackId && sp.PackageId == packageId);
+
+            if (toRemove != null)
+            {
+                context.StackPackages.Remove(toRemove);
+                await context.SaveChangesAsync();
+                await LoadData();
+            }
+        }
+    }
+
+    private void UpdatePage()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+            actualPage++;
+
+        UpdatePage();
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+            actualPage--;
+
+        UpdatePage();
+    }
+}

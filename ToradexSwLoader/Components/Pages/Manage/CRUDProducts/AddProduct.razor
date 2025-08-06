@@ -1,0 +1,260 @@
+﻿@page "/manageProducts/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Produto</PageTitle>
+
+<div class="custom-container">
+    <div class="page-title d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+            <h3 class="ms-2 mb-0">Adicionar Produto</h3>
+        </div>
+
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-light border border-white border-2"
+                    style="width: 100px;"
+                    @onclick="Cancel">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </button>
+            <button class="btn btn-outline-light border border-white border-2 fs-5"
+                    style="width: 150px;"
+                    @onclick="SaveProduct">
+                <i class="bi bi-floppy"></i> Salvar
+            </button>
+        </div>
+    </div>
+
+    <div class="edit-form mt-4">
+        <div class="d-flex align-items-center gap-3">
+            <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
+                Nome do produto
+                <span style="font-size: 15px;"> (máx. 30 caracteres)</span> :
+            </label>
+            <input type="text" @bind="productName"
+                   class="form-control"
+                   style="font-size: 1.2rem; border: 1px solid grey;" 
+                   maxlength="30"/>
+        </div>
+
+        <br />
+        <h4>Selecionar Dispositivo(s):</h4>
+
+        <div class="table-wrapper">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th style="width: 50%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                   border-right: 1px solid white">Dispositivo</th>
+                        <th style="width: 50%; text-align: center; border-top-right-radius: 5px;">Selecionar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var device in PaginatedDevices)
+                    {
+                        <tr class="table-light" style="height: 60px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                @device.Name
+                            </td>
+                            <td class="text-center align-middle p-0">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@device.Id"
+                                       @onchange="(e => ToggleDevice(e, device))"
+                                       checked="@selectedDevices.Any(d => d.Id == device.Id)" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="sticky-footer-right">
+                <div class="d-flex justify-content-end align-items-center gap-3">
+                    <span>@currentDevicePage - @TotalDevicePages de @TotalDevicePages</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="PrevDevicePage" disabled="@(currentDevicePage == 1)">
+                            &lt;
+                        </button>
+
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="NextDevicePage" disabled="@(currentDevicePage == TotalDevicePages)">
+                            &gt;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Object Variables
+    private List<Device> selectedDevices = new List<Device>();
+
+    private IEnumerable<Device> PaginatedDevices =>
+        FilterService.SelectedDevices
+            .Skip((currentDevicePage - 1) * devicesPerPage)
+            .Take(devicesPerPage);
+
+    // String Variables
+    private string productName = string.Empty;
+
+    // Integer Variables
+    private int currentDevicePage = 1;
+    private int devicesPerPage = 3;
+    private int TotalDevicePages => (int)Math.Ceiling((double)FilterService.SelectedDevices.Count / devicesPerPage);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterService.LoadFilterAsync();
+        selectedDevices = new List<Device>();
+    }
+
+    private void ToggleDevice(ChangeEventArgs e, Device device)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedDevices.Any(d => d.Id == device.Id))
+                selectedDevices.Add(device);
+        }
+        else
+        {
+            selectedDevices.RemoveAll(d => d.Id == device.Id);
+        }
+    }
+
+    private async Task SaveProduct()
+    {
+        if (!ValidateProduct())
+            return;
+
+        if (!ValidateDeviceCount())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await ProductExistsAsync(context))
+        {
+            await ShowProductExistsAlert();
+            return;
+        }
+
+        await AddProductAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageProducts");
+    }
+
+    private bool ValidateProduct()
+    {
+        if (string.IsNullOrWhiteSpace(productName))
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        if (productName.Length > 30)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome do produto deve ter no máximo 30 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidateDeviceCount()
+    {
+        if (selectedDevices.Count < 1)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deve selecionar pelo menos 1 dispositivo!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> ProductExistsAsync(AppDbContext context)
+    {
+        return await context.Products.AnyAsync(p => p.Name.ToLower() == productName.Trim().ToLower());
+    }
+
+    private async Task ShowProductExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Este produto já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private async Task AddProductAsync(AppDbContext context)
+    {
+        var newProduct = new Product
+        {
+            Name = productName,
+            Enabled = true
+        };
+
+        context.Products.Add(newProduct);
+        await context.SaveChangesAsync();
+
+        foreach (var device in selectedDevices)
+        {
+            context.DeviceProducts.Add(new DeviceProduct
+            {
+                ProductId = newProduct.Id,
+                DeviceId = device.Id
+            });
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    private async Task ShowSuccessAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Produto adicionado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageProducts");
+    }
+
+    private void PrevDevicePage()
+    {
+        if (currentDevicePage > 1)
+            currentDevicePage--;
+    }
+
+    private void NextDevicePage()
+    {
+        if (currentDevicePage < TotalDevicePages)
+            currentDevicePage++;
+    }
+}

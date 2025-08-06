@@ -5,7 +5,7 @@ namespace ToradexSwLoader.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions options) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
 
@@ -13,17 +13,20 @@ namespace ToradexSwLoader.Data
         public DbSet<Device> Devices { get; set; }
         public DbSet<Package> Packages { get; set; }
         public DbSet<Fleet> Fleets { get; set; }
-        public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<UserPetrotec> Users { get; set; }
+        public DbSet<Stack> Stacks { get; set; }
+        public DbSet<Pattern> Patterns { get; set; }
+        public DbSet<Entity> Entities { get; set; }
+        public DbSet<GlobalFilterSettings> GlobalFilters { get; set; }
+        public DbSet<UserRole> Roles { get; set; }
         public DbSet<StackPackage> StackPackages { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; } 
         public DbSet<LoginLog> LoginLogs { get; set; }
         public DbSet<DeviceProduct> DeviceProducts { get; set; }
         public DbSet<FinalProduct> FinalProducts { get; set; }
-        public DbSet<Stack> Stacks { get; set; }
-        public DbSet<Pattern> Patterns { get; set; }
         public DbSet<ProductStack> ProductStacks { get; set; }
+        public DbSet<EntityFleet> EntityFleets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +68,19 @@ namespace ToradexSwLoader.Data
                 .HasOne(ps => ps.Stack)
                 .WithMany(s => s.ProductStacks)
                 .HasForeignKey(ps => ps.StackId);
+
+            modelBuilder.Entity<EntityFleet>()
+                .HasKey(ef => new { ef.EntityId, ef.FleetId });
+
+            modelBuilder.Entity<EntityFleet>()
+                .HasOne(ef => ef.Entity)
+                .WithMany(e => e.EntityFleets)
+                .HasForeignKey(ef => ef.EntityId);
+
+            modelBuilder.Entity<EntityFleet>()
+                .HasOne(ef => ef.Fleet)
+                .WithMany(e => e.EntityFleets)
+                .HasForeignKey(ef => ef.FleetId);
 
             base.OnModelCreating(modelBuilder);
         }

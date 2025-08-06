@@ -1,0 +1,303 @@
+﻿@page "/manageEntities/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Entidade</PageTitle>
+
+<div class="custom-container">
+    <div class="page-title d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+            <h3 class="ms-2 mb-0">Adicionar Entidade</h3>
+        </div>
+
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-light border border-white border-2"
+                    style="width: 100px;"
+                    @onclick="Cancel">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </button>
+            <button class="btn btn-outline-light border border-white border-2 fs-5"
+                    style="width: 150px;"
+                    @onclick="SaveEntity">
+                <i class="bi bi-floppy"></i> Salvar
+            </button>
+        </div>
+    </div>
+
+    <div class="edit-form mt-4">
+        <div class="d-flex align-items-center gap-3">
+            <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
+                Nome da Entidade
+                <span style="font-size: 15px;"> (máx. 50 caracteres)</span> :
+            </label>
+            <input type="text" @bind="entityName"
+                   class="form-control"
+                   style="font-size: 1.2rem; border: 1px solid grey;" 
+                   maxlength="50"/>
+        </div>
+        <div class="d-flex align-items-center gap-3 mt-3">
+            <label for="text" class="pb-4" style="font-size: 1.5rem;">Observações</label>
+            <textarea @bind="observations"
+                      class="form-control w-100 mx-auto"
+                      style="font-size: 1.2rem; text-align: center; border: 1px solid grey;"
+                      rows="2"
+                      placeholder="Insira uma observação...">
+            </textarea>
+        </div>
+
+        <br />
+        <h4>Selecionar Frota(s):</h4>
+
+        <div class="w-50">
+            <input type="text" class="form-control" style="border: 1px solid grey;"
+                   placeholder="Pesquisar frota pelo nome..."
+                   @bind="searchTerm" @bind:event="oninput" />
+        </div>
+
+        <div class="table-wrapper">
+            <table class="table mt-3 w-100" style="table-layout: fixed;">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th style="width: 70%; text-align: left; padding-left: 20px;">Frota</th>
+                        <th style="width: 30%; text-align: center;">Selecionar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var fleet in PaginatedFleets)
+                    {
+                        <tr class="table-light" style="height: 50px;">
+                            <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
+                                @fleet.Name
+                            </td>
+                            <td class="text-center align-middle p-0">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@fleet.Id"
+                                       @onchange="(e => ToggleFleet(e, fleet))"
+                                       checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="sticky-footer-right">
+                <div class="d-flex justify-content-end align-items-center gap-3">
+                    <span>@currentFleetPage - @TotalFleetPages de @TotalFleetPages</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary"
+                                @onclick="PrevFleetPage"
+                                disabled="@(currentFleetPage == 1)">
+                            &lt;
+                        </button>
+                        <button class="btn btn-outline-secondary"
+                                @onclick="NextFleetPage"
+                                disabled="@(currentFleetPage == TotalFleetPages)">
+                            &gt;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Object Variables
+    private List<Fleet> fleets = new List<Fleet>();
+    private List<Fleet> selectedFleets = new List<Fleet>();
+
+    private IEnumerable<Fleet> FilteredFleets =>
+    string.IsNullOrWhiteSpace(searchTerm)
+        ? fleets
+        : fleets.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<Fleet> PaginatedFleets =>
+    FilteredFleets
+        .Skip((currentFleetPage - 1) * fleetsPerPage)
+        .Take(fleetsPerPage);
+
+    // String Variables
+    private string entityName = string.Empty;
+    private string observations = string.Empty;
+
+    private string _searchTerm = string.Empty;
+    private string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+                currentFleetPage = 1;
+            }
+        }
+    }
+
+    // Integer Variables
+    private int currentFleetPage = 1;
+    private int fleetsPerPage = 3;
+    private int TotalFleetPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        fleets = await context.Fleets.ToListAsync();
+    }
+
+    private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
+    {
+        var isChecked = e.Value is bool b && b;
+
+        if (isChecked)
+        {
+            if (!selectedFleets.Any(f => f.Id == fleet.Id))
+                selectedFleets.Add(fleet);
+        }
+        else
+        {
+            selectedFleets.RemoveAll(f => f.Id == fleet.Id);
+        }
+    }
+
+    private async Task SaveEntity()
+    {
+        if (!ValidateEntityName())
+            return;
+
+        if (!ValidateFleetCount())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await EntityExistsAsync(context))
+        {
+            await ShowEntityExistsAlert();
+            return;
+        }
+
+        await AddEntityAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageEntities");
+    }
+
+    private bool ValidateEntityName()
+    {
+        if (string.IsNullOrWhiteSpace(entityName))
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        if (entityName.Length > 50)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome da entidade deve ter no máximo 50 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidateFleetCount()
+    {
+        if (selectedFleets.Count < 1)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deve selecionar pelo menos 1 frota!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> EntityExistsAsync(AppDbContext context)
+    {
+        return await context.Entities.AnyAsync(e => e.Name.ToLower() == entityName.Trim().ToLower());
+    }
+
+    private async Task ShowEntityExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Esta entidade já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private async Task AddEntityAsync(AppDbContext context)
+    {
+        var newEntity = new Entity
+        {
+            Name = entityName,
+            Observation = observations,
+            Enabled = true
+        };
+
+        context.Entities.Add(newEntity);
+        await context.SaveChangesAsync();
+
+        foreach (var fleet in fleets)
+        {
+            context.EntityFleets.Add(new EntityFleet
+            {
+                EntityId = newEntity.Id,
+                FleetId = fleet.Id
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        newEntity.EntityFleets = fleets.Select(f => new EntityFleet
+        {
+            EntityId = newEntity.Id,
+            FleetId = f.Id,
+            Fleet = f
+        }).ToList();
+    }
+
+    private async Task ShowSuccessAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Entidade adicionada com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageEntities");
+    }
+
+    private void PrevFleetPage()
+    {
+        if (currentFleetPage > 1)
+            currentFleetPage--;
+    }
+
+    private void NextFleetPage()
+    {
+        if (currentFleetPage < TotalFleetPages)
+            currentFleetPage++;
+    }
+}

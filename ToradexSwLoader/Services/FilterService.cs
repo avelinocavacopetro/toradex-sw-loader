@@ -20,6 +20,7 @@ namespace ToradexSwLoader.Services
         public List<Device> SelectedDevices { get; private set; } = new List<Device>();
         public List<Stack> SelectedStacks { get; private set; } = new List<Stack>();
         public List<Pattern> SelectedPatterns { get; private set; } = new List<Pattern>();
+        public List<Entity> SelectedEntities { get; private set; } = new List<Entity>();
 
         public FilterService(IDbContextFactory<AppDbContext> contextFactory)
         {
@@ -28,6 +29,11 @@ namespace ToradexSwLoader.Services
 
         public async Task LoadFilterAsync()
         {
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
             using var context = _contextFactory.CreateDbContext();
             var filter = await context.GlobalFilters.FirstOrDefaultAsync();
             if(filter != null)
@@ -39,21 +45,24 @@ namespace ToradexSwLoader.Services
 
                 SelectedFleets = string.IsNullOrWhiteSpace(filter.SelectedFleetsJson)
                                  ? new List<Fleet>()
-                                 : JsonSerializer.Deserialize<List<Fleet>>(filter.SelectedFleetsJson) ?? new List<Fleet>();
+                                 : JsonSerializer.Deserialize<List<Fleet>>(filter.SelectedFleetsJson, options) ?? new List<Fleet>();
 
                 SelectedProducts = string.IsNullOrWhiteSpace(filter.SelectedProductsJson)
                                  ? new List<Product>()
-                                 : JsonSerializer.Deserialize<List<Product>>(filter.SelectedProductsJson) ?? new List<Product>();
+                                 : JsonSerializer.Deserialize<List<Product>>(filter.SelectedProductsJson, options) ?? new List<Product>();
 
                 SelectedDevices = string.IsNullOrWhiteSpace(filter.SelectedDevicesJson)
                                  ? new List<Device>()
-                                 : JsonSerializer.Deserialize<List<Device>>(filter.SelectedDevicesJson) ?? new List<Device>();
+                                 : JsonSerializer.Deserialize<List<Device>>(filter.SelectedDevicesJson, options) ?? new List<Device>();
                 SelectedStacks = string.IsNullOrWhiteSpace(filter.SelectedStacksJson)
                                  ? new List<Stack>()
-                                 : JsonSerializer.Deserialize<List<Stack>>(filter.SelectedStacksJson) ?? new List<Stack>();
+                                 : JsonSerializer.Deserialize<List<Stack>>(filter.SelectedStacksJson, options) ?? new List<Stack>();
                 SelectedPatterns = string.IsNullOrWhiteSpace(filter.SelectedPatternsJson)
                                  ? new List<Pattern>()
-                                 : JsonSerializer.Deserialize<List<Pattern>>(filter.SelectedPatternsJson) ?? new List<Pattern>();
+                                 : JsonSerializer.Deserialize<List<Pattern>>(filter.SelectedPatternsJson, options) ?? new List<Pattern>();
+                SelectedEntities = string.IsNullOrWhiteSpace(filter.SelectedEntitiesJson)
+                                 ? new List<Entity>()
+                                 : JsonSerializer.Deserialize<List<Entity>>(filter.SelectedEntitiesJson, options) ?? new List<Entity>();
             }
         }
         
@@ -67,19 +76,32 @@ namespace ToradexSwLoader.Services
                 context.GlobalFilters.Add(filter);
             }
 
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                WriteIndented = false
+            };
+
             filter.OnlineTime = OnlineTime;
             filter.RefreshTime = RefreshTime;
             filter.SelectedPackage = SelectedPackage;
             filter.Version = Version;
-            filter.SelectedFleetsJson = JsonSerializer.Serialize(SelectedFleets);
-            filter.SelectedProductsJson = JsonSerializer.Serialize(SelectedProducts);
-            filter.SelectedDevicesJson = JsonSerializer.Serialize(SelectedDevices);
-            filter.SelectedStacksJson = JsonSerializer.Serialize(SelectedStacks);
-            filter.SelectedPatternsJson = JsonSerializer.Serialize(SelectedPatterns);
+            filter.SelectedFleetsJson = JsonSerializer.Serialize(SelectedFleets, options);
+            filter.SelectedProductsJson = JsonSerializer.Serialize(SelectedProducts, options);
+            filter.SelectedDevicesJson = JsonSerializer.Serialize(SelectedDevices, options);
+            filter.SelectedStacksJson = JsonSerializer.Serialize(SelectedStacks, options);
+            filter.SelectedPatternsJson = JsonSerializer.Serialize(SelectedPatterns, options);
+            filter.SelectedEntitiesJson = JsonSerializer.Serialize(SelectedEntities, options);
             filter.LastUpdated = DateTime.Now;
 
             await context.SaveChangesAsync();
             OnFilterChanged?.Invoke();
+        }
+
+        private async Task ApplyFilterAsync<T>(Action<List<T>> setFilter, List<T> value)
+        {
+            setFilter(value);
+            await SaveFilterAsync();
         }
 
         public async Task ApplyPackageFilter(string? name, string? version)
@@ -89,34 +111,23 @@ namespace ToradexSwLoader.Services
             await SaveFilterAsync();
         }
 
-        public async Task ApplyFleetFilter(List<Fleet> fleetNames)
-        {
-            SelectedFleets = fleetNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyFleetFilter(List<Fleet> fleets) =>
+            ApplyFilterAsync(f => SelectedFleets = f, fleets);
 
-        public async Task ApplyProductsFilter(List<Product> productsNames)
-        {
-            SelectedProducts = productsNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyProductsFilter(List<Product> products) =>
+            ApplyFilterAsync(p => SelectedProducts = p, products);
 
-        public async Task ApplyDevicesFilter(List<Device> devicesNames)
-        {
-            SelectedDevices = devicesNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyDevicesFilter(List<Device> devices) =>
+            ApplyFilterAsync(d => SelectedDevices = d, devices);
 
-        public async Task ApplyStacksFilter(List<Stack> stacksNames)
-        {
-            SelectedStacks = stacksNames;
-            await SaveFilterAsync();
-        }
-        public async Task ApplyPatternsFilter(List<Pattern> patternsNames)
-        {
-            SelectedPatterns = patternsNames;
-            await SaveFilterAsync();
-        }
+        public Task ApplyStacksFilter(List<Stack> stacks) =>
+            ApplyFilterAsync(s => SelectedStacks = s, stacks);
+
+        public Task ApplyPatternsFilter(List<Pattern> patterns) =>
+            ApplyFilterAsync(p => SelectedPatterns = p, patterns);
+
+        public Task ApplyEntitiesFilter(List<Entity> entities) =>
+            ApplyFilterAsync(e => SelectedEntities = e, entities);
 
         public async Task ApplyTimeFilter(int newTime)
         {

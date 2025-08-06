@@ -1,0 +1,215 @@
+﻿@page "/updateVersion/{deviceUuid}"
+
+@rendermode InteractiveServer
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject TorizonService TorizonService
+@inject LoginService LoginService
+@inject FilterService FilterService
+@inject NavigationManager UriHelper
+@inject SweetAlertService Swal
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<PageTitle>Atualizar Versão</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="custom-container d-flex flex-column">
+        <a href="#"
+           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+           class="text-black"
+           style="cursor: @(isLoading ? "default" : "pointer");">
+            <i class="bi bi-arrow-left fs-1"></i>
+        </a>
+
+        <h3 class="text-center pb-5">Atualizar Versão</h3>
+
+        @if (selectedDevice?.Packages?.Any() == true)
+        {
+            <table class="table mt-3 w-100">
+                <thead style="background-color: #0c6527; color: white;">
+                    <tr>
+                        <th style="width: 50%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">Nome</th>
+                        <th style="width: 50%; text-align: center; border-top-right-radius: 5px;">Versão</th>
+                    </tr>
+                </thead>
+                <tbody style="height: 60px;">
+                    <tr>
+                        <td style="width: 50%; padding-left: 20px; vertical-align: middle;">@installedPackageName</td>
+                        <td style="width: 50%; vertical-align: middle; text-align: center;">
+                            <select @bind="selectedVersion">
+                                @foreach (var stack in filteredPackages)
+                                {
+                                    <option value="@stack?.Package?.Version">@stack?.Package?.Version</option>
+                                }
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-danger text-center">Não foram encontrados pacotes para este dispositivo.</p>
+        }
+
+        <div class="text-center fixed-bottom pb-5">
+            <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Atualizar</button>
+        </div>
+    </div>
+}
+
+@code {
+    // Object Variables
+    private DetailedDevice? selectedDevice = new();
+    private List<StackPackage> filteredPackages = new();
+    private List<StackPackage> stacksPackages = new();
+
+    // String Variables
+    [Parameter]
+    public string? deviceUuid { get; set; }
+    private string? devicePackage;
+    private string? selectedVersion;
+    private string? installedPackageName;
+
+    // Boolean Variables
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await TorizonService.AuthenticateAsync())
+        {
+            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
+            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+
+            if (selectedDevice == null)
+            {
+                Console.WriteLine("Dispositivo não encontrado.");
+                isLoading = false;
+                return;
+            }
+
+            if (selectedDevice.Packages?.Count > 1)
+            {
+                var fullName = selectedDevice.Packages[1].Name;
+
+                var lastDashIndex = fullName.LastIndexOf('-');
+                if (lastDashIndex > 0 && lastDashIndex < fullName.Length - 1)
+                {
+                    installedPackageName = fullName.Substring(0, lastDashIndex);
+                    selectedVersion = fullName.Substring(lastDashIndex + 1);
+                }
+                else
+                {
+                    installedPackageName = fullName;
+                    selectedVersion = "unknown";
+                }
+            }
+
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            stacksPackages = await context.StackPackages
+                .Include(pp => pp.Package)
+                .ToListAsync();
+
+            filteredPackages = stacksPackages
+                .Where(sp => sp?.Package?.Name == installedPackageName)
+                .OrderByDescending(sp => sp?.Package?.Version)
+                .ToList();
+
+            await FilterService.LoadFilterAsync();
+
+            isLoading = false;
+        }
+    }
+
+    private async Task OnClick()
+    {
+        devicePackage = installedPackageName + "-" + selectedVersion;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (selectedVersion != null)
+        {
+            var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deseja continuar?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
+
+            if (result.IsConfirmed)
+            {
+                var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Selecionou a versão: {selectedVersion} para a placa {selectedDevice?.DeviceName}",
+                    ActType = "Manutenção",
+                    ActTimeStamp = DateTime.Now
+                };
+
+                var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == devicePackage);
+
+                var deviceDto = new DeviceDTO
+                {
+                    PackageIds = new List<string> { devicePackage },
+                    Devices = new List<string> {deviceUuid.ToString()},
+                };
+
+                var response = await TorizonService.SendUpdateAsync(deviceDto);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    context.UserActivities.Add(userAct);
+                    await context.SaveChangesAsync();
+
+                    await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Versão atualizada com sucesso!",
+                        Icon = SweetAlertIcon.Success,
+                        ConfirmButtonColor = "#0B5120"
+                    });
+
+                    UriHelper.NavigateTo("/home");
+                }
+                else
+                {
+                    await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Erro ao atualizar versão",
+                        Icon = SweetAlertIcon.Warning,
+                        Text = $"{response.StatusCode}",
+                        ConfirmButtonColor = "#0B5120"
+                    });
+
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
+                    Console.WriteLine($"Conteúdo do erro: {errorContent}");
+                }
+            }
+        }
+        else
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Selecione um software!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120",
+            });
+        }
+    }
+}

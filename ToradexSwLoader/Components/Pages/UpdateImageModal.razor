@@ -1,0 +1,215 @@
+﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject TorizonService TorizonService
+@inject LoginService LoginService
+@inject FilterService FilterService
+@inject SweetAlertService Swal
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<PageTitle>Selecionar Pacote</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <table class="table mt-3 w-100">
+        <thead style="background-color: #0c6527; color: white;">
+            <tr>
+                <th style="width: 60%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">Nome</th>
+                <th style="width: 40%; border-top-right-radius: 5px; text-align: center;">Versão</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var package in paginatedPackages)
+            {
+                if (package?.Package != null)
+                {
+                    <tr @onclick="() => SelectRow(package.Package)">
+                        <td title="@package.Package.Name" style="width: 60%; padding-left: 20px;">
+                            @package.Package.Name
+                        </td>
+                        <td style="width: 40%; text-align: center;">@package.Package.Version</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex justify-content-end pe-lg-0">
+        <div class="d-flex justify-content-between align-items-center gap-3 ms-auto">
+            <span>@actualPage - @TotalPages de @TotalPages</span>
+            <div class="d-flex gap-2">
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                    &lt;
+                </button>
+
+                <button class="btn custom-outline-button btn-lg"
+                        @onclick="NextPage" disabled="@(!CanGoNext)">
+                    &gt;
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Parameters
+    [Parameter]
+    public string? DeviceUuid { get; set; }
+
+    [Parameter] 
+    public EventCallback OnCloseModal { get; set; }
+
+    // Object Variables
+    private DetailedDevice? selectedDevice = new();
+    private Package? selectedPackage;
+    private List<StackPackage> paginatedPackages = new();
+    private List<StackPackage> stacksPackages = new();
+
+    // Integer Variables
+    private int actualPage = 1;
+    private int packagesPerPage = 8;
+    private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
+
+    // Boolean Variables
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await TorizonService.AuthenticateAsync())
+        {
+            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{DeviceUuid}";
+            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+
+            stacksPackages = await context.StackPackages
+                .Include(pp => pp.Package)
+                .ToListAsync();
+
+            await FilterService.LoadFilterAsync();
+
+            UpdatePage();
+
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectRow(Package package)
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        selectedPackage = package;
+
+        if (selectedPackage != null)
+        {
+            var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deseja continuar?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
+
+            if (result.IsConfirmed)
+            {
+                var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Selecionou o software: Nome: {selectedPackage.Name} | Versão: {selectedPackage.Version} para a placa {selectedDevice?.DeviceName}",
+                    ActType = "Manutenção",
+                    ActTimeStamp = DateTime.Now
+                };
+
+                var deviceDto = new DeviceDTO
+                {
+                    PackageIds = new List<string> { selectedPackage.Id.ToString() },
+                    Devices = new List<string> { DeviceUuid.ToString() },
+                };
+
+                var response = await TorizonService.SendUpdateAsync(deviceDto);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    context.UserActivities.Add(userAct);
+                    await context.SaveChangesAsync();
+
+                    await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Pedido efetuado com sucesso!",
+                        Icon = SweetAlertIcon.Success,
+                        ConfirmButtonColor = "#0B5120"
+                    });
+
+                    if (OnCloseModal.HasDelegate)
+                        await OnCloseModal.InvokeAsync();
+                }
+                else
+                {
+                    await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Erro ao efetuar pedido",
+                        Icon = SweetAlertIcon.Warning,
+                        Text = $"{response.StatusCode}",
+                        ConfirmButtonColor = "#0B5120"
+                    });
+
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
+                    Console.WriteLine($"Conteúdo do erro: {errorContent}");
+                }
+            }
+        }
+        else
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Selecione um software!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120",
+            });
+        }
+    }
+
+    private void UpdatePage()
+    {
+        paginatedPackages = stacksPackages
+                                 .Skip((actualPage - 1) * packagesPerPage)
+                                 .Take(packagesPerPage)
+                                 .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+}

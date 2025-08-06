@@ -22,6 +22,8 @@ namespace ToradexSwLoader.Models
         [Required]
         public DateTime CreatedAt { get; set; }
 
+        public DateTime? LastSeen { get; set; }
+
         [ForeignKey("Device")]
         public int DeviceId { get; set; }
         public Device? Device { get; set; }

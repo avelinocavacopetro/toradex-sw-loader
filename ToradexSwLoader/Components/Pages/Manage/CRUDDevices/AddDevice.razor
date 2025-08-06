@@ -1,0 +1,136 @@
+﻿@page "/manageDevices/add"
+
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+
+<PageTitle>Adicionar Dispositivo</PageTitle>
+
+<div class="custom-container">
+    <div class="page-title d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
+            <h3 class="ms-2 mb-0">Adicionar Dispositivo</h3>
+        </div>
+
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-light border border-white border-2"
+                    style="width: 100px;"
+                    @onclick="Cancel">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </button>
+            <button class="btn btn-outline-light border border-white border-2 fs-5"
+                    style="width: 150px;"
+                    @onclick="SaveDevice">
+                <i class="bi bi-floppy"></i> Salvar
+            </button>
+        </div>
+    </div>
+
+    <div class="edit-form mt-4">
+        <div class="d-flex align-items-center gap-3">
+            <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
+                Nome do Dispositivo
+                <span style="font-size: 15px;"> (máx. 30 caracteres)</span> :
+            </label>
+            <input type="text" @bind="deviceName"
+                   class="form-control"
+                   style="font-size: 1.2rem; border: 1px solid grey;"
+                   maxlength="30"/>
+        </div>
+    </div>
+</div>
+
+@code {
+    // String Variables
+    private string deviceName = string.Empty;
+
+    private async Task SaveDevice()
+    {
+        if (!ValidateDeviceName())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await DeviceExistsAsync(context))
+        {
+            await ShowDeviceExistsAlert();
+            return;
+        }
+
+        await AddDeviceAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageDevices");
+    }
+
+    private bool ValidateDeviceName()
+    {
+        if (string.IsNullOrWhiteSpace(deviceName))
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Por favor insira um nome válido!",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        if (deviceName.Length > 30)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome do dispositivo deve ter no máximo 30 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> DeviceExistsAsync(AppDbContext context)
+    {
+        return await context.Devices
+            .AnyAsync(d => d.Name.ToLower() == deviceName.Trim().ToLower());
+    }
+
+    private async Task ShowDeviceExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Este dispositivo já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private async Task AddDeviceAsync(AppDbContext context)
+    {
+        var newDevice = new Device
+        {
+            Name = deviceName.Trim(),
+            Enabled = true
+        };
+
+        context.Devices.Add(newDevice);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task ShowSuccessAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Dispositivo adicionado com sucesso!",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/manageDevices");
+    }
+}

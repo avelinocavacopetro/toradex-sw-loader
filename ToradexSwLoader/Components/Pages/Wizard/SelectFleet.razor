@@ -1,0 +1,169 @@
+@page "/selectFleet/{deviceId:int}/{productId:int}/{stackId:int}/{packageId}"
+
+@rendermode InteractiveServer
+@inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime JS
+@inject TorizonService TorizonService
+@inject FleetService FleetService
+@inject NavigationManager UriHelper
+@inject SweetAlertService Swal
+@inject LoginService LoginService
+@inject FilterService FilterService
+
+<PageTitle>Selecionar Frota</PageTitle>
+
+@if (isLoading)
+{
+    <div class="center">
+        <div class="text-center mt-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">A carregar...</span>
+            </div>
+            <p class="mt-3">A carregar...</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="custom-container d-flex flex-column">
+        <a href="#"
+           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+           class="text-black"
+           style="cursor: @(isLoading ? "default" : "pointer");">
+            <i class="bi bi-arrow-left fs-1"></i>
+        </a>
+
+        <h3 class="text-center pb-5">Selecionar Frota</h3>
+
+        @if(paginatedFleets == null)
+        {
+            <p>Não existem frotas disponiveis no momento.</p>
+        } 
+        else
+        {
+            <div class="grid-container">
+                @foreach (var fleet in paginatedFleets)
+                {
+                    <div class="grid-item" @onclick="() => SelectFleetName(fleet)">
+                        @fleet.Name
+                    </div>
+                }
+            </div>
+
+            <div class="sticky-footer-right">
+                <div class="d-flex align-items-center gap-3 justify-content-end">
+                    <span>@actualPage - @TotalPages de @TotalPages</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="PrevPage" disabled="@(!CanGoPrev)">
+                            &lt;
+                        </button>
+
+                        <button class="btn custom-outline-button btn-lg"
+                                @onclick="NextPage" disabled="@(!CanGoNext)">
+                            &gt;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    // Parameters
+    [Parameter]
+    public int deviceId { get; set; }
+
+    [Parameter]
+    public int stackId { get; set; }
+
+    [Parameter]
+    public int productId { get; set; }
+
+    [Parameter]
+    public string packageId { get; set; } = string.Empty;
+
+    // Object Variables
+    private Device? selectedDevice;
+    private Stack? selectedStack;
+    private Product? selectedProduct;
+    private Fleet? selectedFleet;
+    private List<Fleet> fleets = new();
+    private List<Fleet> paginatedFleets = new();
+    
+    // Integer Variables
+    private int actualPage = 1;
+    private int fleetsPerPage = 8;
+    private int TotalPages => (int)Math.Ceiling((double)fleets.Count / fleetsPerPage);
+
+    // Boolean Variables
+    private bool isLoading = false;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbContextFactory.CreateDbContext();
+        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
+
+        fleets = new List<Fleet>(FilterService.SelectedFleets);
+
+        UpdatePage();
+        isLoading = false;
+    }
+
+    private async void SelectFleetName(Fleet fleet)
+    {
+        selectedFleet = fleet;
+        await OnClick();
+    }
+
+    private async Task OnClick()
+    {
+        if (selectedFleet != null)
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var userAct = new UserActivity
+            {
+                UserId = LoginService.UserId,
+                ActMessage = $"Selecionou a frota: Nome: {selectedFleet.Name}",
+                ActTimeStamp = DateTime.Now
+            };
+
+            context.UserActivities.Add(userAct);
+            await context.SaveChangesAsync();
+
+            UriHelper.NavigateTo($"/selectBoard/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
+            
+        }
+    }
+
+    private void UpdatePage()
+    {
+        paginatedFleets = fleets
+                              .Skip((actualPage - 1) * fleetsPerPage)
+                              .Take(fleetsPerPage)
+                              .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (CanGoNext)
+        {
+            actualPage++;
+            UpdatePage();
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (CanGoPrev)
+        {
+            actualPage--;
+            UpdatePage();
+        }
+    }
+}
