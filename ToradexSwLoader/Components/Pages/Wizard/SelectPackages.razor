@@ -3,7 +3,6 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
-@inject PackageService PackageService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
@@ -45,16 +44,27 @@ else
                 </tr>
             </thead>
             <tbody style="height: 60px;">
-                @foreach (var package in paginatedPackages)
+                @if (paginatedPackages is null || !paginatedPackages.Any())
                 {
-                    if (package?.Package != null)
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                            Sem dados disponíveis
+                        </td>
+                    </tr>
+                }
+                else 
+                {
+                    @foreach (var package in paginatedPackages)
                     {
-                        <tr class="@GetRowClass(package.Package)" @onclick="() => SelectRow(package.Package)">
-                            <td title="@package.Package.Name" style="vertical-align: middle; padding-left: 20px;">
-                                @package.Package.Name
-                            </td>
-                            <td style="text-align: center; vertical-align: middle;">@package.Package.Version</td>
-                        </tr>
+                        if (package?.Package != null)
+                        {
+                            <tr @onclick="() => SelectRow(package.Package)">
+                                <td title="@package.Package.Name" style="vertical-align: middle; padding-left: 20px;">
+                                    @package.Package.Name
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">@package.Package.Version</td>
+                            </tr>
+                        }
                     }
                 }
             </tbody>
@@ -80,27 +90,30 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int deviceId { get; set; }
-    private Device? selectedDevice = new Device();
 
     [Parameter]
     public int productId { get; set; }
-    private Product? selectedProduct = new Product();
 
     [Parameter]
     public int stackId { get; set; }
-    private Stack? selectedStack = new Stack();
 
-    private List<StackPackage> paginatedPackages = new List<StackPackage>();
-    private List<StackPackage> stacksPackages = new List<StackPackage>();
+    // Object Variables
+    private Device? selectedDevice;
+    private Product? selectedProduct;
+    private Stack? selectedStack;
     private Package? selectedPackage;
-    private WindowDimension? dimension;
-
+    private List<StackPackage> paginatedPackages = new();
+    private List<StackPackage> stacksPackages = new();
+    
+    // Integer Variables
     private int actualPage = 1;
     private int packagesPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
 
+    // Boolean Variables
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
@@ -125,25 +138,11 @@ else
         StateHasChanged();
     }
 
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        packagesPerPage = dimension.Width <= 1024 ? 3 : 5;
-
-        UpdatePage();
-        StateHasChanged();
-    }
-
     private async Task SelectRow(Package package)
     {
-        selectedPackage = package;
-
-        await OnClick();
-    }
-
-    private async Task OnClick()
-    {
         using var context = DbContextFactory.CreateDbContext();
+
+        selectedPackage = package;
 
         if (selectedPackage != null)
         {
@@ -169,11 +168,6 @@ else
                 ConfirmButtonColor = "#0B5120",
             });
         }
-    }
-
-    private string GetRowClass(Package package)
-    {
-        return selectedPackage == package ? "table-primary" : string.Empty;
     }
 
     private void UpdatePage()

@@ -42,65 +42,91 @@
 </div>
 
 @code {
+    // String Variables
     private string deviceName = string.Empty;
 
     private async Task SaveDevice()
     {
+        if (!ValidateDeviceName())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await DeviceExistsAsync(context))
+        {
+            await ShowDeviceExistsAlert();
+            return;
+        }
+
+        await AddDeviceAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageDevices");
+    }
+
+    private bool ValidateDeviceName()
+    {
         if (string.IsNullOrWhiteSpace(deviceName))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        if(deviceName.Length > 30)
+        if (deviceName.Length > 30)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Nome muito comprido!",
                 Text = "O nome do dispositivo deve ter no máximo 30 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
-        bool exists = await context.Devices.AnyAsync(d => d.Name.ToLower() == deviceName.Trim().ToLower());
+    private async Task<bool> DeviceExistsAsync(AppDbContext context)
+    {
+        return await context.Devices
+            .AnyAsync(d => d.Name.ToLower() == deviceName.Trim().ToLower());
+    }
 
-        if (exists)
+    private async Task ShowDeviceExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Este dispositivo já existe!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+            Title = "Este dispositivo já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
 
+    private async Task AddDeviceAsync(AppDbContext context)
+    {
         var newDevice = new Device
         {
-            Name = deviceName,
+            Name = deviceName.Trim(),
             Enabled = true
         };
 
         context.Devices.Add(newDevice);
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Dispositivo adicionado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageDevices");
     }
 
     private void Cancel()

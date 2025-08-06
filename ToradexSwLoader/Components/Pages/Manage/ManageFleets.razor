@@ -60,7 +60,7 @@ else
                                 @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
                             </span>
                         </th>
-                        <th style="width: 30%; text-align: center;">Estado</th>
+                        <th style="width: 30%; text-align: center; border-top-right-radius: 5px">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -114,23 +114,12 @@ else
 }
 
 @code {
+    // Object Variables
     private List<Fleet> fleets = new List<Fleet>();
     private List<Fleet> paginatedFleets = new List<Fleet>();
     private List<Fleet> selectedFleets = new List<Fleet>();
-    private WindowDimension? dimension;
 
-    private int actualPage = 1;
-    private int fleetsPerPage = 6;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
-
-    private string currentSortColumn = "Name";
-
-    private bool isNameAscending = true;
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
-    
-    private IEnumerable<Fleet> FilteredFleets 
+    private IEnumerable<Fleet> FilteredFleets
     {
         get
         {
@@ -154,6 +143,14 @@ else
         .Skip((actualPage - 1) * fleetsPerPage)
         .Take(fleetsPerPage);
 
+    // Integer Variables
+    private int actualPage = 1;
+    private int fleetsPerPage = 6;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
+
+    // String Variables
+    private string currentSortColumn = "Name";
+
     private string _searchTerm = string.Empty;
     private string searchTerm
     {
@@ -168,6 +165,12 @@ else
         }
     }
 
+    // Boolean Variables
+    private bool isNameAscending = true;
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
+    
     protected override async Task OnInitializedAsync()
     {
         // await FilterService.LoadFilterAsync();
@@ -209,14 +212,6 @@ else
         {
             selectedFleets.RemoveAll(f => f.Id == fleet.Id);
         }
-    }
-
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-
-        UpdatePage();
-        StateHasChanged();
     }
 
     private async Task SaveFleetFilter()

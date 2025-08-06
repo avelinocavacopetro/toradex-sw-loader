@@ -127,6 +127,44 @@ namespace ToradexSwLoader.Services
             return result;
         }
 
+        public async Task<SessionSsh?> GetSessionSshAsync(string url)
+        {
+            var response = await _httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+
+            if (!root.TryGetProperty("ssh", out var sshElement))
+                return null;
+
+            var authorizedPubKeys = new List<string>();
+            if (sshElement.TryGetProperty("authorizedPubKeys", out var keysElement) && keysElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var key in keysElement.EnumerateArray())
+                {
+                    authorizedPubKeys.Add(key.GetString() ?? string.Empty);
+                }
+            }
+
+            var reversePort = sshElement.GetProperty("reversePort").GetInt32();
+            var raServerUrl = sshElement.GetProperty("raServerUrl").GetString() ?? string.Empty;
+            var raServerSshPubKey = sshElement.GetProperty("raServerSshPubKey").GetString() ?? string.Empty;
+            var expiresAt = sshElement.GetProperty("expiresAt").GetDateTime();
+
+            return new SessionSsh
+            {
+                AuthorizedPubKeys = authorizedPubKeys,
+                ReversePort = reversePort,
+                RaServerUrl = raServerUrl,
+                RaServerSshPubKey = raServerSshPubKey,
+                ExpiresAt = expiresAt
+            };
+        }
+
         public async Task ChangeSecretAndSave(string newSecret)
         {
             try

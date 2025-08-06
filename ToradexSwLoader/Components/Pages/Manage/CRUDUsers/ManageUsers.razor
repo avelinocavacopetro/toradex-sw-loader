@@ -71,10 +71,10 @@ else
                         @foreach (var user in PaginatedUsers)
                         {
                             <tr class="table-light" style="height: 50px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px; font-weight: 500;">
+                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
                                     @user.UserName
                                 </td>
-                                <td style="text-align: center; vertical-align: middle; font-weight: 500;">
+                                <td style="text-align: center; vertical-align: middle;">
                                     @user.Email
                                 </td>
                                 <td class="text-center align-middle">
@@ -135,24 +135,6 @@ else
             </div>
         </div>
     </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 <style>
@@ -178,23 +160,23 @@ else
 </style>
 
 @code {
-    private List<UserPetrotec> users = new List<UserPetrotec>();
-    private List<UserPetrotec> paginatedUsers = new List<UserPetrotec>();
-    private List<UserRole> roles = new List<UserRole>();
-    private WindowDimension dimension = new WindowDimension();
+    // Object Variables
+    private List<UserPetrotec> users = new();
+    private List<UserPetrotec> paginatedUsers = new();
+    private List<UserRole> roles = new();
 
+    private IEnumerable<UserPetrotec> FilteredUsers =>
+    string.IsNullOrWhiteSpace(searchTerm)
+        ? users
+        : users.Where(u => u.UserName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<UserPetrotec> PaginatedUsers =>
+    FilteredUsers
+        .Skip((actualPage - 1) * usersPerPage)
+        .Take(usersPerPage);
+
+    // String Variables
     private string userName = string.Empty;
-
-    private int actualPage = 1;
-    private int usersPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredUsers.Count() / usersPerPage);
-
-    private int? editingUserId = null; 
-    private int? selectedRoleId = null;
-
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
 
     private string _searchTerm = string.Empty;
     private string searchTerm
@@ -210,23 +192,17 @@ else
         }
     }
 
-    private IEnumerable<UserPetrotec> FilteredUsers =>
-    string.IsNullOrWhiteSpace(searchTerm)
-        ? users
-        : users.Where(u => u.UserName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    // Integer Variables
+    private int actualPage = 1;
+    private int usersPerPage = 5;
+    private int TotalPages => (int)Math.Ceiling((double)FilteredUsers.Count() / usersPerPage);
+    private int? editingUserId = null; 
+    private int? selectedRoleId = null;
 
-    private IEnumerable<UserPetrotec> PaginatedUsers =>
-    FilteredUsers
-        .Skip((actualPage - 1) * usersPerPage)
-        .Take(usersPerPage);
-
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-
-        UpdatePage();
-        StateHasChanged();
-    }
+    // Boolean Variables
+    private bool isLoading = true;
+    private bool CanGoNext => actualPage < TotalPages;
+    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -286,48 +262,6 @@ else
             StateHasChanged();
         }
     }
-
-    // private void EditRole(UserPetrotec user)
-    // {
-    //     editingUserId = user.Id;
-    //     selectedRoleId = user.UserRole?.Id ?? roles.FirstOrDefault()?.Id;
-    // }
-
-    // private async Task SaveRole(int userId)
-    // {
-    //     if (selectedRoleId == null)
-    //         return;
-
-    //     using var context = DbContextFactory.CreateDbContext();
-
-    //     var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-    //     if (user != null)
-    //     {
-    //         user.UserRoleId = selectedRoleId.Value;
-    //         await context.SaveChangesAsync();
-
-    //         var localUser = users.FirstOrDefault(u => u.Id == userId);
-    //         if (localUser != null)
-    //         {
-    //             localUser.UserRole = roles.FirstOrDefault(r => r.Id == selectedRoleId.Value);
-    //         }
-
-    //         editingUserId = null;
-    //         selectedRoleId = null;
-
-    //         await Swal.FireAsync(new SweetAlertOptions
-    //          {
-    //              Title = "Utilizador atualizado com sucesso!",
-    //              Icon = SweetAlertIcon.Success,
-    //              ConfirmButtonColor = "#0B5120"
-    //          });
-    //     }
-    // }
-
-    // private void CancelEdit()
-    // {
-    //     editingUserId = null;
-    // }
 
     private void UpdatePage()
     {

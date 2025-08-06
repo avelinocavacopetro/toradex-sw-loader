@@ -82,13 +82,22 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int UserId { get; set; }
+
+    // Object Variables
     private List<UserRole> roles = new();
+
+    // String Variables
     private string userName = string.Empty;
     private string userEmail = string.Empty;
     private string userPassword = string.Empty;
+
+    // Integer Variables
     private int? selectedRoleId = null;
+
+    // Boolean Variables
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -110,19 +119,70 @@ else
 
     private async Task SaveChanges()
     {
+        if(!ValidateUser())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await ChangeUser(context);
+        await ShowSuccessAlert();    
+        NavigationManager.NavigateTo("/manageUsers");
+    }
+
+    private bool ValidateUser()
+    {
         if (string.IsNullOrWhiteSpace(userName) & string.IsNullOrWhiteSpace(userEmail) & string.IsNullOrWhiteSpace(userPassword))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira dados válidos!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        if (userName.Length > 30)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Nome muito comprido!",
+                Text = "O nome de utilizador deve ter no máximo 30 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
 
+        if (userEmail.Length > 50)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Email muito comprido!",
+                Text = "O email deve ter no máximo 50 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        if (userPassword.Length > 15)
+        {
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Palavra-passe muito comprida!",
+                Text = "A palavra-passe deve ter no máximo 15 caracteres.",
+                Icon = SweetAlertIcon.Warning,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task ChangeUser(AppDbContext context)
+    {
         var userDb = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
         if (userDb == null) return;
 
@@ -132,15 +192,16 @@ else
         userDb.UserRoleId = selectedRoleId.Value;
 
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Utilizador editado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageUsers");
     }
 
     private void Cancel()

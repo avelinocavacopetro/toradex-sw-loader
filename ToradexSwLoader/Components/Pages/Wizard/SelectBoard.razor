@@ -44,23 +44,34 @@ else
                 </tr>
             </thead>
             <tbody style="height: 60px">
-                @foreach (var board in paginatedBoards)
+                @if (paginatedBoards is null || !paginatedBoards.Any())
                 {
-                    <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
-                        <td title="@board.DeviceUuid" style="width: 30%; padding-left: 20px; vertical-align: middle;">
-                            @board.DeviceId
-                        </td>
-                        <td title="@board.DeviceName" style="width: 25%; padding-left: 20px; vertical-align: middle;">
-                            @board.DeviceName
-                        </td>
-                        <td style="width: 15%; vertical-align: middle; text-align: center;">@board.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td style="width: 15%; vertical-align: middle; text-align: center;">
-                            @CheckOnlineStatus(board)
-                        </td>
-                        <td style="width: 15%;">
-                            @GetStatusIcon(board.DeviceStatus)
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
+                            Sem dados disponíveis
                         </td>
                     </tr>
+                }
+                else
+                {
+                    @foreach (var board in paginatedBoards)
+                    {
+                        <tr @onclick="() => SelectRow(board)">
+                            <td title="@board.DeviceUuid" style="width: 30%; padding-left: 20px; vertical-align: middle;">
+                                @board.DeviceId
+                            </td>
+                            <td title="@board.DeviceName" style="width: 25%; padding-left: 20px; vertical-align: middle;">
+                                @board.DeviceName
+                            </td>
+                            <td style="width: 15%; vertical-align: middle; text-align: center;">@board.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="width: 15%; vertical-align: middle; text-align: center;">
+                                @CheckOnlineStatus(board)
+                            </td>
+                            <td style="width: 15%;">
+                                @GetStatusIcon(board.DeviceStatus)
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
@@ -85,6 +96,7 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int deviceId { get; set; }
 
@@ -100,16 +112,19 @@ else
     [Parameter]
     public string fleetId { get; set; } = string.Empty;
 
-    private List<DetailedDevice> boards = new List<DetailedDevice>();
-    private List<DetailedDevice> allBoards = new List<DetailedDevice>();
-    private List<DetailedDevice> paginatedBoards = new List<DetailedDevice>();
-    private List<Pattern> patterns = new List<Pattern>();
-    private DetailedDevice? selectedBoard = new DetailedDevice();
+    // Object Variables
+    private DetailedDevice? selectedBoard;
+    private List<DetailedDevice> boards = new();
+    private List<DetailedDevice> allBoards = new();
+    private List<DetailedDevice> paginatedBoards = new();
+    private List<Pattern> patterns = new();
 
+    // Integer Variables
     private int actualPage = 1;
     private int boardsPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)boards.Count / boardsPerPage);
 
+    // Boolean Variables
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
@@ -119,8 +134,7 @@ else
         using var context = DbContextFactory.CreateDbContext();
         patterns = await context.Patterns.ToListAsync();
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
+        if(await TorizonService.AuthenticateAsync())
         {
             foreach (var pattern in FilterService.SelectedPatterns)
             {
@@ -142,19 +156,9 @@ else
 
     private async Task SelectRow(DetailedDevice board)
     {
-        selectedBoard = board;
-
-        await OnClick();
-    }
-
-    private string GetRowClass(DetailedDevice board)
-    {
-        return selectedBoard == board ? "table-primary" : string.Empty;
-    }
-
-    private async Task OnClick()
-    {
         using var context = DbContextFactory.CreateDbContext();
+
+        selectedBoard = board;
 
         if (selectedBoard != null && !string.IsNullOrEmpty(selectedBoard.DeviceUuid))
         {

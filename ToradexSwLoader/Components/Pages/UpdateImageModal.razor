@@ -1,6 +1,5 @@
 ﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
-@inject PackageService PackageService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
@@ -8,9 +7,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<PageTitle>Atualizar pacote</PageTitle>
-
-<WindowDimensions OnChange="OnDimensionsChanged" />
+<PageTitle>Selecionar Pacote</PageTitle>
 
 @if (isLoading)
 {
@@ -25,8 +22,31 @@
 }
 else
 {
-    <div class="d-flex justify-content-end pe-5">
-        <div class="d-flex justify-content-between align-items-center gap-3">
+    <table class="table mt-3 w-100">
+        <thead style="background-color: #0c6527; color: white;">
+            <tr>
+                <th style="width: 60%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">Nome</th>
+                <th style="width: 40%; border-top-right-radius: 5px; text-align: center;">Versão</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var package in paginatedPackages)
+            {
+                if (package?.Package != null)
+                {
+                    <tr @onclick="() => SelectRow(package.Package)">
+                        <td title="@package.Package.Name" style="width: 60%; padding-left: 20px;">
+                            @package.Package.Name
+                        </td>
+                        <td style="width: 40%; text-align: center;">@package.Package.Version</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex justify-content-end pe-lg-0">
+        <div class="d-flex justify-content-between align-items-center gap-3 ms-auto">
             <span>@actualPage - @TotalPages de @TotalPages</span>
             <div class="d-flex gap-2">
                 <button class="btn custom-outline-button btn-lg"
@@ -41,53 +61,28 @@ else
             </div>
         </div>
     </div>
-
-    <table class="table mt-3 w-100">
-        <thead style="background-color: #0c6527; color: white;">
-            <tr>
-                <th>Nome</th>
-                <th style="text-align: center;">Versão</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var package in paginatedPackages)
-            {
-                if (package?.Package != null)
-                {
-                    <tr class="@GetRowClass(package.Package)" @onclick="() => SelectRow(package.Package)">
-                        <td title="@package.Package.Name" style="word-break: break-word; white-space: normal;">
-                            @package.Package.Name
-                        </td>
-                        <td style="text-align: center;">@package.Package.Version</td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
-
-    <div class="text-center pb-5">
-        <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Atualizar</button>
-    </div>
 }
 
 @code {
+    // Parameters
     [Parameter]
-
     public string? DeviceUuid { get; set; }
+
     [Parameter] 
     public EventCallback OnCloseModal { get; set; }
 
-    private DetailedDevice? selectedDevice = new DetailedDevice();
-
-    private List<StackPackage> paginatedPackages = new List<StackPackage>();
-    private List<StackPackage> stacksPackages = new List<StackPackage>();
+    // Object Variables
+    private DetailedDevice? selectedDevice = new();
     private Package? selectedPackage;
-    private WindowDimension? dimension;
+    private List<StackPackage> paginatedPackages = new();
+    private List<StackPackage> stacksPackages = new();
 
+    // Integer Variables
     private int actualPage = 1;
     private int packagesPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
 
+    // Boolean Variables
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
@@ -96,49 +91,29 @@ else
     {
         using var context = DbContextFactory.CreateDbContext();
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-
-        if (!authOk)
+        if (await TorizonService.AuthenticateAsync())
         {
-            Console.WriteLine("Falha na autenticação.");
+            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{DeviceUuid}";
+            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+
+            stacksPackages = await context.StackPackages
+                .Include(pp => pp.Package)
+                .ToListAsync();
+
+            await FilterService.LoadFilterAsync();
+
+            UpdatePage();
+
             isLoading = false;
-            return;
+            StateHasChanged();
         }
-
-        var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{DeviceUuid}";
-        selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
-
-        stacksPackages = await context.StackPackages
-            .Include(pp => pp.Package)
-            .ToListAsync();
-
-        await FilterService.LoadFilterAsync();
-
-        UpdatePage();
-
-        isLoading = false;
-        StateHasChanged();
-
-        Console.WriteLine($"{selectedDevice.DeviceName}");
     }
 
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        packagesPerPage = dimension.Width <= 1024 ? 3 : 5;
-
-        UpdatePage();
-        StateHasChanged();
-    }
-
-    private void SelectRow(Package package)
-    {
-        selectedPackage = package;
-    }
-
-    private async Task OnClick()
+    private async Task SelectRow(Package package)
     {
         using var context = DbContextFactory.CreateDbContext();
+
+        selectedPackage = package;
 
         if (selectedPackage != null)
         {
@@ -210,11 +185,6 @@ else
                 ConfirmButtonColor = "#0B5120",
             });
         }
-    }
-
-    private string GetRowClass(Package package)
-    {
-        return selectedPackage == package ? "table-primary" : string.Empty;
     }
 
     private void UpdatePage()

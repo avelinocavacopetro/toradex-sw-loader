@@ -64,7 +64,7 @@ else
             </div>
 
             <div class="center-customization" style="min-height: 30vh;">
-                <h4 class="custom-h4 text-center px-5">
+                <h4 class="custom-label text-center px-5">
                     @finalBoard
                     <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
                 </h4>
@@ -91,38 +91,42 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int deviceId { get; set; }
-    private Device? selectedDevice = new Device();
 
     [Parameter]
     public int productId { get; set; }
-    private Product? selectedProduct = new Product();
 
     [Parameter]
     public int stackId { get; set; }
-    private Stack? selectedStack = new Stack();
 
     [Parameter]
     public string packageId { get; set; } = string.Empty;
-    private Package? selectedPackage = new Package();
 
     [Parameter]
     public string fleetId { get; set; } = string.Empty;
-    private Fleet? selectedFleet = new Fleet();
 
     [Parameter]
     public string boardUuid { get; set; } = string.Empty;
-    private DetailedDevice? selectedBoard = new DetailedDevice();
 
+    // Object Variables
+    private Device? selectedDevice = new Device();
+    private Product? selectedProduct = new Product();
+    private Stack? selectedStack = new Stack();
+    private Package? selectedPackage = new Package();
+    private Fleet? selectedFleet = new Fleet();
+    private DetailedDevice? selectedBoard = new DetailedDevice();
     private Package? packageUri = new Package();
 
+    // String Variables
     private string originalFinalBoard = string.Empty;
     private string finalBoard = string.Empty;
     private string editableTag = string.Empty;
     private string notEditable = string.Empty;
     private string serialNumber = string.Empty;
 
+    // Boolean Variables
     private bool isLoading = true;
     private bool isEditing = false;
 
@@ -136,14 +140,12 @@ else
         selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
         selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
 
-        var boardUrl = $"https://app.torizon.io/api/v2beta/devices/{boardUuid}";
-
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
+        if(await TorizonService.AuthenticateAsync())
         {
+            var boardUrl = $"https://app.torizon.io/api/v2beta/devices/{boardUuid}";
             selectedBoard = await TorizonService.GetItemAsync<DetailedDevice>(boardUrl);
 
-            isLoading = false;
+            isLoading = false; 
         }
 
         string[] parts = selectedBoard.DeviceId.Split('-');
@@ -285,8 +287,6 @@ else
             }
         }
     }
-
-
 
     public class JSResult
     {

@@ -56,10 +56,14 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int DeviceId { get; set; }
 
+    // String Variables
     private string deviceName = string.Empty;
+
+    // Boolean Variables
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -77,46 +81,62 @@ else
 
     private async Task SaveChanges()
     {
+        if (!ValidateDeviceName())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await ChangeDevice(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageDevices");
+    }
+
+    private bool ValidateDeviceName()
+    {
         if (string.IsNullOrWhiteSpace(deviceName))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (deviceName.Length > 30)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Nome muito comprido!",
                 Text = "O nome do dispositivo deve ter no máximo 30 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
+    private async Task ChangeDevice(AppDbContext context)
+    {
         var deviceDb = await context.Devices.FirstOrDefaultAsync(d => d.Id == DeviceId);
         if (deviceDb == null) return;
 
         deviceDb.Name = deviceName;
 
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Dispositivo editado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageDevices");
     }
 
     private void Cancel()

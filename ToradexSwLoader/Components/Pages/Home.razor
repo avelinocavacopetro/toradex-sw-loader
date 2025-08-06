@@ -4,6 +4,8 @@
 @inject FinalProductStateService ProductState
 @inject SweetAlertService Swal
 @inject TorizonService TorizonService
+@inject LoginService LoginService
+@inject NavigationManager Navigation
 
 <PageTitle>Página Inicial</PageTitle>
 
@@ -83,13 +85,18 @@ else
 }
 
 @code {
+    // Object Variables
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
     private IReadOnlyList<FinalProduct> finalProducts = new List<FinalProduct>();
 
+    // Boolean Variables
     bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
+        CheckAuthentication();
+        Navigation.LocationChanged += OnLocationChanged;
+
         isLoading = true;
         await LoadProductsFromDb();
 
@@ -103,6 +110,21 @@ else
                 StateHasChanged();
             });
         };
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        CheckAuthentication();
+    }
+
+    private void CheckAuthentication()
+    {
+        var currentUri = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
+
+        if (!LoginService.IsLoggedIn && currentUri != "")
+        {
+            Navigation.NavigateTo("/", true);
+        }
     }
 
     private async Task LoadProductsFromDb()
@@ -127,6 +149,7 @@ else
     public void Dispose()
     {
         ProductState.OnChange -= OnProductsChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 
     private async Task AbortOperation(FinalProduct productToRemove)

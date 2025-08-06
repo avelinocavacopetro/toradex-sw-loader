@@ -70,11 +70,11 @@ else
         </div>
 
         <div class="table-responsive">
-            <table class="table table-custom mt-3" style="min-width: 2200px;">
+            <table class="table table-custom mt-3" style="min-width: 2000px;">
                 <thead>
                     <tr>
-                        <th style="width: 250px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                       border-right: 1px solid white;">ID</th>
+                        <th style="width: 50px; border-top-left-radius: 5px; border-right: 1px solid white;"></th>
+                        <th style="width: 250px; padding-left: 20px; text-align: left; border-right: 1px solid white;">ID</th>
                         <th @onclick="@(() => SortByColumn("DeviceName"))"
                             style="width: 250px; text-align: center; border-right: 1px solid white; cursor: pointer;">
                             Nome
@@ -136,10 +136,8 @@ else
                         @foreach (var device in FilteredDevices)
                         {
                             <tr>
-                                <td style="position: relative; width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                <td style="width: 50px; vertical-align: middle;">
                                     <i @onclick="() => ToggleMenu(device.DeviceId)" class="bi bi-three-dots-vertical px-3" style="font-size: 1.2rem; cursor: pointer;"></i>
-                                    @device.DeviceId
-
                                     @if (openMenuDeviceId == device.DeviceId)
                                     {
                                         <div class="actions-dropdown">
@@ -151,6 +149,9 @@ else
                                             </button>
                                         </div>
                                     }
+                                </td>
+                                <td style="width: 250px; padding-left: 20px; word-break: break-word; white-space: normal; vertical-align: middle;">
+                                    @device.DeviceId
                                 </td>
                                 <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
                                     @device.DeviceName
@@ -178,17 +179,23 @@ else
 
             <Modal @ref="modalSelect" Title="Selecionar Utilizador" IsVerticallyCentered="true" Size="ModalSize.Large">
                 <BodyTemplate>
-                    <SelectUserModel DeviceUuid="@currentDeviceUuid" OnNextModal="NextModal" />
+                    <SelectUserModel DeviceUuid="@currentDeviceUuid" OnNextModal="NextModalAccess" />
                 </BodyTemplate>
             </Modal>
 
             <Modal @ref="modalAcess" Title="Criar sessão de acesso remoto" IsVerticallyCentered="true" Size="ModalSize.Large">
                 <BodyTemplate>
-                    <RemoteAcess DeviceUuid="@currentDeviceUuid" SelectedKey="selectedSshKey" OnCloseModal="CloseModal"/>
+                    <RemoteAcess DeviceUuid="@currentDeviceUuid" SelectedKey="selectedSshKey" OnNextModal="NextModalLink" />
                 </BodyTemplate>
             </Modal>
 
-            <Modal @ref="modalUpdate" Title="Atualizar dispositivo" IsVerticallyCentered="true" Size="ModalSize.Large">
+            <Modal @ref="modalSsh" Title="Visualizar SSH" IsVerticallyCentered="true" Size="ModalSize.Large">
+                <BodyTemplate>
+                    <SshLinkModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal" />
+                </BodyTemplate>
+            </Modal>
+
+            <Modal @ref="modalUpdate" Title="Selecionar Pacote" IsVerticallyCentered="true" Size="ModalSize.Large">
                 <BodyTemplate>
                     <UpdateImageModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal"/>
                 </BodyTemplate>
@@ -198,29 +205,22 @@ else
 }
 
 @code {
-    private List<DetailedDevice> originalDevices = new List<DetailedDevice>();
-    private List<DetailedDevice> devices = new List<DetailedDevice>();
-    private List<Fleet> fleets = new List<Fleet>();
+    // Object Variables
+    private DetailedDevice currentDevice = new();
+    private SshKey selectedSshKey = new();
+    private Modal modalSelect = new();
+    private Modal modalAcess = new();
+    private Modal modalUpdate = new();
+    private Modal modalSsh = new();
+    private List<DetailedDevice> originalDevices = new();
+    private List<DetailedDevice> devices = new();
+    private List<Fleet> fleets = new();
 
-    private DetailedDevice currentDevice;
-    private SshKey selectedSshKey = new SshKey();
-    private Modal? modalSelect;
-    private Modal? modalAcess;
-    private Modal? modalUpdate;
-
+    // String Variables
     private string? openMenuDeviceId = null;
     private string? currentSortColumn = "DeviceName";
     private string? currentDeviceUuid;
-
-    private bool isLoading = true;
-    private bool sortAscending = true;
-
     private string selectedFleetId = string.Empty;
-
-    private IEnumerable<DetailedDevice> FilteredDevices =>
-    string.IsNullOrWhiteSpace(searchTerm)
-        ? devices
-        : devices.Where(d => d.DeviceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
     private string _searchTerm = string.Empty;
     private string searchTerm
@@ -235,13 +235,21 @@ else
         }
     }
 
+    // Boolean Variables
+    private bool isLoading = true;
+    private bool sortAscending = true;
+
+    private IEnumerable<DetailedDevice> FilteredDevices =>
+    string.IsNullOrWhiteSpace(searchTerm)
+        ? devices
+        : devices.Where(d => d.DeviceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
     protected override async Task OnInitializedAsync()
     {
         var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
         var fleetDevicesUrl = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
+        if(await TorizonService.AuthenticateAsync())
         {
             var apiDevices = await TorizonService.GetItemsAsync<DetailedDevice>(devicesUrl) ?? new List<DetailedDevice>();
 
@@ -257,20 +265,36 @@ else
         StateHasChanged();
     }
 
-    private async Task NextModal(SshKey key)
+    private async Task NextModalAccess(SshKey key)
     {
         selectedSshKey = key;
-        await modalSelect?.HideAsync();
-        await modalAcess?.ShowAsync();
+        await modalSelect.HideAsync();
+        await modalAcess.ShowAsync();
+    }
+
+    private async Task NextModalLink()
+    {
+        await modalAcess.HideAsync();
+        await modalSsh.ShowAsync();
     }
 
     private async Task CloseModal()
     {
-        if (modalAcess != null & modalUpdate != null)
-        {
-            await modalAcess.HideAsync(); 
-            await modalUpdate.HideAsync();
-        }
+        await modalAcess.HideAsync();
+        await modalUpdate.HideAsync();
+        await modalSsh.HideAsync(); 
+    }
+
+    private async Task UpdateDevice()
+    {
+        await modalUpdate.ShowAsync();
+        openMenuDeviceId = null;
+    }
+
+    private async Task RemoteAcess()
+    {
+        await modalSelect.ShowAsync();
+        openMenuDeviceId = null;
     }
 
     private void ToggleMenu(string deviceId)
@@ -283,21 +307,8 @@ else
         {
             openMenuDeviceId = deviceId;
             currentDevice = devices.FirstOrDefault(d => d.DeviceId == deviceId);
-            currentDeviceUuid = currentDevice.DeviceUuid;
-            Console.WriteLine($"id:{currentDevice.DeviceId} uuid:{currentDeviceUuid}");
+            currentDeviceUuid = currentDevice?.DeviceUuid;
         }
-    }
-
-    private async Task UpdateDevice()
-    {
-        await modalUpdate?.ShowAsync();
-        openMenuDeviceId = null;
-    }
-
-    private async Task RemoteAcess()
-    {
-        await modalSelect?.ShowAsync();
-        openMenuDeviceId = null;
     }
 
     private async Task OnFleetChanged()

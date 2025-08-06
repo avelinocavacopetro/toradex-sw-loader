@@ -56,10 +56,14 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int PatternId { get; set; }
 
+    // String Variables
     private string patternString = string.Empty;
+
+    // Boolean Variables
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -77,46 +81,62 @@ else
 
     private async Task SaveChanges()
     {
+        if (!ValidadePattern())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        await ChangePattern(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/managePatterns");
+    }
+
+    private bool ValidadePattern()
+    {
         if (string.IsNullOrWhiteSpace(patternString))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (patternString.Length > 50)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Pattern muito comprida!",
                 Text = "A pattern deve ter no máximo 50 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
+    private async Task ChangePattern(AppDbContext context)
+    {
         var patternDb = await context.Patterns.FirstOrDefaultAsync(p => p.Id == PatternId);
         if (patternDb == null) return;
 
         patternDb.NameContains = patternString;
 
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Padrão editado com sucesso!",
+            Title = "Pattern editado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/managePatterns");
     }
 
     private void Cancel()

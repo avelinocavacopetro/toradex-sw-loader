@@ -19,10 +19,8 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 // Configurar serviços a serem utilizados
 builder.Services.AddHttpClient<TorizonService>();
 builder.Services.AddScoped<DeviceService>();
-builder.Services.AddScoped<PackageService>();
 builder.Services.AddScoped<FleetService>();
 builder.Services.AddScoped<LoginService>();
-builder.Services.AddScoped<WindowService>();
 builder.Services.AddScoped<FilterService>();
 builder.Services.AddSingleton<FinalProductStateService>();
 builder.Services.AddHostedService<DeviceStatusUpdaterService>();

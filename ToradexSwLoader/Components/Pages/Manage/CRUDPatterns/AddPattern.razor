@@ -42,48 +42,73 @@
 </div>
 
 @code {
+    // String Variables
     private string pattern = string.Empty;
 
     private async Task SavePattern()
     {
+        if (!ValidadePattern())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await PatternExistsAsync(context))
+        {
+            await ShowPatternExistsAlert();
+            return;
+        }
+
+        await AddPatternAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/managePatterns");
+    }
+
+    private bool ValidadePattern()
+    {
         if (string.IsNullOrWhiteSpace(pattern))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira um nome válido!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (pattern.Length > 50)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Pattern muito comprida!",
                 Text = "A pattern deve ter no máximo 50 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
-        bool exists = await context.Patterns.AnyAsync(p => p.NameContains.ToLower() == pattern.Trim().ToLower());
+    private async Task<bool> PatternExistsAsync(AppDbContext context)
+    {
+        return await context.Patterns.AnyAsync(p => p.NameContains.ToLower() == pattern.Trim().ToLower());
+    }
 
-        if (exists)
+    private async Task ShowPatternExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Este padrão já existe!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+            Title = "Esta pattern já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+        return;
+    }
 
+    private async Task AddPatternAsync(AppDbContext context)
+    {
         var newPattern = new Pattern
         {
             NameContains = pattern,
@@ -92,15 +117,16 @@
 
         context.Patterns.Add(newPattern);
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Padrão adicionado com sucesso!",
+            Title = "Pattern adicionado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/managePatterns");
     }
 
     private void Cancel()

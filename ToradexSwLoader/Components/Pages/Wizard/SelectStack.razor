@@ -59,35 +59,29 @@ else
 }
 
 @code {
+    // Parameters
     [Parameter]
     public int deviceId { get; set; }
-    private Device? selectedDevice = new Device();
 
     [Parameter]
     public int productId { get; set; }
-    private Product? selectedProduct = new Product();
 
-    private List<Stack> stacks = new List<Stack>();
-    private List<Stack> paginatedStacks = new List<Stack>();
+    // Object Variables
+    private Device? selectedDevice;
+    private Product? selectedProduct;
     private Stack? selectedStack;
-    private WindowDimension? dimension;
-
+    private List<Stack> stacks = new();
+    private List<Stack> paginatedStacks = new();
+   
+    // Integer Variables
     private int actualPage = 1;
     private int stacksPerPage = 8;
     private int TotalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
 
+    // Boolean Variables
     private bool isLoading = false;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
-
-    private void OnDimensionsChanged(WindowDimension newDimension)
-    {
-        dimension = newDimension;
-        stacksPerPage = dimension.Width <= 1024 ? 8 : stacks.Count;
-
-        UpdatePage();
-        StateHasChanged();
-    }
 
     protected override async Task OnInitializedAsync()
     {

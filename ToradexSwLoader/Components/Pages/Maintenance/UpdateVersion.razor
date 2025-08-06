@@ -3,7 +3,6 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
-@inject PackageService PackageService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
@@ -73,67 +72,66 @@ else
 }
 
 @code {
+    // Object Variables
+    private DetailedDevice? selectedDevice = new();
+    private List<StackPackage> filteredPackages = new();
+    private List<StackPackage> stacksPackages = new();
+
+    // String Variables
     [Parameter]
     public string? deviceUuid { get; set; }
-    private List<StackPackage> filteredPackages = new List<StackPackage>();
-    private DetailedDevice? selectedDevice = new();
     private string? devicePackage;
-    private List<StackPackage> stacksPackages = new();
-    private bool isLoading = true;
     private string? selectedVersion;
     private string? installedPackageName;
 
+    // Boolean Variables
+    private bool isLoading = true;
+
     protected override async Task OnInitializedAsync()
     {
-        bool authOk = await TorizonService.AuthenticateAsync();
-
-        if (!authOk)
+        if (await TorizonService.AuthenticateAsync())
         {
-            Console.WriteLine("Falha na autenticação.");
-            isLoading = false;
-            return;
-        }
+            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
+            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
 
-        var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
-        selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
-
-        if (selectedDevice == null)
-        {
-            Console.WriteLine("Dispositivo não encontrado.");
-            isLoading = false;
-            return;
-        }
-
-        if (selectedDevice.Packages?.Count > 1)
-        {
-            var fullName = selectedDevice.Packages[1].Name;
-
-            var lastDashIndex = fullName.LastIndexOf('-');
-            if (lastDashIndex > 0 && lastDashIndex < fullName.Length - 1)
+            if (selectedDevice == null)
             {
-                installedPackageName = fullName.Substring(0, lastDashIndex);
-                selectedVersion = fullName.Substring(lastDashIndex + 1);
+                Console.WriteLine("Dispositivo não encontrado.");
+                isLoading = false;
+                return;
             }
-            else
+
+            if (selectedDevice.Packages?.Count > 1)
             {
-                installedPackageName = fullName;
-                selectedVersion = "unknown";
+                var fullName = selectedDevice.Packages[1].Name;
+
+                var lastDashIndex = fullName.LastIndexOf('-');
+                if (lastDashIndex > 0 && lastDashIndex < fullName.Length - 1)
+                {
+                    installedPackageName = fullName.Substring(0, lastDashIndex);
+                    selectedVersion = fullName.Substring(lastDashIndex + 1);
+                }
+                else
+                {
+                    installedPackageName = fullName;
+                    selectedVersion = "unknown";
+                }
             }
+
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            stacksPackages = await context.StackPackages
+                .Include(pp => pp.Package)
+                .ToListAsync();
+
+            filteredPackages = stacksPackages
+                .Where(sp => sp?.Package?.Name == installedPackageName)
+                .OrderByDescending(sp => sp?.Package?.Version)
+                .ToList();
+
+            await FilterService.LoadFilterAsync();
+
+            isLoading = false;
         }
-
-        using var context = await DbContextFactory.CreateDbContextAsync();
-        stacksPackages = await context.StackPackages
-            .Include(pp => pp.Package)
-            .ToListAsync();
-
-        filteredPackages = stacksPackages
-            .Where(sp => sp?.Package?.Name == installedPackageName)
-            .OrderByDescending(sp => sp?.Package?.Version)
-            .ToList();
-
-        await FilterService.LoadFilterAsync();
-
-        isLoading = false;
     }
 
     private async Task OnClick()

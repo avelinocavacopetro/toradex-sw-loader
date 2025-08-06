@@ -71,11 +71,16 @@
 </div>
 
 @code {
-    private List<UserPetrotec> users = new List<UserPetrotec>();
-    private List<UserRole> roles = new List<UserRole>();
+    // Object Variables
+    private List<UserPetrotec> users = new();
+    private List<UserRole> roles = new();
+
+    // String Variables
     private string userName = string.Empty;
     private string userEmail = string.Empty;
     private string userPassword = string.Empty;
+
+    // Integer Variables
     private int? selectedRoleId = null;
 
     protected override async Task OnInitializedAsync()
@@ -91,68 +96,91 @@
 
     private async Task SaveUser()
     {
+        if(!ValidateUser())
+            return;
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        if (await UserExistsAsync(context))
+        {
+            await ShowUserExistsAlert();
+            return;
+        }
+
+        await AddUserAsync(context);
+        await ShowSuccessAlert();
+        NavigationManager.NavigateTo("/manageUsers");
+    }
+
+    private bool ValidateUser()
+    {
         if (string.IsNullOrWhiteSpace(userName) & string.IsNullOrWhiteSpace(userEmail) & string.IsNullOrWhiteSpace(userPassword))
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Por favor insira dados válidos!",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (userName.Length > 30)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Nome muito comprido!",
                 Text = "O nome de utilizador deve ter no máximo 30 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (userEmail.Length > 50)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Email muito comprido!",
                 Text = "O email deve ter no máximo 50 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
         if (userPassword.Length > 15)
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            _ = Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Palavra-passe muito comprida!",
                 Text = "A palavra-passe deve ter no máximo 15 caracteres.",
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
+            return false;
         }
 
-        using var context = DbContextFactory.CreateDbContext();
+        return true;
+    }
 
-        bool exists = await context.Users.AnyAsync(u => u.Email.ToLower() == userEmail.ToLower());
+    private async Task<bool> UserExistsAsync(AppDbContext context)
+    {
+        return await context.Users.AnyAsync(u => u.Email.ToLower() == userEmail.ToLower());
+    }
 
-        if (exists)
+    private async Task ShowUserExistsAlert()
+    {
+        await Swal.FireAsync(new SweetAlertOptions
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Este utilizador já existe!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+            Title = "Este utilizador já existe!",
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
 
+    private async Task AddUserAsync(AppDbContext context)
+    {
         var newUser = new UserPetrotec
         {
             UserRoleId = selectedRoleId.Value,
@@ -164,15 +192,16 @@
 
         context.Users.Add(newUser);
         await context.SaveChangesAsync();
+    }
 
+    private async Task ShowSuccessAlert()
+    {
         await Swal.FireAsync(new SweetAlertOptions
         {
             Title = "Utilizador adicionado com sucesso!",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
-
-        NavigationManager.NavigateTo("/manageUsers");
     }
 
     private void Cancel()

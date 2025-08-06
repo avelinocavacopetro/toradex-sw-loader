@@ -24,13 +24,6 @@
 else
 {
     <div class="custom-container d-flex flex-column">
-        <a href="#"
-           onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-           class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
-            <i class="bi bi-arrow-left fs-1"></i>
-        </a>
-
         <h3 class="text-center pb-5">Placas Disponíveis</h3>
 
         <table class="table mt-3 w-100">
@@ -40,11 +33,11 @@ else
                     <th style="width: 30%; padding-left: 20px; border-right: 1px solid white;">Software</th>
                     <th style="width: 20%; border-right: 1px solid white; text-align: center;">Entidade</th>
                     <th style="width: 15%; border-right: 1px solid white; text-align: center;">Estado</th>
-                    <th style=" width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado de Atualização</th>
+                    <th style="width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado de Atualização</th>
                 </tr>
             </thead>
             <tbody>
-                @if (paginatedBoards is null || !paginatedBoards.Any())
+                @if (PaginatedBoards is null || !PaginatedBoards.Any())
                 {
                     <tr>
                         <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
@@ -54,9 +47,9 @@ else
                 }
                 else
                 {
-                    @foreach (var board in paginatedBoards)
+                    @foreach (var board in PaginatedBoards)
                     {
-                        <tr class="@GetRowClass(board)" @onclick="() => SelectRow(board)">
+                        <tr @onclick="() => SelectRow(board)">
                             <td title="@board.DeviceName" style="width: 20%; padding-left: 20px; vertical-align: middle;">
                                 @board.DeviceName
                             </td>
@@ -108,111 +101,130 @@ else
 }
 
 @code {
-    private List<DetailedDevice> boards = new List<DetailedDevice>();
-    private List<DetailedDevice> allBoards = new List<DetailedDevice>();
-    private List<DetailedDevice> paginatedBoards = new List<DetailedDevice>();
-    private Dictionary<string, List<string>> deviceEntityNames = new();
-    private List<EntityFleet> entitiesFleets = new();
-    private List<Pattern> patterns = new List<Pattern>();
-    private List<Fleet> fleets = new List<Fleet>();
-    private DetailedDevice? selectedBoard = new DetailedDevice();
+    // Object Variables
+    private List<DetailedDevice> allBoards = new();
 
+    private List<DetailedDevice> UniqueBoards => allBoards
+        .GroupBy(d => d.DeviceUuid)
+        .Select(g => g.First())
+        .ToList();
+
+    private List<DetailedDevice> PaginatedBoards => UniqueBoards
+        .Skip((actualPage - 1) * boardsPerPage)
+        .Take(boardsPerPage)
+        .ToList();
+
+    private List<EntityFleet> entitiesFleets = new();
+    private List<Pattern> patterns = new();
+    private List<Fleet> fleets = new();
+    private Dictionary<string, List<string>> deviceEntityNames = new();
+    private DetailedDevice? selectedBoard = null;
+
+    // String Variables
     public string? EntityName { get; set; }
 
+    // Integer Variables
     private int actualPage = 1;
     private int boardsPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)boards.Count / boardsPerPage);
+    private int TotalPages => (int)Math.Ceiling((double)UniqueBoards.Count / boardsPerPage);
 
+    // Boolean Variables
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
 
-
     protected override async Task OnInitializedAsync()
     {
         using var context = DbContextFactory.CreateDbContext();
-        patterns = await context.Patterns.ToListAsync();
 
-        bool authOk = await TorizonService.AuthenticateAsync();
-        if (authOk)
+        await LoadPatternsAsync(context);
+        if (await TorizonService.AuthenticateAsync())
         {
-            foreach (var pattern in FilterService.SelectedPatterns)
+            await LoadBoardsAsync(context);
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadPatternsAsync(AppDbContext context)
+    {
+        patterns = await context.Patterns.ToListAsync();
+    }
+
+    private async Task LoadBoardsAsync(AppDbContext context)
+    {
+        await FetchDevicesFromTorizonAsync();
+        await LoadEntitiesFleetsAsync(context);
+        MapDevicesToEntities();
+    }
+
+    private async Task FetchDevicesFromTorizonAsync()
+    {
+        allBoards.Clear();
+
+        foreach (var pattern in FilterService.SelectedPatterns)
+        {
+            var url = $"https://app.torizon.io/api/v2beta/devices?limit=200&offset=0&nameContains={Uri.EscapeDataString(pattern.NameContains)}";
+
+            var devices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+
+            var detailedTasks = devices.Select(async device =>
             {
-                var url = $"https://app.torizon.io/api/v2beta/devices?limit=200&offset=0&nameContains={Uri.EscapeDataString(pattern.NameContains)}";
+                var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{device.DeviceUuid}";
+                return await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+            });
 
-                var devices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+            var detailedDevices = await Task.WhenAll(detailedTasks);
+            allBoards.AddRange(detailedDevices.Where(d => d is not null)!);
+        }
+    }
 
-                var detailedTasks = devices.Select(async device =>
-                {
-                    var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{device.DeviceUuid}";
-                    var detailedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
-                    return detailedDevice;
-                });
+    private async Task LoadEntitiesFleetsAsync(AppDbContext context)
+    {
+        entitiesFleets = await context.EntityFleets
+            .Include(ef => ef.Entity)
+            .ToListAsync();
+    }
 
-                var detailedDevices = await Task.WhenAll(detailedTasks);
+    private void MapDevicesToEntities()
+    {
+        deviceEntityNames.Clear();
 
-                allBoards.AddRange(detailedDevices.Where(d => d != null));
-            }
+        foreach (var board in UniqueBoards)
+        {
+            var entityNames = new List<string>();
 
-            boards = allBoards
-                        .GroupBy(d => d.DeviceUuid)
-                        .Select(g => g.First())
-                        .ToList();
-
-            entitiesFleets = await context.EntityFleets
-                .Include(ef => ef.Entity)
-                .ToListAsync();
-
-            deviceEntityNames.Clear();
-
-            foreach (var board in boards)
+            if (board.Fleets != null && board.Fleets.Count > 0)
             {
-                var entityNames = new List<string>();
-
-                if (board.Fleets != null && board.Fleets.Count > 0)
+                foreach (var fleet in board.Fleets)
                 {
-                    foreach (var fleet in board.Fleets)
+                    var entityFleetsForFleet = entitiesFleets
+                        .Where(ef => ef.FleetId == fleet.Id && ef.Entity != null);
+
+                    foreach (var ef in entityFleetsForFleet)
                     {
-                        var entityFleetsForThisFleet = entitiesFleets.Where(ef => ef.FleetId == fleet.Id && ef.Entity != null);
-
-                        foreach (var ef in entityFleetsForThisFleet)
+                        if (!entityNames.Contains(ef.Entity!.Name))
                         {
-                            if (!entityNames.Contains(ef.Entity!.Name))
-                            {
-                                entityNames.Add(ef.Entity.Name);
-                            }
+                            entityNames.Add(ef.Entity.Name);
                         }
                     }
                 }
-
-                if (entityNames.Count == 0)
-                {
-                    entityNames.Add("Sem entidade");
-                }
-
-                deviceEntityNames[board.DeviceUuid] = entityNames;
             }
 
-            isLoading = false;
-            UpdatePage();
+            if (entityNames.Count == 0)
+            {
+                entityNames.Add("Sem entidade");
+            }
+
+            deviceEntityNames[board.DeviceUuid] = entityNames;
         }
     }
 
     private async Task SelectRow(DetailedDevice board)
     {
-        selectedBoard = board;
-
-        await OnClick();
-    }
-
-    private string GetRowClass(DetailedDevice board)
-    {
-        return selectedBoard == board ? "table-primary" : string.Empty;
-    }
-
-    private async Task OnClick()
-    {
         using var context = DbContextFactory.CreateDbContext();
+
+        selectedBoard = board;
 
         if (selectedBoard != null && !string.IsNullOrEmpty(selectedBoard.DeviceUuid))
         {
@@ -239,20 +251,12 @@ else
         }
     }
 
-    private void UpdatePage()
-    {
-        paginatedBoards = boards
-                              .Skip((actualPage - 1) * boardsPerPage)
-                              .Take(boardsPerPage)
-                              .ToList();
-    }
-
     private void NextPage()
     {
         if (CanGoNext)
         {
             actualPage++;
-            UpdatePage();
+            StateHasChanged();
         }
     }
 
@@ -261,7 +265,7 @@ else
         if (CanGoPrev)
         {
             actualPage--;
-            UpdatePage();
+            StateHasChanged();
         }
     }
 
