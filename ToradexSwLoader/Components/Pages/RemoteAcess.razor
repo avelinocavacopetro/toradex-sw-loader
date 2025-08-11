@@ -1,4 +1,5 @@
-﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
+﻿@using log4net
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject SweetAlertService Swal
 @inject LoginService LoginService
@@ -39,20 +40,33 @@
     // Object Variables
     private DetailedDevice? selectedDevice = new();
     private Modal modalAcess = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(RemoteAcess));
 
     // Integer Variables
     private int duration = 90;
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        if(await TorizonService.AuthenticateAsync())
+        try
         {
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (!await TorizonService.AuthenticateAsync())
+            {
+                log.Error("Error authenticating to Torizon Service.");
+                return;
+            }
+
             var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{DeviceUuid}";
             selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
 
+            log.Info($"Device - {selectedDevice?.DeviceName} loaded successfully.");
+
             StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error authenticating to Torizon Service or loading device.", ex);
         }
     }
 
@@ -71,98 +85,121 @@
 
     private async Task OnClick()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (duration != 0)
+        if (duration == 0)
         {
-            var resultClick = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Deseja continuar?",
-                Icon = SweetAlertIcon.Warning,
-                ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
-                ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
-            });
+            log.Warn($"User {LoginService.UserId} attempted to create a session without selecting a duration.");
+            await ShowWarningAsync("Selecione uma duração!");
+            return;
+        }
 
-            if (resultClick.IsConfirmed)
-            {
-                var userAct = new UserActivity
-                {
-                    UserId = LoginService.UserId,
-                    ActMessage = $"Criou uma sessão para a placa {selectedDevice?.DeviceName} com duração {duration}",
-                    ActType = "Remote Acess",
-                    ActTimeStamp = DateTime.Now
-                };
+        var confirmed = await ConfirmAsync("Deseja continuar?");
+        if (!confirmed)
+        {
+            log.Info($"User {LoginService.UserId} cancelled session creation.");
+            return;
+        }
 
-                var sessionUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{DeviceUuid}/sessions";
+        log.Info($"User {LoginService.UserId} initiated session creation for device {selectedDevice?.DeviceName} with duration {duration}.");
 
-                var response = await TorizonService.SendCreateSession(DeviceUuid, duration, SelectedKey.Pubkey);
+        var response = await TorizonService.SendCreateSession(DeviceUuid, duration, SelectedKey.Pubkey);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    context.UserActivities.Add(userAct);
-                    await context.SaveChangesAsync();
-
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = "Sessão criada com sucesso!",
-                        Icon = SweetAlertIcon.Success,
-                        ConfirmButtonColor = "#0B5120"
-                    });
-
-                    await OnNextModal.InvokeAsync();
-                }
-                else
-                {
-                    if ((int)response.StatusCode == 409)
-                    {
-                        var result = await Swal.FireAsync(new SweetAlertOptions
-                        {
-                            Title = "Já existe uma sessão",
-                            Icon = SweetAlertIcon.Error,
-                            Text = $"Deseja apagar a sessão atual?",
-                            ShowDenyButton = true, 
-                            ConfirmButtonColor = "#0B5120",
-                            ConfirmButtonText = "Sim",
-                            DenyButtonText = "Não"
-                        });
-
-                        if (result.IsConfirmed)
-                        {
-                            await TorizonService.CancelSessionAsync(DeviceUuid);
-
-                            await Swal.FireAsync(new SweetAlertOptions
-                            {
-                                Title = "Sessão removida com sucesso!",
-                                Icon = SweetAlertIcon.Success,
-                                ConfirmButtonColor = "#0B5120"
-                            });
-                        }
-                    }
-                    else
-                    {
-                        await Swal.FireAsync(new SweetAlertOptions
-                        {
-                            Title = "Erro ao criar sessão",
-                            Icon = SweetAlertIcon.Error,
-                            Text = $"{response.StatusCode}",
-                            ConfirmButtonColor = "#0B5120"
-                        });
-                    }
-                    
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                }
-            }
+        if (response.IsSuccessStatusCode)
+        {
+            await HandleSessionCreatedAsync();
         }
         else
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            var errorContent = await response.Content.ReadAsStringAsync();
+            log.Error($"Failed to create session for device {selectedDevice?.DeviceName} by user {LoginService.UserId}. Status: {response.StatusCode}, Response: {errorContent}");
+
+            if ((int)response.StatusCode == 409)
             {
-                Title = "Selecione uma duração!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+                var shouldCancel = await ConfirmAsync("Já existe uma sessão. Deseja apagar a sessão atual?", true);
+                if (shouldCancel)
+                {
+                    log.Info($"User {LoginService.UserId} opted to cancel existing session for device {selectedDevice?.DeviceName}.");
+                    await TorizonService.CancelSessionAsync(DeviceUuid);
+                    await ShowSuccessAsync("Sessão removida com sucesso!");
+                }
+                else
+                {
+                    log.Info($"User {LoginService.UserId} declined to cancel existing session for device {selectedDevice?.DeviceName}.");
+                }
+            }
+            else
+            {
+                await ShowErrorAsync($"Erro ao criar sessão: {response.StatusCode}");
+            }
         }
+    }
+
+    private async Task<bool> ConfirmAsync(string message, bool showDeny = false)
+    {
+        var options = new SweetAlertOptions
+        {
+            Title = message,
+            Icon = SweetAlertIcon.Warning,
+            ShowCancelButton = !showDeny,
+            ShowDenyButton = showDeny,
+            ConfirmButtonText = "Continuar",
+            ConfirmButtonColor = "#0B5120",
+            CancelButtonText = showDeny ? "Não" : "Cancelar",
+            DenyButtonText = showDeny ? "Não" : null
+        };
+
+        var result = await Swal.FireAsync(options);
+        return result.IsConfirmed;
+    }
+
+    private async Task ShowWarningAsync(string message)
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = message,
+            Icon = SweetAlertIcon.Warning,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private async Task ShowSuccessAsync(string message)
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = message,
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private async Task ShowErrorAsync(string message)
+    {
+        await Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "Erro",
+            Text = message,
+            Icon = SweetAlertIcon.Error,
+            ConfirmButtonColor = "#0B5120"
+        });
+    }
+
+    private async Task HandleSessionCreatedAsync()
+    {
+        log.Info($"Session successfully created for device {selectedDevice?.DeviceName} by user {LoginService.UserId}.");
+
+        using var context = DbContextFactory.CreateDbContext();
+
+        var userAct = new UserActivity
+        {
+            UserId = LoginService.UserId,
+            ActMessage = $"Criou uma sessão para a placa {selectedDevice?.DeviceName} com duração {duration}",
+            ActType = "Remote Access",
+            ActTimeStamp = DateTime.Now
+        };
+
+        context.UserActivities.Add(userAct);
+        await context.SaveChangesAsync();
+
+        await ShowSuccessAsync("Sessão criada com sucesso!");
+        await OnNextModal.InvokeAsync();
     }
 }

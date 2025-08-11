@@ -1,11 +1,20 @@
 using CurrieTechnologies.Razor.SweetAlert2;
+using log4net;
+using log4net.Config;
 using Microsoft.EntityFrameworkCore;
 using Syncfusion.Blazor;
+using System.Reflection;
 using ToradexSwLoader.Components;
 using ToradexSwLoader.Data;
 using ToradexSwLoader.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var logDirectory = Path.Combine(AppContext.BaseDirectory, "Logs");
+Directory.CreateDirectory(logDirectory);
+
+var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+XmlConfigurator.Configure(logRepository, new FileInfo("Log4NetConfig.xml"));
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

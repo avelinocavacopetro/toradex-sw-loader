@@ -1,4 +1,5 @@
 ﻿@page "/devices"
+@using log4net
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
@@ -215,6 +216,7 @@ else
     private List<DetailedDevice> originalDevices = new();
     private List<DetailedDevice> devices = new();
     private List<Fleet> fleets = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(Devices));
 
     // String Variables
     private string? openMenuDeviceId = null;
@@ -246,11 +248,17 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
-        var fleetDevicesUrl = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
-
-        if(await TorizonService.AuthenticateAsync())
+        try
         {
+            var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
+            var fleetDevicesUrl = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
+
+            if (!await TorizonService.AuthenticateAsync())
+            {
+                log.Error("Error authenticating to Torizon Service.");
+                return;
+            }
+
             var apiDevices = await TorizonService.GetItemsAsync<DetailedDevice>(devicesUrl) ?? new List<DetailedDevice>();
 
             originalDevices = new List<DetailedDevice>(apiDevices);
@@ -260,9 +268,15 @@ else
             fleets = await context.Fleets.ToListAsync();
 
             isLoading = false;
-        }
 
-        StateHasChanged();
+            log.Info("Devices loaded successfully.");
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error authenticating to Torizon Service or loading devices.", ex);
+        }
     }
 
     private async Task NextModalAccess(SshKey key)
@@ -313,16 +327,27 @@ else
 
     private async Task OnFleetChanged()
     {
-        if (string.IsNullOrWhiteSpace(selectedFleetId))
+        log.Info($"Selected fleet change to: {(string.IsNullOrEmpty(selectedFleetId) ? "all" : selectedFleetId)}");
+
+        try
         {
-            var allDevices = await TorizonService.GetItemsAsync<DetailedDevice>("https://app.torizon.io/api/v2beta/devices?limit=200&offset=0");
-            devices = allDevices?.ToList() ?? new();
+            if (string.IsNullOrWhiteSpace(selectedFleetId))
+            {
+                var allDevices = await TorizonService.GetItemsAsync<DetailedDevice>("https://app.torizon.io/api/v2beta/devices?limit=200&offset=0");
+                devices = allDevices?.ToList() ?? new();
+            }
+            else
+            {
+                var url = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
+                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url);
+                devices = fleetDevices?.ToList() ?? new();
+            }
+
+            log.Info($"Devices loaded after fleet change: {devices.Count} devices.");
         }
-        else
+        catch (Exception ex)
         {
-            var url = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
-            var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url);
-            devices = fleetDevices?.ToList() ?? new();
+            log.Error("Error loading devices after fleet change.", ex);
         }
 
         StateHasChanged();
