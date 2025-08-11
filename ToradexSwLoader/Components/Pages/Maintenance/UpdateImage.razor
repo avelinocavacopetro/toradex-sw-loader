@@ -84,6 +84,7 @@ else
     private Package? selectedPackage;
     private List<StackPackage> paginatedPackages = new();
     private List<StackPackage> stacksPackages = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(UpdateImage));
 
     // String Variables
     [Parameter]
@@ -101,96 +102,116 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await TorizonService.AuthenticateAsync())
+        try
         {
-            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
-            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+            using var context = DbContextFactory.CreateDbContext();
 
-            stacksPackages = await context.StackPackages
-                .Include(pp => pp.Package)
-                .ToListAsync();
+            if (await TorizonService.AuthenticateAsync())
+            {
+                var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
+                selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
 
-            await FilterService.LoadFilterAsync();
+                stacksPackages = await context.StackPackages
+                    .Include(pp => pp.Package)
+                    .ToListAsync();
 
-            UpdatePage();
+                await FilterService.LoadFilterAsync();
 
-            isLoading = false;
-            StateHasChanged();
+                UpdatePage();
+
+                isLoading = false;
+                StateHasChanged();
+            }
+
+            log.Info("Update Image page loaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading Update Image page.", ex);
         }
     }
 
     private async Task SelectRow(Package package)
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (selectedPackage != null)
+        try
         {
-            var result = await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Deseja continuar?",
-                Icon = SweetAlertIcon.Warning,
-                ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
-                ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
-            });
+            using var context = DbContextFactory.CreateDbContext();
 
-            if (result.IsConfirmed)
+            if (selectedPackage != null)
             {
-                var userAct = new UserActivity
+                var result = await Swal.FireAsync(new SweetAlertOptions
                 {
-                    UserId = LoginService.UserId,
-                    ActMessage = $"Selecionou o software: Nome: {selectedPackage.Name} | Versão: {selectedPackage.Version} para a placa {selectedDevice?.DeviceName}",
-                    ActType = "Manutenção",
-                    ActTimeStamp = DateTime.Now
-                };
+                    Title = "Deseja continuar?",
+                    Icon = SweetAlertIcon.Warning,
+                    ShowCancelButton = true,
+                    ConfirmButtonText = "Continuar",
+                    ConfirmButtonColor = "#0B5120",
+                    CancelButtonText = "Cancelar"
+                });
 
-                var deviceDto = new DeviceDTO
+                if (result.IsConfirmed)
                 {
-                    PackageIds = new List<string> { selectedPackage.Id.ToString() },
-                    Devices = new List<string> {deviceUuid.ToString()},
+                    var userAct = new UserActivity
+                    {
+                        UserId = LoginService.UserId,
+                        ActMessage = $"Selecionou o software: Nome: {selectedPackage.Name} | Versão: {selectedPackage.Version} para a placa {selectedDevice?.DeviceName}",
+                        ActType = "Manutenção",
+                        ActTimeStamp = DateTime.Now
                     };
 
-                var response = await TorizonService.SendUpdateAsync(deviceDto);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    context.UserActivities.Add(userAct);
-                    await context.SaveChangesAsync();
-
-                    await Swal.FireAsync(new SweetAlertOptions
+                    var deviceDto = new DeviceDTO
                     {
-                        Title = "Imagem atualizada com sucesso!",
-                        Icon = SweetAlertIcon.Success,
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                        PackageIds = new List<string> { selectedPackage.Id.ToString() },
+                        Devices = new List<string> { deviceUuid.ToString() },
+                    };
 
-                    UriHelper.NavigateTo("/home");
-                }
-                else
-                {
-                    await Swal.FireAsync(new SweetAlertOptions
+                    var response = await TorizonService.SendUpdateAsync(deviceDto);
+
+                    if (response.IsSuccessStatusCode)
                     {
-                        Title = "Erro ao atualizar imagem",
-                        Icon = SweetAlertIcon.Warning,
-                        Text = $"{response.StatusCode}",
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                        context.UserActivities.Add(userAct);
+                        await context.SaveChangesAsync();
 
-                    var errorContent = await response.Content.ReadAsStringAsync();
+                        log.Info($"Software '{selectedPackage.Name}' selected for update.");
+
+                        await Swal.FireAsync(new SweetAlertOptions
+                        {
+                            Title = "Imagem atualizada com sucesso!",
+                            Icon = SweetAlertIcon.Success,
+                            ConfirmButtonColor = "#0B5120"
+                        });
+
+                        UriHelper.NavigateTo("/home");
+                    }
+                    else
+                    {
+                        await Swal.FireAsync(new SweetAlertOptions
+                        {
+                            Title = "Erro ao atualizar imagem",
+                            Icon = SweetAlertIcon.Warning,
+                            Text = $"{response.StatusCode}",
+                            ConfirmButtonColor = "#0B5120"
+                        });
+
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                    }
                 }
             }
-        }
-        else
-        {
-            await Swal.FireAsync(new SweetAlertOptions
+            else
             {
-                Title = "Selecione um software!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+                log.Warn("No image selected before attempting update.");
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Selecione um software!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120",
+                });
+            }
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error selecting image for update.", ex);
         }
     }
 

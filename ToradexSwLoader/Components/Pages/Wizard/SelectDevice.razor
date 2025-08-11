@@ -81,7 +81,8 @@ else
     private Device? selectedDevice;
     private List<Device> allDevices = new();
     private List<Device> paginatedDevices = new();
-    
+    private static readonly ILog log = LogManager.GetLogger(typeof(SelectDevice));
+
     // Integer Variables
     private int actualPage = 1;
     private int devicesPerPage = 8;
@@ -94,44 +95,65 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
+        try
+        {
+            await FilterService.LoadFilterAsync();
 
-        allDevices = FilterService.SelectedDevices.ToList();
-        UpdatePage();
+            allDevices = FilterService.SelectedDevices.ToList();
+            UpdatePage();
 
-        isLoading = false;
-        StateHasChanged();
+            isLoading = false;
+            StateHasChanged();
+
+            log.Info("Select device page loaded successfully.");
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error loading Select device page.", ex);
+        }
+
     }
 
     private async Task ChooseDevice(Device device)
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        bool hasProducts = await context.DeviceProducts.AnyAsync(dp => dp.DeviceId == device.Id);
-
-        if (!hasProducts)
+        try
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Este dispositivo não tem produtos associados.",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
-            return;
-        }
+            using var context = DbContextFactory.CreateDbContext();
 
-        selectedDevice = device;
-        await OnClick();
+            bool hasProducts = await context.DeviceProducts.AnyAsync(dp => dp.DeviceId == device.Id);
+
+            if (!hasProducts)
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Este dispositivo não tem produtos associados.",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+                return;
+            }
+
+            selectedDevice = device;
+            await OnClick();
+
+            log.Info($"Device '{device.Name}' selected");
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error choosing device", ex);
+        }
     }
 
     private async Task OnClick()
     {
-        if (selectedDevice != null)
+        try
         {
+            if (selectedDevice != null)
+            {
 
-            using var context = DbContextFactory.CreateDbContext();
+                using var context = DbContextFactory.CreateDbContext();
 
-            var userAct = new UserActivity
+                var userAct = new UserActivity
                 {
                     UserId = LoginService.UserId,
                     ActMessage = $"Selecionou o dispositivo: Nome: {selectedDevice.Name}",
@@ -139,19 +161,28 @@ else
                     ActTimeStamp = DateTime.Now
                 };
 
-            context.UserActivities.Add(userAct);
-            await context.SaveChangesAsync();
+                context.UserActivities.Add(userAct);
+                await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectProduct/{selectedDevice.Id}");
-        }
-        else
-        {
-            await Swal.FireAsync(new SweetAlertOptions
+                log.Info($"Device '{selectedDevice.Name}' selected");
+
+                UriHelper.NavigateTo($"/selectProduct/{selectedDevice.Id}");
+            }
+            else
             {
-                Title = "Selecione um dispositivo!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+                log.Warn("No device selected.");
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Selecione um dispositivo!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120",
+                });
+            }
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error choosing device", ex);
         }
     }
 
