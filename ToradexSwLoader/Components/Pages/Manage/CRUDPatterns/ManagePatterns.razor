@@ -1,5 +1,6 @@
 ﻿@page "/managePatterns"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -138,6 +139,7 @@ else
     private List<Pattern> patterns = new();
     private List<Pattern> selectedPatterns = new();
     private List<Pattern> paginatedPatterns = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManagePatterns));
 
     private IEnumerable<Pattern> FilteredPatterns
     {
@@ -162,7 +164,7 @@ else
     FilteredPatterns
         .Skip((actualPage - 1) * patternsPerPage)
         .Take(patternsPerPage);
-   
+
     // String Variables
     private string currentSortColumn = "NameContains";
 
@@ -193,18 +195,35 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
+        try
+        {
+            await FilterService.LoadFilterAsync();
 
-        using var context = DbContextFactory.CreateDbContext();
-        patterns = await context.Patterns.Where(p => p.Enabled).ToListAsync();
+            using var context = DbContextFactory.CreateDbContext();
+            patterns = await context.Patterns.Where(p => p.Enabled).ToListAsync();
 
-        selectedPatterns = FilterService.SelectedPatterns
-            .Select(sp => patterns.FirstOrDefault(p => p.Id == sp.Id))
-            .Where(p => p != null)
-            .ToList();
+            selectedPatterns = FilterService.SelectedPatterns
+                .Select(sp => patterns.FirstOrDefault(p => p.Id == sp.Id))
+                .Where(p => p != null)
+                .ToList();
 
-        UpdatePage();
-        isLoading = false;
+            UpdatePage();
+
+            log.Info("Pattern loaded successfully.");
+            isLoading = false;
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error loading patterns.  ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar patterns",
+                Text = "Ocorreu um erro ao tentar carregar as patterns. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }
     }
 
     private void TogglePattern(ChangeEventArgs e, Pattern pattern)
@@ -234,61 +253,91 @@ else
 
     private async Task ApplyFilter()
     {
-        if (selectedPatterns.Count == 0)
+        try
         {
+            if (selectedPatterns.Count == 0)
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Por favor selecione pelo menos uma pattern!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+                return;
+            }
+
+            await FilterService.ApplyPatternsFilter(
+                new List<Pattern>(
+                    selectedPatterns.Where(p => patterns.Any(a => a.Id == p.Id && a.Enabled))
+                )
+            );
+
+
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos uma pattern!",
-                Icon = SweetAlertIcon.Warning,
+                Title = "Filtros aplicados com sucesso!",
+                Icon = SweetAlertIcon.Success,
+                ConfirmButtonColor = "#0B5120"
+            });
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error applying filter. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao aplicar filtros",
+                Text = "Ocorreu um erro ao tentar aplicar os filtros. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
         }
-
-        await FilterService.ApplyPatternsFilter(
-            new List<Pattern>(
-                selectedPatterns.Where(p => patterns.Any(a => a.Id == p.Id && a.Enabled))
-            )
-        );
-
-
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = "Filtros aplicados com sucesso!",
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
     }
 
     private async Task DisablePattern(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja apagar esta pattern?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            isLoading = true;
-
-            using var context = DbContextFactory.CreateDbContext();
-            var patternDb = await context.Patterns.FirstOrDefaultAsync(d => d.Id == id);
-
-            if (patternDb != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                patternDb.Enabled = false;
-                await context.SaveChangesAsync();
+                Title = "Deseja apagar esta pattern?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
+
+            if (result.IsConfirmed)
+            {
+                isLoading = true;
+
+                using var context = DbContextFactory.CreateDbContext();
+                var patternDb = await context.Patterns.FirstOrDefaultAsync(d => d.Id == id);
+
+                if (patternDb != null)
+                {
+                    patternDb.Enabled = false;
+                    await context.SaveChangesAsync();
+                }
+
+                patterns.RemoveAll(d => d.Id == id);
+
+                isLoading = false;
+                StateHasChanged();
             }
-
-            patterns.RemoveAll(d => d.Id == id);
-
-            isLoading = false;
-            StateHasChanged();
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error disabling pattern. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao desativar a pattern",
+                Text = "Ocorreu um erro ao tentar desativar a pattern. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
         }
     }
 

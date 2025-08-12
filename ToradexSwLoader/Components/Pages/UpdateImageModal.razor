@@ -1,4 +1,5 @@
-﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
+﻿@using log4net
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject LoginService LoginService
@@ -76,6 +77,7 @@ else
     private Package? selectedPackage;
     private List<StackPackage> paginatedPackages = new();
     private List<StackPackage> stacksPackages = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(UpdateImageModal));
 
     // Integer Variables
     private int actualPage = 1;
@@ -89,10 +91,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await TorizonService.AuthenticateAsync())
+        try
         {
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (!await TorizonService.AuthenticateAsync())
+            {
+                log.Error("Error authenticating to Torizon Service.");
+                return;
+            }
+
             var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{DeviceUuid}";
             selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
 
@@ -106,6 +114,10 @@ else
 
             isLoading = false;
             StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error authenticating to Torizon Service or loading packages.", ex);
         }
     }
 
@@ -171,8 +183,6 @@ else
                     });
 
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
-                    Console.WriteLine($"Conteúdo do erro: {errorContent}");
                 }
             }
         }

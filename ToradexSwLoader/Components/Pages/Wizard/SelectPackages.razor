@@ -107,7 +107,8 @@ else
     private Package? selectedPackage;
     private List<StackPackage> paginatedPackages = new();
     private List<StackPackage> stacksPackages = new();
-    
+    private static readonly ILog log = LogManager.GetLogger(typeof(SelectPackages));
+
     // Integer Variables
     private int actualPage = 1;
     private int packagesPerPage = 8;
@@ -120,53 +121,73 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
-        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+            selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+            selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
 
-        stacksPackages = await context.StackPackages
-            .Where(pp => pp.StackId == stackId)
-            .Include(pp => pp.Package)
-            .ToListAsync();
+            stacksPackages = await context.StackPackages
+                .Where(pp => pp.StackId == stackId)
+                .Include(pp => pp.Package)
+                .ToListAsync();
 
-        await FilterService.LoadFilterAsync();
+            await FilterService.LoadFilterAsync();
 
-        UpdatePage();
+            UpdatePage();
 
-        isLoading = false;
-        StateHasChanged();
+            isLoading = false;
+            StateHasChanged();
+
+            log.Info("Select packages page loaded successfully.");
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error loading Select packages page.", ex);
+        }
     }
 
     private async Task SelectRow(Package package)
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        selectedPackage = package;
-
-        if (selectedPackage != null)
+        try
         {
-            var userAct = new UserActivity
+            using var context = DbContextFactory.CreateDbContext();
+
+            selectedPackage = package;
+
+            if (selectedPackage != null)
             {
-                UserId = LoginService.UserId,
-                ActMessage = $"Selecionou o software: Nome: {selectedPackage.Name} | Versão: {selectedPackage.Version}",
-                ActType = "Wizard",
-                ActTimeStamp = DateTime.Now
-            };
+                var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Selecionou o software: Nome: {selectedPackage.Name} | Versão: {selectedPackage.Version}",
+                    ActType = "Wizard",
+                    ActTimeStamp = DateTime.Now
+                };
 
-            context.UserActivities.Add(userAct);
-            await context.SaveChangesAsync();
+                context.UserActivities.Add(userAct);
+                await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectFleet/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(selectedPackage.Id)}");
+                log.Info($"Package '{selectedPackage.Name}' selected.");
+
+                UriHelper.NavigateTo($"/selectFleet/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(selectedPackage.Id)}");
+            }
+            else
+            {
+                log.Warn("No package selected.");
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Selecione um software!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120",
+                });
+            }
         }
-        else
+        catch(Exception ex)
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Selecione um software!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+            log.Error("Error selecting package.", ex);
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿@page "/manageUsers/add"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -74,6 +75,7 @@
     // Object Variables
     private List<UserPetrotec> users = new();
     private List<UserRole> roles = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(AddUser));
 
     // String Variables
     private string userName = string.Empty;
@@ -85,31 +87,60 @@
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
 
-        users = await context.Users
-            .Include(u => u.UserRole)
-            .ToListAsync();
+            users = await context.Users
+                .Include(u => u.UserRole)
+                .ToListAsync();
 
-        roles = await context.Roles.ToListAsync();
+            roles = await context.Roles.ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading user roles. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar dados",
+                Text = "Ocorreu um erro ao carregar os dados necessários.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
     }
 
     private async Task SaveUser()
     {
-        if(!ValidateUser())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await UserExistsAsync(context))
+        try
         {
-            await ShowUserExistsAlert();
+            if (!ValidateUser())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (await UserExistsAsync(context))
+            {
+                await ShowUserExistsAlert();
+                return;
+            }
+
+            await AddUserAsync(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageUsers");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving user. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar utilizador",
+                Text = "Ocorreu um erro ao salvar o utilizador. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
         }
-
-        await AddUserAsync(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageUsers");
     }
 
     private bool ValidateUser()

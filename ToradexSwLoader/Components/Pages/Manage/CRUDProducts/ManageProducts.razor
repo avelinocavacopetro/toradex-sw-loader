@@ -1,5 +1,6 @@
 ﻿@page "/manageProducts"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -158,6 +159,7 @@ else
     private List<Product> products = new();
     private List<Product> selectedProducts = new();
     private List<Product> paginatedProducts = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManageProducts));
 
     private IEnumerable<Product> FilteredProducts
     {
@@ -213,31 +215,46 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        var filteredDevicesIds = FilterService.SelectedDevices.Select(d => d.Id).ToHashSet();
-
-        products = await context.Products
-            .Where(p => p.Enabled)
-            .Include(p => p.DeviceProducts)
-            .ThenInclude(dp => dp.Device)
-            .OrderBy(p => p.Name)
-            .ToListAsync();
-
-        foreach (var product in products)
+        try
         {
-            product.DeviceProducts = product.DeviceProducts
-                .Where(dp => dp.Device != null && filteredDevicesIds.Contains(dp.Device.Id))
-                .ToList();
+            await FilterService.LoadFilterAsync();
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            var filteredDevicesIds = FilterService.SelectedDevices.Select(d => d.Id).ToHashSet();
+
+            products = await context.Products
+                .Where(p => p.Enabled)
+                .Include(p => p.DeviceProducts)
+                .ThenInclude(dp => dp.Device)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+
+            foreach (var product in products)
+            {
+                product.DeviceProducts = product.DeviceProducts
+                    .Where(dp => dp.Device != null && filteredDevicesIds.Contains(dp.Device.Id))
+                    .ToList();
+            }
+
+            selectedProducts = FilterService.SelectedProducts;
+
+            UpdatePage();
+
+            log.Info("Products loaded successfully");
+            isLoading = false;
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error loading products. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar produtos",
+                Text = "Ocorreu um erro ao carregar os produtos. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
         }
-
-        selectedProducts = FilterService.SelectedProducts;
-
-        UpdatePage();
-
-        isLoading = false;
     }
 
     private void ToggleProduct(ChangeEventArgs e, Product product)
@@ -267,68 +284,98 @@ else
 
     private async Task ApplyFilter()
     {
-        if (selectedProducts.Count == 0)
+        try
         {
+            if (selectedProducts.Count == 0)
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Por favor selecione pelo menos um produto!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+                return;
+            }
+            else
+            {
+                await FilterService.ApplyProductsFilter(new List<Product>(selectedProducts));
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Filtros aplicados com sucesso!",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonColor = "#0B5120"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error applying product filter. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos um produto!",
-                Icon = SweetAlertIcon.Warning,
+                Title = "Erro ao aplicar filtros",
+                Text = "Ocorreu um erro ao aplicar os filtros. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
-        }
-        else
-        {
-            await FilterService.ApplyProductsFilter(new List<Product>(selectedProducts));
-
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Filtros aplicados com sucesso!",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120"
-            });
         }
     }
 
     private async Task DisableProduct(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja desativar este produto?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            isLoading = true;
-
-            using var context = DbContextFactory.CreateDbContext();
-            var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == id);
-
-            if (productDb != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                productDb.Enabled = false;
+                Title = "Deseja desativar este produto?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
 
-                var relations = await context.ProductStacks
-                    .Where(ps => ps.ProductId == id)
-                    .ToListAsync();
+            if (result.IsConfirmed)
+            {
+                isLoading = true;
 
-                context.ProductStacks.RemoveRange(relations);
+                using var context = DbContextFactory.CreateDbContext();
+                var productDb = await context.Products.FirstOrDefaultAsync(p => p.Id == id);
 
-                await context.SaveChangesAsync();
+                if (productDb != null)
+                {
+                    productDb.Enabled = false;
+
+                    var relations = await context.ProductStacks
+                        .Where(ps => ps.ProductId == id)
+                        .ToListAsync();
+
+                    context.ProductStacks.RemoveRange(relations);
+
+                    await context.SaveChangesAsync();
+                }
+
+                products.RemoveAll(p => p.Id == id);
+
+                FilterService.SelectedProducts.RemoveAll(p => p.Id == id);
+                await FilterService.SaveFilterAsync();
+
+                isLoading = false;
+                StateHasChanged();
             }
-
-            products.RemoveAll(p => p.Id == id);
-
-            FilterService.SelectedProducts.RemoveAll(p => p.Id == id);
-            await FilterService.SaveFilterAsync();
-
-            isLoading = false;
-            StateHasChanged();
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error disabling product. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao desativar produto",
+                Text = "Ocorreu um erro ao desativar o produto. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
         }
     }
 

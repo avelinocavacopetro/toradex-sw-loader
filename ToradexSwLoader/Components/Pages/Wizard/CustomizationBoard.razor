@@ -118,6 +118,7 @@ else
     private Fleet? selectedFleet = new Fleet();
     private DetailedDevice? selectedBoard = new DetailedDevice();
     private Package? packageUri = new Package();
+    private static readonly ILog log = LogManager.GetLogger(typeof(CustomizationBoard));
 
     // String Variables
     private string originalFinalBoard = string.Empty;
@@ -132,25 +133,33 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
-        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
-        selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == packageId);
-        selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
-        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-
-        if(await TorizonService.AuthenticateAsync())
+        try
         {
-            var boardUrl = $"https://app.torizon.io/api/v2beta/devices/{boardUuid}";
-            selectedBoard = await TorizonService.GetItemAsync<DetailedDevice>(boardUrl);
+            using var context = DbContextFactory.CreateDbContext();
+            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+            selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+            selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
+            selectedPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == packageId);
+            selectedFleet = await context.Fleets.FirstOrDefaultAsync(f => f.Id == fleetId);
+            selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
 
-            isLoading = false; 
+            if (await TorizonService.AuthenticateAsync())
+            {
+                var boardUrl = $"https://app.torizon.io/api/v2beta/devices/{boardUuid}";
+                selectedBoard = await TorizonService.GetItemAsync<DetailedDevice>(boardUrl);
+
+                isLoading = false;
+            }
+
+            string[] parts = selectedBoard.DeviceId.Split('-');
+            serialNumber = parts[2];
+
+            log.Info("Customization page loaded successfully.");
         }
-
-        string[] parts = selectedBoard.DeviceId.Split('-');
-        serialNumber = parts[2];
-        
+        catch (Exception ex)
+        {
+            log.Error("Error loading Customization page.", ex);
+        }
     }
 
     protected override void OnParametersSet()
@@ -164,24 +173,33 @@ else
 
     private void ChangeName()
     {
-        isEditing = true;
-
-        if (!string.IsNullOrEmpty(finalBoard) && !string.IsNullOrEmpty(notEditable) && finalBoard.StartsWith(notEditable))
+        try
         {
-            var tag = finalBoard.Substring(notEditable.Length).Trim();
+            isEditing = true;
 
-            if (tag.StartsWith("(") && tag.EndsWith(")"))
+            if (!string.IsNullOrEmpty(finalBoard) && !string.IsNullOrEmpty(notEditable) && finalBoard.StartsWith(notEditable))
             {
-                editableTag = tag.Substring(1, tag.Length - 2);
+                var tag = finalBoard.Substring(notEditable.Length).Trim();
+
+                if (tag.StartsWith("(") && tag.EndsWith(")"))
+                {
+                    editableTag = tag.Substring(1, tag.Length - 2);
+                }
+                else
+                {
+                    editableTag = tag;
+                }
             }
             else
             {
-                editableTag = tag;
+                editableTag = string.Empty;
             }
+
+            log.Info("Name change successfully");
         }
-        else
+        catch (Exception ex)
         {
-            editableTag = string.Empty;
+            log.Error("Failed to change name", ex);
         }
     }
 
@@ -198,93 +216,104 @@ else
 
     private async Task ConfirmAndSubmit()
     {
-        if (!string.IsNullOrEmpty(finalBoard) && finalBoard.Length > 100)
+        try
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            if (!string.IsNullOrEmpty(finalBoard) && finalBoard.Length > 100)
             {
-                Title = "Nome muito comprido",
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#d33"
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Nome muito comprido",
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonColor = "#d33"
+                });
+                return;
+            }
+
+            var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Deseja continuar?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
             });
-            return;
+
+            if (result.IsConfirmed)
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
+                    ActType = "Wizard",
+                    ActTimeStamp = DateTime.Now
+                };
+
+                var finalProduct = new FinalProduct
+                {
+                    DeviceUuid = selectedBoard.DeviceUuid,
+                    Name = finalBoard,
+                    Status = selectedBoard.DeviceStatus,
+                    CreatedAt = DateTime.Now,
+                    LastSeen = selectedBoard.LastSeen,
+                    DeviceId = deviceId,
+                    ProductId = productId,
+                    StackId = stackId,
+                    PackageId = packageId,
+                    FleetId = fleetId,
+                    UserId = LoginService.UserId,
+                    Enabled = true
+                };
+
+                var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == finalProduct.PackageId);
+
+                var deviceDto = new DeviceDTO
+                {
+                    PackageIds = new List<string> { finalProduct.PackageId.ToString() },
+                    Devices = new List<string> { finalProduct.DeviceUuid.ToString() },
+                };
+
+                var response = await TorizonService.SendUpdateAsync(deviceDto);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    context.UserActivities.Add(userAct);
+                    context.FinalProducts.Add(finalProduct);
+                    await context.SaveChangesAsync();
+
+                    log.Info($"Board '{selectedBoard?.DeviceName}' installed with software successfully.");
+
+                    await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Pedido efetuado com sucesso!",
+                        Icon = SweetAlertIcon.Success,
+                        ConfirmButtonColor = "#0B5120"
+                    });
+
+                    UriHelper.NavigateTo("/home");
+                }
+                else
+                {
+                    await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Erro ao efetuar pedido",
+                        Icon = SweetAlertIcon.Warning,
+                        Text = $"{response.StatusCode}",
+                        ConfirmButtonColor = "#0B5120"
+                    });
+
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
+                    Console.WriteLine($"Conteúdo do erro: {errorContent}");
+
+                    log.Error($"Failed to update board '{selectedBoard?.DeviceName}'. StatusCode: {response.StatusCode}, Error: {errorContent}");
+                }
+            }
         }
-
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        catch (Exception ex)
         {
-            Title = "Deseja continuar?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            using var context = DbContextFactory.CreateDbContext();
-            var userAct = new UserActivity
-            {
-                UserId = LoginService.UserId,
-                ActMessage = $"Iniciou o carregamento da placa -> Nome: {finalBoard}",
-                ActType = "Wizard",
-                ActTimeStamp = DateTime.Now
-            };
-
-            var finalProduct = new FinalProduct
-            {
-                DeviceUuid = selectedBoard.DeviceUuid,
-                Name = finalBoard,
-                Status = selectedBoard.DeviceStatus,
-                CreatedAt = DateTime.Now,
-                LastSeen = selectedBoard.LastSeen,
-                DeviceId = deviceId,
-                ProductId = productId,
-                StackId = stackId,
-                PackageId = packageId,
-                FleetId = fleetId,
-                UserId = LoginService.UserId,
-                Enabled = true
-            };
-
-            var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == finalProduct.PackageId);
-
-            var deviceDto = new DeviceDTO
-            {
-                PackageIds = new List<string> { finalProduct.PackageId.ToString() },
-                Devices = new List<string> { finalProduct.DeviceUuid.ToString() },
-            };
-
-            var response = await TorizonService.SendUpdateAsync(deviceDto);
-
-            if (response.IsSuccessStatusCode)
-            {
-                context.UserActivities.Add(userAct);
-                context.FinalProducts.Add(finalProduct);
-                await context.SaveChangesAsync();
-
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = "Pedido efetuado com sucesso!",
-                    Icon = SweetAlertIcon.Success,
-                    ConfirmButtonColor = "#0B5120"
-                });
-
-                UriHelper.NavigateTo("/home");
-            }
-            else
-            {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = "Erro ao efetuar pedido",
-                    Icon = SweetAlertIcon.Warning,
-                    Text = $"{response.StatusCode}",
-                    ConfirmButtonColor = "#0B5120"
-                });
-
-                var errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
-                Console.WriteLine($"Conteúdo do erro: {errorContent}");
-            }
+            log.Error("Error occurred while installing board software.", ex);
         }
     }
 

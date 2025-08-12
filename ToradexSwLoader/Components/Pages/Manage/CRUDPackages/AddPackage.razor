@@ -1,5 +1,6 @@
 ﻿@page "/managePackages/add"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject FilterService FilterService
@@ -108,6 +109,7 @@
     private List<string> filteredPackageNames = new();
     private List<string> filteredVersionList = new();
     private List<string> filteredVersions = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(Devices));
 
     // String Variables
     private string searchTerm = "";
@@ -135,18 +137,33 @@
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        packages = await context.Packages.ToListAsync();
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            packages = await context.Packages.ToListAsync();
 
-        packageNames = packages
-            .Select(p => p.Name)
-            .Distinct()
-            .OrderBy(p => p)
-            .ToHashSet();
+            packageNames = packages
+                .Select(p => p.Name)
+                .Distinct()
+                .OrderBy(p => p)
+                .ToHashSet();
 
-        filteredPackageNames = packageNames.ToList();
+            filteredPackageNames = packageNames.ToList();
 
-        await FilterService.LoadFilterAsync();
+            await FilterService.LoadFilterAsync();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading packages options. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar os dados",
+                Text = "Ocorreu um erro ao inicializar a página. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/managePackages");
+        }
     }
 
     private void FilterPackageNames(ChangeEventArgs e)
@@ -224,20 +241,35 @@
 
     private async Task Save()
     {
-        if (!ValidateStack())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await PackagesExistsAsync(context))
+        try
         {
-            await ShowPackageExistsAlert();
+            if (!ValidateStack())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (await PackagesExistsAsync(context))
+            {
+                await ShowPackageExistsAlert();
+                return;
+            }
+
+            await AddPackageAsync(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/managePackages");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving package. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar o pacote",
+                Text = "Ocorreu um erro ao tentar salvar o pacote. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
         }
-
-        await AddPackageAsync(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/managePackages");
     }
 
     private bool ValidateStack()

@@ -1,5 +1,6 @@
 ﻿@page "/manageProducts/edit/{ProductId:int}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -109,6 +110,7 @@ else
 
     // Object Variables
     private List<Device> selectedDevices = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditProduct));
 
     private IEnumerable<Device> PaginatedDevices =>
         FilterService.SelectedDevices
@@ -128,22 +130,37 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-
-        using var context = DbContextFactory.CreateDbContext();
-        var product = await context.Products.FirstOrDefaultAsync(p => p.Id == ProductId);
-
-        if (product != null)
+        try
         {
-            productName = product.Name;
+            await FilterService.LoadFilterAsync();
 
-            selectedDevices = await context.DeviceProducts
-                .Where(dp => dp.ProductId == ProductId)
-                .Select(dp => dp.Device!)
-                .ToListAsync();
+            using var context = DbContextFactory.CreateDbContext();
+            var product = await context.Products.FirstOrDefaultAsync(p => p.Id == ProductId);
+
+            if (product != null)
+            {
+                productName = product.Name;
+
+                selectedDevices = await context.DeviceProducts
+                    .Where(dp => dp.ProductId == ProductId)
+                    .Select(dp => dp.Device!)
+                    .ToListAsync();
+            }
+
+            isLoading = false;
         }
-
-        isLoading = false;
+        catch (Exception ex)
+        {
+            log.Error("Error loading product. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar a página!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/manageProducts");
+        }
     }
 
     private void ToggleDevice(ChangeEventArgs e, Device device)
@@ -163,17 +180,32 @@ else
 
     private async Task SaveChanges()
     {
-        if (!ValidateProduct())
+        try
+        {
+            if (!ValidateProduct())
+                return;
+
+            if (!ValidateDeviceCount())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await ChangeProduct(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageProducts");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving changes. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar as alterações!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
-
-        if (!ValidateDeviceCount())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await ChangeProduct(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageProducts");
+        }
     }
 
     private bool ValidateProduct()

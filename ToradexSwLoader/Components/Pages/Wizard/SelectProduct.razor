@@ -69,7 +69,8 @@ else
     private Device? selectedDevice;
     private List<Product> products = new();
     private List<Product> paginatedProducts = new();
-    
+    private static readonly ILog log = LogManager.GetLogger(typeof(SelectProduct));
+
     // Integer Variables
     private int actualPage = 1;
     private int productsPerPage = 8;
@@ -82,17 +83,26 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
 
-        products = await context.DeviceProducts
-            .Where(dp => dp.DeviceId == deviceId && dp.Product.Enabled)
-            .Select(dp => dp.Product!)
-            .Distinct()
-            .ToListAsync();
+            products = await context.DeviceProducts
+                .Where(dp => dp.DeviceId == deviceId && dp.Product.Enabled)
+                .Select(dp => dp.Product!)
+                .Distinct()
+                .ToListAsync();
 
-        UpdatePage();
-        isLoading = false;
+            UpdatePage();
+            isLoading = false;
+
+            log.Info("Select product page loaded successfully.");
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error loading Select product page.", ex);
+        }
     }
 
     private async Task SelectProductName(Product product)
@@ -117,21 +127,30 @@ else
 
     private async Task OnClick()
     {
-        if (selectedProduct != null)
+        try
         {
-            using var context = DbContextFactory.CreateDbContext();
-            var userAct = new UserActivity
+            if (selectedProduct != null)
             {
-                UserId = LoginService.UserId,
-                ActMessage = $"Selecionou o Produto: Nome: {selectedProduct.Name}",
-                ActType = "Wizard",
-                ActTimeStamp = DateTime.Now
-            };
+                using var context = DbContextFactory.CreateDbContext();
+                var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Selecionou o Produto: Nome: {selectedProduct.Name}",
+                    ActType = "Wizard",
+                    ActTimeStamp = DateTime.Now
+                };
 
-            context.UserActivities.Add(userAct);
-            await context.SaveChangesAsync();
+                context.UserActivities.Add(userAct);
+                await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectStack/{deviceId}/{selectedProduct.Id}");
+                log.Info($"Product '{selectedProduct.Name}' selected.");
+
+                UriHelper.NavigateTo($"/selectStack/{deviceId}/{selectedProduct.Id}");
+            }
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error selecting product.", ex);
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿@page "/manageFleets"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject FleetService FleetService
@@ -118,6 +119,7 @@ else
     private List<Fleet> fleets = new List<Fleet>();
     private List<Fleet> paginatedFleets = new List<Fleet>();
     private List<Fleet> selectedFleets = new List<Fleet>();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManageFleets));
 
     private IEnumerable<Fleet> FilteredFleets
     {
@@ -170,7 +172,7 @@ else
     private bool isLoading = true;
     private bool CanGoNext => actualPage < TotalPages;
     private bool CanGoPrev => actualPage > 1;
-    
+
     protected override async Task OnInitializedAsync()
     {
         // await FilterService.LoadFilterAsync();
@@ -189,14 +191,30 @@ else
 
         // UpdatePage();
 
-        await FilterService.LoadFilterAsync();
+        try
+        {
+            await FilterService.LoadFilterAsync();
 
-        using var context = DbContextFactory.CreateDbContext();
-        fleets = await context.Fleets.ToListAsync();
+            using var context = DbContextFactory.CreateDbContext();
+            fleets = await context.Fleets.ToListAsync();
 
-        selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
+            selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
 
-        isLoading = false;
+            isLoading = false;
+            log.Info("Fleets loaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading fleets. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar as frotas",
+                Text = "Ocorreu um erro ao tentar carregar as frotas. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
+
     }
 
     private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
@@ -216,26 +234,41 @@ else
 
     private async Task SaveFleetFilter()
     {
-        if (selectedFleets.Count == 0)
+        try
         {
+            if (selectedFleets.Count == 0)
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Por favor selecione pelo menos uma frota!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+                return;
+            }
+            else
+            {
+                await FilterService.ApplyFleetFilter(new List<Fleet>(selectedFleets));
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Filtros aplicados com sucesso!",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonColor = "#0B5120"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving fleet filter. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos uma frota!",
-                Icon = SweetAlertIcon.Warning,
+                Title = "Erro ao aplicar filtros",
+                Text = "Ocorreu um erro ao tentar aplicar os filtros. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
-        }
-        else
-        {
-            await FilterService.ApplyFleetFilter(new List<Fleet>(selectedFleets));
-
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Filtros aplicados com sucesso!",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120"
-            });
         }
     }
 

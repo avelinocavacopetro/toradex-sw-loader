@@ -119,6 +119,7 @@ else
     private List<Fleet> fleets = new();
     private Dictionary<string, List<string>> deviceEntityNames = new();
     private DetailedDevice? selectedBoard = null;
+    private static readonly ILog log = LogManager.GetLogger(typeof(MaintenanceBoard));
 
     // String Variables
     public string? EntityName { get; set; }
@@ -135,119 +136,180 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        await LoadPatternsAsync(context);
-        if (await TorizonService.AuthenticateAsync())
+        try
         {
-            await LoadBoardsAsync(context);
-            isLoading = false;
-            StateHasChanged();
+            using var context = DbContextFactory.CreateDbContext();
+
+            await LoadPatternsAsync(context);
+            if (await TorizonService.AuthenticateAsync())
+            {
+                await LoadBoardsAsync(context);
+                isLoading = false;
+                StateHasChanged();
+            }
+
+            log.Info("Maintenance page loaded successfully.");
         }
+        catch (Exception ex)
+        {
+            log.Error("Error loading Maintenance page.", ex);
+        }
+
     }
 
     private async Task LoadPatternsAsync(AppDbContext context)
     {
-        patterns = await context.Patterns.ToListAsync();
+        try
+        {
+            patterns = await context.Patterns.ToListAsync();
+
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading patterns from database", ex);
+        }
     }
 
     private async Task LoadBoardsAsync(AppDbContext context)
     {
-        await FetchDevicesFromTorizonAsync();
-        await LoadEntitiesFleetsAsync(context);
-        MapDevicesToEntities();
+        try
+        {
+            await FetchDevicesFromTorizonAsync();
+            await LoadEntitiesFleetsAsync(context);
+            MapDevicesToEntities();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading boards from database", ex);
+        }
     }
 
     private async Task FetchDevicesFromTorizonAsync()
     {
-        allBoards.Clear();
-
-        foreach (var pattern in FilterService.SelectedPatterns)
+        try
         {
-            var url = $"https://app.torizon.io/api/v2beta/devices?limit=200&offset=0&nameContains={Uri.EscapeDataString(pattern.NameContains)}";
+            allBoards.Clear();
 
-            var devices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
-
-            var detailedTasks = devices.Select(async device =>
+            foreach (var pattern in FilterService.SelectedPatterns)
             {
-                var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{device.DeviceUuid}";
-                return await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
-            });
+                var url = $"https://app.torizon.io/api/v2beta/devices?limit=200&offset=0&nameContains={Uri.EscapeDataString(pattern.NameContains)}";
 
-            var detailedDevices = await Task.WhenAll(detailedTasks);
-            allBoards.AddRange(detailedDevices.Where(d => d is not null)!);
+                var devices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+
+                var detailedTasks = devices.Select(async device =>
+                {
+                    var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{device.DeviceUuid}";
+                    return await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+                });
+
+                var detailedDevices = await Task.WhenAll(detailedTasks);
+                allBoards.AddRange(detailedDevices.Where(d => d is not null)!);
+            }
+
+            log.Info("Devices fetched successfully.");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error authenticating to Torizon Service or loading devices.", ex);
         }
     }
 
     private async Task LoadEntitiesFleetsAsync(AppDbContext context)
     {
-        entitiesFleets = await context.EntityFleets
-            .Include(ef => ef.Entity)
-            .ToListAsync();
+        try
+        {
+            entitiesFleets = await context.EntityFleets
+          .Include(ef => ef.Entity)
+          .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading entities from database", ex);
+        }
     }
 
     private void MapDevicesToEntities()
     {
-        deviceEntityNames.Clear();
-
-        foreach (var board in UniqueBoards)
+        try
         {
-            var entityNames = new List<string>();
+            deviceEntityNames.Clear();
 
-            if (board.Fleets != null && board.Fleets.Count > 0)
+            foreach (var board in UniqueBoards)
             {
-                foreach (var fleet in board.Fleets)
-                {
-                    var entityFleetsForFleet = entitiesFleets
-                        .Where(ef => ef.FleetId == fleet.Id && ef.Entity != null);
+                var entityNames = new List<string>();
 
-                    foreach (var ef in entityFleetsForFleet)
+                if (board.Fleets != null && board.Fleets.Count > 0)
+                {
+                    foreach (var fleet in board.Fleets)
                     {
-                        if (!entityNames.Contains(ef.Entity!.Name))
+                        var entityFleetsForFleet = entitiesFleets
+                            .Where(ef => ef.FleetId == fleet.Id && ef.Entity != null);
+
+                        foreach (var ef in entityFleetsForFleet)
                         {
-                            entityNames.Add(ef.Entity.Name);
+                            if (!entityNames.Contains(ef.Entity!.Name))
+                            {
+                                entityNames.Add(ef.Entity.Name);
+                            }
                         }
                     }
                 }
+
+                if (entityNames.Count == 0)
+                {
+                    entityNames.Add("Sem entidade");
+                }
+
+                deviceEntityNames[board.DeviceUuid] = entityNames;
             }
 
-            if (entityNames.Count == 0)
-            {
-                entityNames.Add("Sem entidade");
-            }
-
-            deviceEntityNames[board.DeviceUuid] = entityNames;
+            log.Info("Devices mapped to entities successfully.");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error mapping devices to entities.", ex);
         }
     }
 
     private async Task SelectRow(DetailedDevice board)
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        selectedBoard = board;
-
-        if (selectedBoard != null && !string.IsNullOrEmpty(selectedBoard.DeviceUuid))
+        try
         {
-            var userAct = new UserActivity
+            using var context = DbContextFactory.CreateDbContext();
+
+            selectedBoard = board;
+
+            if (selectedBoard != null && !string.IsNullOrEmpty(selectedBoard.DeviceUuid))
             {
-                UserId = LoginService.UserId,
-                ActMessage = $"Selecionou a placa para atualização: Nome: {selectedBoard.DeviceName}",
-                ActTimeStamp = DateTime.Now
-            };
+                var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Selecionou a placa para atualização: Nome: {selectedBoard.DeviceName}",
+                    ActTimeStamp = DateTime.Now
+                };
 
-            context.UserActivities.Add(userAct);
-            await context.SaveChangesAsync();
+                context.UserActivities.Add(userAct);
+                await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectAction/{selectedBoard.DeviceUuid}");
+                log.Info($"Board '{selectedBoard.DeviceName}' selected for update.");
+
+                UriHelper.NavigateTo($"/selectAction/{selectedBoard.DeviceUuid}");
+            }
+            else
+            {
+                log.Warn("No board selected before attempting update.");
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Selecione uma placa!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120",
+                });
+            }
         }
-        else
+        catch (Exception ex)
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Selecione uma placa!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+            log.Error("Error selecting board for update.", ex);
         }
     }
 

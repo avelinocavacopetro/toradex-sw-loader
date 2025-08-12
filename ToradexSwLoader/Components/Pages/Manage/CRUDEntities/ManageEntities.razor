@@ -1,5 +1,6 @@
 ﻿@page "/manageEntities"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -154,6 +155,7 @@ else
     private List<Entity> entities = new();
     private List<Entity> selectedEntities = new();
     private List<Entity> paginatedEntities = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManageEntities));
 
     private IEnumerable<Entity> FilteredEntities
     {
@@ -209,31 +211,46 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        var filteredFleetsIds = FilterService.SelectedFleets.Select(f => f.Id).ToHashSet();
-
-        entities = await context.Entities
-            .Where(e => e.Enabled)
-            .Include(e => e.EntityFleets)
-            .ThenInclude(f => f.Fleet)
-            .OrderBy(e => e.Name)
-            .ToListAsync();
-
-        foreach (var entity in entities)
+        try
         {
-            entity.EntityFleets = entity.EntityFleets
-                .Where(ef => ef.Fleet != null && filteredFleetsIds.Contains(ef.Fleet.Id))
-                .ToList();
+            await FilterService.LoadFilterAsync();
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            var filteredFleetsIds = FilterService.SelectedFleets.Select(f => f.Id).ToHashSet();
+
+            entities = await context.Entities
+                .Where(e => e.Enabled)
+                .Include(e => e.EntityFleets)
+                .ThenInclude(f => f.Fleet)
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
+            foreach (var entity in entities)
+            {
+                entity.EntityFleets = entity.EntityFleets
+                    .Where(ef => ef.Fleet != null && filteredFleetsIds.Contains(ef.Fleet.Id))
+                    .ToList();
+            }
+
+            selectedEntities = FilterService.SelectedEntities;
+
+            UpdatePage();
+
+            log.Info("Entities loaded successfully.");
+            isLoading = false;
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error loading entities. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar entidades",
+                Text = "Ocorreu um erro ao tentar carregar as entidades. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
         }
-
-        selectedEntities = FilterService.SelectedEntities;
-
-        UpdatePage();
-
-        isLoading = false;
     }
 
     private void ToggleEntity(ChangeEventArgs e, Entity entity)
@@ -263,70 +280,100 @@ else
 
     private async Task ApplyFilter()
     {
-        if (selectedEntities.Count == 0)
+        try
         {
+            if (selectedEntities.Count == 0)
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Por favor selecione pelo menos uma entidade!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+                return;
+            }
+            else
+            {
+                await FilterService.ApplyEntitiesFilter(new List<Entity>(selectedEntities));
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Filtros aplicados com sucesso!",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonColor = "#0B5120"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error applying filter. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos uma entidade!",
-                Icon = SweetAlertIcon.Warning,
+                Title = "Erro ao aplicar filtros",
+                Text = "Ocorreu um erro ao tentar aplicar os filtros. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
-        }
-        else
-        {
-            await FilterService.ApplyEntitiesFilter(new List<Entity>(selectedEntities));
-
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Filtros aplicados com sucesso!",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120"
-            });
         }
     }
 
     private async Task DisableEntity(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja desativar esta entidade?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            isLoading = true;
-
-            using var context = DbContextFactory.CreateDbContext();
-            var entityDb = await context.Entities.FirstOrDefaultAsync(e => e.Id == id);
-
-            if (entityDb != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                entityDb.Enabled = false;
+                Title = "Deseja desativar esta entidade?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
 
-                var relations = await context.EntityFleets
-                    .Where(ef => ef.EntityId == id)
-                    .ToListAsync();
+            if (result.IsConfirmed)
+            {
+                isLoading = true;
 
-                context.EntityFleets.RemoveRange(relations);
+                using var context = DbContextFactory.CreateDbContext();
+                var entityDb = await context.Entities.FirstOrDefaultAsync(e => e.Id == id);
 
-                await context.SaveChangesAsync();
+                if (entityDb != null)
+                {
+                    entityDb.Enabled = false;
+
+                    var relations = await context.EntityFleets
+                        .Where(ef => ef.EntityId == id)
+                        .ToListAsync();
+
+                    context.EntityFleets.RemoveRange(relations);
+
+                    await context.SaveChangesAsync();
+                }
+
+                entities.RemoveAll(e => e.Id == id);
+
+                FilterService.SelectedEntities.RemoveAll(e => e.Id == id);
+                await FilterService.SaveFilterAsync();
+
+                UpdatePage();
+
+                isLoading = false;
+                StateHasChanged();
             }
-
-            entities.RemoveAll(e => e.Id == id);
-
-            FilterService.SelectedEntities.RemoveAll(e => e.Id == id);
-            await FilterService.SaveFilterAsync();
-
-            UpdatePage();
-
-            isLoading = false;
-            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error disabling entity. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao desativar entidade",
+                Text = "Ocorreu um erro ao tentar desativar a entidade. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿@page "/managePackages"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -115,6 +116,7 @@
     // Object Variables
     private List<StackPackage> stacksPackages = new();
     private List<StackPackage> paginatedPackages = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManagePackages));
 
     private IEnumerable<StackPackage> FilteredPackages
     {
@@ -170,7 +172,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadData();
+        try
+        {
+            await LoadData();
+
+            log.Info("Packages loaded successfully.");
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error loading packages. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro",
+                Text = "Ocorreu um erro ao carregar os pacotes.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonText = "OK"
+            });
+        }   
     }
 
     private async Task LoadData()
@@ -211,28 +229,43 @@
 
     private async Task RemoveStack(int stackId, string packageId)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja remover?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            using var context = DbContextFactory.CreateDbContext();
-            var toRemove = await context.StackPackages
-                .FirstOrDefaultAsync(sp => sp.StackId == stackId && sp.PackageId == packageId);
-
-            if (toRemove != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                context.StackPackages.Remove(toRemove);
-                await context.SaveChangesAsync();
-                await LoadData();
+                Title = "Deseja remover?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
+
+            if (result.IsConfirmed)
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var toRemove = await context.StackPackages
+                    .FirstOrDefaultAsync(sp => sp.StackId == stackId && sp.PackageId == packageId);
+
+                if (toRemove != null)
+                {
+                    context.StackPackages.Remove(toRemove);
+                    await context.SaveChangesAsync();
+                    await LoadData();
+                }
             }
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error removing package. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro",
+                Text = "Ocorreu um erro ao remover o pacote.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonText = "OK"
+            });
+            return;
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿@page "/manageDevices"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -138,6 +139,7 @@ else
     private List<Device> devices = new();
     private List<Device> selectedDevices = new();
     private List<Device> paginatedDevices = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManageDevices));
 
     private IEnumerable<Device> FilteredDevices
     {
@@ -193,15 +195,25 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
+        try
+        {
+            await FilterService.LoadFilterAsync();
 
-        using var context = DbContextFactory.CreateDbContext();
-        devices = await context.Devices.Where(d => d.Enabled).OrderBy(d => d.Name).ToListAsync();
+            using var context = DbContextFactory.CreateDbContext();
+            devices = await context.Devices.Where(d => d.Enabled).OrderBy(d => d.Name).ToListAsync();
 
-        selectedDevices = FilterService.SelectedDevices;
+            selectedDevices = FilterService.SelectedDevices;
 
-        UpdatePage();
-        isLoading = false;
+            UpdatePage();
+
+            log.Info("Devices loaded successfuly.");
+            isLoading = false;
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error loading devices. ", ex);
+        }
+
     }
 
     private void ToggleDevice(ChangeEventArgs e, Device device)
@@ -231,66 +243,94 @@ else
 
     private async Task ApplyFilter()
     {
-        if (selectedDevices.Count == 0)
+        try
         {
+            if (selectedDevices.Count == 0)
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Por favor selecione pelo menos um dispositivo!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+                return;
+            }
+
+            await FilterService.ApplyDevicesFilter(new List<Device>(selectedDevices));
+
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos um dispositivo!",
-                Icon = SweetAlertIcon.Warning,
+                Title = "Filtros aplicados com sucesso!",
+                Icon = SweetAlertIcon.Success,
                 ConfirmButtonColor = "#0B5120"
             });
-            return;
-        }
-
-        await FilterService.ApplyDevicesFilter(new List<Device>(selectedDevices));
-
-        await Swal.FireAsync(new SweetAlertOptions
+        } catch (Exception ex)
         {
-            Title = "Filtros aplicados com sucesso!",
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
+            log.Error("Error applying filter. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao aplicar filtros!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
     }
 
     private async Task DisableDevice(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja desativar este dispositivo?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            isLoading = true;
-
-            using var context = DbContextFactory.CreateDbContext();
-            var deviceDb = await context.Devices.FirstOrDefaultAsync(d => d.Id == id);
-
-            if (deviceDb != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                deviceDb.Enabled = false;
+                Title = "Deseja desativar este dispositivo?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
 
-                var relations = await context.DeviceProducts
-                    .Where(dp => dp.DeviceId == id)
-                    .ToListAsync();
+            if (result.IsConfirmed)
+            {
+                isLoading = true;
 
-                context.DeviceProducts.RemoveRange(relations);
+                using var context = DbContextFactory.CreateDbContext();
+                var deviceDb = await context.Devices.FirstOrDefaultAsync(d => d.Id == id);
 
-                await context.SaveChangesAsync();
+                if (deviceDb != null)
+                {
+                    deviceDb.Enabled = false;
+
+                    var relations = await context.DeviceProducts
+                        .Where(dp => dp.DeviceId == id)
+                        .ToListAsync();
+
+                    context.DeviceProducts.RemoveRange(relations);
+
+                    await context.SaveChangesAsync();
+                }
+
+                devices.RemoveAll(d => d.Id == id);
+
+                FilterService.SelectedDevices.RemoveAll(d => d.Id == id);
+                await FilterService.SaveFilterAsync();
+
+                isLoading = false;
+                StateHasChanged();
             }
-
-            devices.RemoveAll(d => d.Id == id);
-
-            FilterService.SelectedDevices.RemoveAll(d => d.Id == id);
-            await FilterService.SaveFilterAsync();
-
-            isLoading = false;
-            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error disabling device. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao desativar dispositivo!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
         }
     }
 

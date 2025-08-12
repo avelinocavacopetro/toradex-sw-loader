@@ -1,5 +1,6 @@
 ﻿@page "/manageDevices/edit/{DeviceId:int}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -60,6 +61,9 @@ else
     [Parameter]
     public int DeviceId { get; set; }
 
+    // Object Variables
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditDevice));
+
     // String Variables
     private string deviceName = string.Empty;
 
@@ -68,27 +72,58 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        var device = await context.Devices.FirstOrDefaultAsync(d => d.Id == DeviceId);
-
-        if (device != null)
+        try
         {
-            deviceName = device.Name;
-        }
+            using var context = DbContextFactory.CreateDbContext();
+            var device = await context.Devices.FirstOrDefaultAsync(d => d.Id == DeviceId);
 
-        isLoading = false;
+            if (device != null)
+            {
+                deviceName = device.Name;
+            }
+
+            isLoading = false;
+            log.Info("Device loaded successfuly");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading device", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar dispositivo",
+                Text = "Ocorreu um erro ao tentar carregar os dados do dispositivo.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/manageDevices");
+        }
     }
 
     private async Task SaveChanges()
     {
-        if (!ValidateDeviceName())
+        try
+        {
+            if (!ValidateDeviceName())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await ChangeDevice(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageDevices");
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error saving device changes", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar dispositivo",
+                Text = "Ocorreu um erro ao tentar salvar as alterações do dispositivo.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await ChangeDevice(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageDevices");
+        }
     }
 
     private bool ValidateDeviceName()

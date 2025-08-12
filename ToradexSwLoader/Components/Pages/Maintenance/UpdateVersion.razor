@@ -76,6 +76,7 @@ else
     private DetailedDevice? selectedDevice = new();
     private List<StackPackage> filteredPackages = new();
     private List<StackPackage> stacksPackages = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(UpdateVersion));
 
     // String Variables
     [Parameter]
@@ -89,127 +90,150 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (await TorizonService.AuthenticateAsync())
+        try
         {
-            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
-            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
-
-            if (selectedDevice == null)
+            if (await TorizonService.AuthenticateAsync())
             {
-                Console.WriteLine("Dispositivo não encontrado.");
+                var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
+                selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+
+                if (selectedDevice == null)
+                {
+                    Console.WriteLine("Dispositivo não encontrado.");
+                    isLoading = false;
+                    return;
+                }
+
+                if (selectedDevice.Packages?.Count > 1)
+                {
+                    var fullName = selectedDevice.Packages[1].Name;
+
+                    var lastDashIndex = fullName.LastIndexOf('-');
+                    if (lastDashIndex > 0 && lastDashIndex < fullName.Length - 1)
+                    {
+                        installedPackageName = fullName.Substring(0, lastDashIndex);
+                        selectedVersion = fullName.Substring(lastDashIndex + 1);
+                    }
+                    else
+                    {
+                        installedPackageName = fullName;
+                        selectedVersion = "unknown";
+                    }
+                }
+
+                using var context = await DbContextFactory.CreateDbContextAsync();
+                stacksPackages = await context.StackPackages
+                    .Include(pp => pp.Package)
+                    .ToListAsync();
+
+                filteredPackages = stacksPackages
+                    .Where(sp => sp?.Package?.Name == installedPackageName)
+                    .OrderByDescending(sp => sp?.Package?.Version)
+                    .ToList();
+
+                await FilterService.LoadFilterAsync();
+
                 isLoading = false;
-                return;
             }
 
-            if (selectedDevice.Packages?.Count > 1)
-            {
-                var fullName = selectedDevice.Packages[1].Name;
-
-                var lastDashIndex = fullName.LastIndexOf('-');
-                if (lastDashIndex > 0 && lastDashIndex < fullName.Length - 1)
-                {
-                    installedPackageName = fullName.Substring(0, lastDashIndex);
-                    selectedVersion = fullName.Substring(lastDashIndex + 1);
-                }
-                else
-                {
-                    installedPackageName = fullName;
-                    selectedVersion = "unknown";
-                }
-            }
-
-            using var context = await DbContextFactory.CreateDbContextAsync();
-            stacksPackages = await context.StackPackages
-                .Include(pp => pp.Package)
-                .ToListAsync();
-
-            filteredPackages = stacksPackages
-                .Where(sp => sp?.Package?.Name == installedPackageName)
-                .OrderByDescending(sp => sp?.Package?.Version)
-                .ToList();
-
-            await FilterService.LoadFilterAsync();
-
-            isLoading = false;
+            log.Info("Update Version page loaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading Update Version page.", ex);
         }
     }
 
     private async Task OnClick()
     {
-        devicePackage = installedPackageName + "-" + selectedVersion;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (selectedVersion != null)
+        try
         {
-            var result = await Swal.FireAsync(new SweetAlertOptions
+            devicePackage = installedPackageName + "-" + selectedVersion;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (selectedVersion != null)
             {
-                Title = "Deseja continuar?",
-                Icon = SweetAlertIcon.Warning,
-                ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
-                ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
-            });
-
-            if (result.IsConfirmed)
-            {
-                var userAct = new UserActivity
+                var result = await Swal.FireAsync(new SweetAlertOptions
                 {
-                    UserId = LoginService.UserId,
-                    ActMessage = $"Selecionou a versão: {selectedVersion} para a placa {selectedDevice?.DeviceName}",
-                    ActType = "Manutenção",
-                    ActTimeStamp = DateTime.Now
-                };
+                    Title = "Deseja continuar?",
+                    Icon = SweetAlertIcon.Warning,
+                    ShowCancelButton = true,
+                    ConfirmButtonText = "Continuar",
+                    ConfirmButtonColor = "#0B5120",
+                    CancelButtonText = "Cancelar"
+                });
 
-                var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == devicePackage);
-
-                var deviceDto = new DeviceDTO
+                if (result.IsConfirmed)
                 {
-                    PackageIds = new List<string> { devicePackage },
-                    Devices = new List<string> {deviceUuid.ToString()},
-                };
-
-                var response = await TorizonService.SendUpdateAsync(deviceDto);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    context.UserActivities.Add(userAct);
-                    await context.SaveChangesAsync();
-
-                    await Swal.FireAsync(new SweetAlertOptions
+                    var userAct = new UserActivity
                     {
-                        Title = "Versão atualizada com sucesso!",
-                        Icon = SweetAlertIcon.Success,
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                        UserId = LoginService.UserId,
+                        ActMessage = $"Selecionou a versão: {selectedVersion} para a placa {selectedDevice?.DeviceName}",
+                        ActType = "Manutenção",
+                        ActTimeStamp = DateTime.Now
+                    };
 
-                    UriHelper.NavigateTo("/home");
-                }
-                else
-                {
-                    await Swal.FireAsync(new SweetAlertOptions
+                    var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == devicePackage);
+
+                    var deviceDto = new DeviceDTO
                     {
-                        Title = "Erro ao atualizar versão",
-                        Icon = SweetAlertIcon.Warning,
-                        Text = $"{response.StatusCode}",
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                        PackageIds = new List<string> { devicePackage },
+                        Devices = new List<string> { deviceUuid.ToString() },
+                    };
 
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
-                    Console.WriteLine($"Conteúdo do erro: {errorContent}");
+                    var response = await TorizonService.SendUpdateAsync(deviceDto);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        context.UserActivities.Add(userAct);
+                        await context.SaveChangesAsync();
+
+                        log.Info($"Device '{selectedDevice?.DeviceName}' updated to version '{selectedVersion}' successfully.");
+
+                        await Swal.FireAsync(new SweetAlertOptions
+                        {
+                            Title = "Versão atualizada com sucesso!",
+                            Icon = SweetAlertIcon.Success,
+                            ConfirmButtonColor = "#0B5120"
+                        });
+
+                        UriHelper.NavigateTo("/home");
+                    }
+                    else
+                    {
+                        await Swal.FireAsync(new SweetAlertOptions
+                        {
+                            Title = "Erro ao atualizar versão",
+                            Icon = SweetAlertIcon.Warning,
+                            Text = $"{response.StatusCode}",
+                            ConfirmButtonColor = "#0B5120"
+                        });
+
+                        var errorContent = await response.Content.ReadAsStringAsync();
+
+                        log.Error($"Failed to update device '{selectedDevice?.DeviceName}'. StatusCode: {response.StatusCode}, Error: {errorContent}");
+
+                        Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
+                        Console.WriteLine($"Conteúdo do erro: {errorContent}");
+                    }
                 }
             }
-        }
-        else
-        {
-            await Swal.FireAsync(new SweetAlertOptions
+            else
             {
-                Title = "Selecione um software!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+                log.Warn("No software version selected before attempting update.");
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Selecione um software!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120",
+                });
+            }
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error occurred while updating device version.", ex);
         }
     }
 }

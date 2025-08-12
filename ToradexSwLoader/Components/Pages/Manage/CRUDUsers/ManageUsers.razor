@@ -1,5 +1,6 @@
 ﻿@page "/manageUsers"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -164,6 +165,7 @@ else
     private List<UserPetrotec> users = new();
     private List<UserPetrotec> paginatedUsers = new();
     private List<UserRole> roles = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManageUsers));
 
     private IEnumerable<UserPetrotec> FilteredUsers =>
     string.IsNullOrWhiteSpace(searchTerm)
@@ -206,18 +208,34 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
 
-        users = await context.Users
-            .Where(u => u.Enabled)
-            .Include(u => u.UserRole)
-            .ToListAsync();
+            users = await context.Users
+                .Where(u => u.Enabled)
+                .Include(u => u.UserRole)
+                .ToListAsync();
 
-        roles = await context.Roles.ToListAsync();
+            roles = await context.Roles.ToListAsync();
 
-        UpdatePage();
+            UpdatePage();
 
-        isLoading = false;
+            log.Info("Users loaded successfully.");
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading users. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro",
+                Text = "Ocorreu um erro ao carregar os dados. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonText = "OK",
+                ConfirmButtonColor = "#d33"
+            });
+        }
     }
 
     private void NavigateToAddUser()
@@ -232,34 +250,50 @@ else
 
     private async Task DisableUser(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja desativar este utilizador?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            isLoading = true;
-
-            using var context = DbContextFactory.CreateDbContext();
-            var userDb = await context.Users.FirstOrDefaultAsync(p => p.Id == id);
-
-            if (userDb != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                userDb.Enabled = false;
+                Title = "Deseja desativar este utilizador?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
 
-                await context.SaveChangesAsync();
+            if (result.IsConfirmed)
+            {
+                isLoading = true;
+
+                using var context = DbContextFactory.CreateDbContext();
+                var userDb = await context.Users.FirstOrDefaultAsync(p => p.Id == id);
+
+                if (userDb != null)
+                {
+                    userDb.Enabled = false;
+
+                    await context.SaveChangesAsync();
+                }
+
+                users.RemoveAll(u => u.Id == id);
+
+                isLoading = false;
+                StateHasChanged();
             }
-
-            users.RemoveAll(u => u.Id == id);
-
-            isLoading = false;
-            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error disabling user with ID {id}. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro",
+                Text = "Ocorreu um erro ao desativar o utilizador. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonText = "OK",
+                ConfirmButtonColor = "#d33"
+            });
+            return;
         }
     }
 
