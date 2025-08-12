@@ -1,5 +1,6 @@
 ﻿@page "/managePatterns/edit/{PatternId:int}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -60,6 +61,9 @@ else
     [Parameter]
     public int PatternId { get; set; }
 
+    // Object Variables
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditPattern));
+
     // String Variables
     private string patternString = string.Empty;
 
@@ -68,27 +72,58 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        var pattern = await context.Patterns.FirstOrDefaultAsync(p => p.Id == PatternId);
-
-        if (pattern != null)
+        try
         {
-            patternString = pattern.NameContains;
-        }
+            using var context = DbContextFactory.CreateDbContext();
+            var pattern = await context.Patterns.FirstOrDefaultAsync(p => p.Id == PatternId);
 
-        isLoading = false;
+            if (pattern != null)
+            {
+                patternString = pattern.NameContains;
+            }
+
+            log.Info("Pattern loaded successfully.");
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading pattern. ", ex);
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar a página!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/managePatterns");
+        }   
     }
 
     private async Task SaveChanges()
     {
-        if (!ValidadePattern())
+        try
+        {
+            if (!ValidadePattern())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await ChangePattern(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/managePatterns");
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error saving changes. ", ex);
+            _ = Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar as alterações!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await ChangePattern(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/managePatterns");
+        }
     }
 
     private bool ValidadePattern()

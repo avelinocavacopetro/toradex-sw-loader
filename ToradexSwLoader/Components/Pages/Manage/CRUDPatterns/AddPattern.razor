@@ -1,5 +1,6 @@
 ﻿@page "/managePatterns/add"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -45,22 +46,40 @@
     // String Variables
     private string pattern = string.Empty;
 
+    // Object Variables
+    private static readonly ILog log = LogManager.GetLogger(typeof(AddPattern));
+
     private async Task SavePattern()
     {
-        if (!ValidadePattern())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await PatternExistsAsync(context))
+        try
         {
-            await ShowPatternExistsAlert();
-            return;
-        }
+            if (!ValidadePattern())
+                return;
 
-        await AddPatternAsync(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/managePatterns");
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (await PatternExistsAsync(context))
+            {
+                await ShowPatternExistsAlert();
+                return;
+            }
+
+            await AddPatternAsync(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/managePatterns");
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error saving pattern. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar a pattern!",
+                Text = "Ocorreu um erro inesperado. Por favor, tente novamente.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
+        }   
     }
 
     private bool ValidadePattern()

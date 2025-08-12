@@ -1,5 +1,6 @@
 ﻿@page "/manageStacks/edit/{StackId:int}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -110,6 +111,7 @@ else
 
     // Object Variables
     private List<Product> selectedProducts = new List<Product>();
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditStack));
 
     private IEnumerable<Product> PaginatedProducts =>
         FilterService.SelectedProducts
@@ -129,22 +131,37 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-
-        using var context = DbContextFactory.CreateDbContext();
-        var stack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == StackId);
-
-        if (stack != null)
+        try
         {
-            stackName = stack.Name;
+            await FilterService.LoadFilterAsync();
 
-            selectedProducts = await context.ProductStacks
-                .Where(ps => ps.StackId == StackId)
-                .Select(ps => ps.Product!)
-                .ToListAsync();
+            using var context = DbContextFactory.CreateDbContext();
+            var stack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == StackId);
+
+            if (stack != null)
+            {
+                stackName = stack.Name;
+
+                selectedProducts = await context.ProductStacks
+                    .Where(ps => ps.StackId == StackId)
+                    .Select(ps => ps.Product!)
+                    .ToListAsync();
+            }
+
+            isLoading = false;
         }
-
-        isLoading = false;
+        catch (Exception ex)
+        {
+            log.Error("Error loading stack. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar a página!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/manageStacks");
+        }
     }
 
     private void ToggleProduct(ChangeEventArgs e, Product product)
@@ -164,17 +181,32 @@ else
 
     private async Task SaveChanges()
     {
-        if(!ValidateStack())
+        try
+        {
+            if (!ValidateStack())
+                return;
+
+            if (!ValidateProductCount())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await ChangeStack(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageStacks");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving changes. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar as alterações!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
-
-        if(!ValidateProductCount())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await ChangeStack(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageStacks");
+        }
     }
 
     private bool ValidateStack()

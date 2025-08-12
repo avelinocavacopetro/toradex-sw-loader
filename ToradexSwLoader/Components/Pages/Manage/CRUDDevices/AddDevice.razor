@@ -1,5 +1,6 @@
 ﻿@page "/manageDevices/add"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -45,22 +46,40 @@
     // String Variables
     private string deviceName = string.Empty;
 
+    // Object Variables
+    private static readonly ILog log = LogManager.GetLogger(typeof(AddDevice));
+
     private async Task SaveDevice()
     {
-        if (!ValidateDeviceName())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await DeviceExistsAsync(context))
+        try
         {
-            await ShowDeviceExistsAlert();
+            if (!ValidateDeviceName())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (await DeviceExistsAsync(context))
+            {
+                await ShowDeviceExistsAlert();
+                return;
+            }
+
+            await AddDeviceAsync(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageDevices");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving device. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar dispositivo",
+                Text = "Ocorreu um erro. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
         }
-
-        await AddDeviceAsync(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageDevices");
     }
 
     private bool ValidateDeviceName()

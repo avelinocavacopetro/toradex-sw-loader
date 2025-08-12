@@ -1,5 +1,6 @@
 ﻿@page "/manageUsers/edit/{UserId:int}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -88,6 +89,7 @@ else
 
     // Object Variables
     private List<UserRole> roles = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditUser));
 
     // String Variables
     private string userName = string.Empty;
@@ -102,31 +104,61 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
-        roles = await context.Roles.ToListAsync();
-
-        if (user != null)
+        try
         {
-            selectedRoleId = user.UserRoleId;
-            userName = user.UserName;
-            userEmail = user.Email;
-            userPassword = user.Password;
-        }
+            using var context = DbContextFactory.CreateDbContext();
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
+            roles = await context.Roles.ToListAsync();
 
-        isLoading = false;
+            if (user != null)
+            {
+                selectedRoleId = user.UserRoleId;
+                userName = user.UserName;
+                userEmail = user.Email;
+                userPassword = user.Password;
+            }
+
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading user or roles. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar dados do utilizador",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/manageUsers");
+        }
     }
 
     private async Task SaveChanges()
     {
-        if(!ValidateUser())
+        try
+        {
+            if (!ValidateUser())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await ChangeUser(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageUsers");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving changes to user. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar alterações",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await ChangeUser(context);
-        await ShowSuccessAlert();    
-        NavigationManager.NavigateTo("/manageUsers");
+        }
     }
 
     private bool ValidateUser()
