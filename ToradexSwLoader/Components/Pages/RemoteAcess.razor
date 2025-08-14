@@ -199,7 +199,7 @@
         context.UserActivities.Add(userAct);
         await context.SaveChangesAsync();
 
-        await ShowSuccessAsync("Sessão criada com sucesso!");
+        // await ShowSuccessAsync("Sessão criada com sucesso!");
         await OnNextModal.InvokeAsync();
     }
 }

@@ -12,6 +12,10 @@ namespace ToradexSwLoader.Models
         [ForeignKey(nameof(UserRoleId))]
         public int UserRoleId { get; set; }
         public UserRole? UserRole { get; set; }
+
+        [ForeignKey(nameof(EntityId))]
+        public int? EntityId { get; set; }
+        public Entity? Entity { get; set; }
         public bool Enabled { get; set; }
         public string UserName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;

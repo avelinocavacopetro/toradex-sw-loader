@@ -6,6 +6,7 @@
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
 @inject IJSRuntime js
+@inject LoginService LoginService
 
 <PageTitle>Dispositivos</PageTitle>
 <HeadContent>
@@ -50,7 +51,7 @@ else
                             @bind="selectedFleetId"
                             @bind:after="OnFleetChanged"
                             style="border: 1px solid grey;">
-                        <option value="">Selecione uma frota</option>
+                        <option value="">Tudo</option>
                         @foreach (var fleet in fleets)
                         {
                             <option value="@fleet.Id">@fleet.Name</option>
@@ -268,34 +269,59 @@ else
     {
         try
         {
-            var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
-            var fleetDevicesUrl = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
-
             if (!await TorizonService.AuthenticateAsync())
             {
                 log.Error("Error authenticating to Torizon Service.");
                 return;
             }
 
-            var apiDevices = await TorizonService.GetItemsAsync<DetailedDevice>(devicesUrl) ?? new List<DetailedDevice>();
-
-            originalDevices = new List<DetailedDevice>(apiDevices);
-            devices = new List<DetailedDevice>(originalDevices);
-
             using var context = DbContextFactory.CreateDbContext();
-            fleets = await context.Fleets.ToListAsync();
+
+            fleets = await context.Fleets
+                .Join(context.EntityFleets, f => f.Id, ef => ef.FleetId, (f, ef) => new { f, ef })
+                .Join(context.Entities, fe => fe.ef.EntityId, e => e.Id, (fe, e) => new { fe.f, e })
+                .Join(context.Users, fe => fe.e.Id, up => up.EntityId, (fe, up) => new { fe.f, up })
+                .Where(x => x.up.Id == LoginService.UserId)
+                .Select(x => x.f)
+                .ToListAsync();
+
+            if (!fleets.Any())
+            {
+                devices = new List<DetailedDevice>();
+                originalDevices = new List<DetailedDevice>();
+                isLoading = false;
+                log.Warn($"No fleets found for user {LoginService.UserId}.");
+                return;
+            }
+
+            var fleetDeviceTasks = fleets.Select(async fleet =>
+            {
+                var url = $"https://app.torizon.io/api/v2beta/fleets/{fleet.Id}/devices";
+                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+                return fleetDevices;
+            });
+
+            var fleetDevicesLists = await Task.WhenAll(fleetDeviceTasks);
+
+            var allEntityDevices = fleetDevicesLists
+                .SelectMany(fd => fd)
+                .GroupBy(d => d.DeviceUuid)
+                .Select(g => g.First())
+                .ToList();
+
+            originalDevices = new List<DetailedDevice>(allEntityDevices);
+            devices = new List<DetailedDevice>(originalDevices);
 
             isLoading = false;
 
-            log.Info("Devices loaded successfully.");
-
+            log.Info($"Loaded {devices.Count} devices for user {LoginService.UserId}.");
             StateHasChanged();
 
             deviceCount = devices.Count();
         }
         catch (Exception ex)
         {
-            log.Error("Error authenticating to Torizon Service or loading devices.", ex);
+            log.Error("Error loading devices for user.", ex);
         }
     }
 
@@ -426,14 +452,13 @@ else
         {
             if (string.IsNullOrWhiteSpace(selectedFleetId))
             {
-                var allDevices = await TorizonService.GetItemsAsync<DetailedDevice>("https://app.torizon.io/api/v2beta/devices?limit=200&offset=0");
-                devices = allDevices?.ToList() ?? new();
+                devices = new List<DetailedDevice>(originalDevices);
             }
             else
             {
                 var url = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
-                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url);
-                devices = fleetDevices?.ToList() ?? new();
+                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+                devices = fleetDevices;
             }
 
             log.Info($"Devices loaded after fleet change: {devices.Count} devices.");

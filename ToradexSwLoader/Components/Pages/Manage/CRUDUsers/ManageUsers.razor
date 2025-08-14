@@ -50,12 +50,13 @@ else
             <table class="table mt-3 w-100" style="table-layout: fixed;">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                        <th style="width: 20%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
                                                        border-right: 1px solid white;">Nome do Utilizador</th>
-                        <th style="width: 40%; text-align: center; border-right: 1px solid white;">User</th>
-                        <th style="width: 25%; text-align: center; border-right: 1px solid white;">Função</th>
-                        <th style="width: 35%;"></th>
-                        <th style="width: 35%; border-top-right-radius: 5px;"></th>
+                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">Utilizador</th>
+                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">Função</th>
+                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Entidade</th>
+                        <th style="width: 7.5%;"></th>
+                        <th style="width: 7.5%; border-top-right-radius: 5px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,7 +93,17 @@ else
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary py-2 px-3">@user.UserRole?.Name</span>
+                                        @user.UserRole?.Name
+                                    }
+                                </td>
+                                <td class="text-center align-middle">
+                                    @if (user.EntityId is null)
+                                    {
+                                        <text>Sem entidade</text>
+                                    }
+                                    else
+                                    {
+                                        @user.Entity?.Name
                                     }
                                 </td>
                                 <td class="text-center align-middle">
@@ -215,6 +226,7 @@ else
             users = await context.Users
                 .Where(u => u.Enabled)
                 .Include(u => u.UserRole)
+                .Include(u => u.Entity)
                 .ToListAsync();
 
             roles = await context.Roles.ToListAsync();
