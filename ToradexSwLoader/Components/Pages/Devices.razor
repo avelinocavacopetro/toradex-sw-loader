@@ -5,8 +5,13 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
+@inject IJSRuntime js
+@inject LoginService LoginService
 
 <PageTitle>Dispositivos</PageTitle>
+<HeadContent>
+    <script type="text/javascript" src="~/js/site.js"></script>
+</HeadContent>
 
 @if (isLoading)
 {
@@ -27,8 +32,8 @@ else
             <h3 class="pt-2">Dispositivos</h3>
         </div>
 
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mt-4 gap-3">
-            <div class="position-relative w-50">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mt-4 gap-4 pb-3">
+            <div class="position-relative" style="width: 40%;">
                 <input type="text"
                        class="form-control py-2 ps-5"
                        placeholder="Pesquisar dispositivo pelo nome..."
@@ -40,13 +45,13 @@ else
 
             <div class="d-flex flex-grow-1 gap-3">
 
-                <div class="d-flex align-items-center" style="width: 50%;">
-                    <label for="fleetSelect" class="fw-bold mb-0" style="min-width: 60px;">Frota</label>
+                <div class="d-flex align-items-center" style="width: 30%;">
+                    <label for="fleetSelect" class="fw-bold mb-0" style="min-width: 50px;">Frota</label>
                     <select id="fleetSelect" class="form-select w-100"
                             @bind="selectedFleetId"
                             @bind:after="OnFleetChanged"
                             style="border: 1px solid grey;">
-                        <option value="">Selecione uma frota</option>
+                        <option value="">Tudo</option>
                         @foreach (var fleet in fleets)
                         {
                             <option value="@fleet.Id">@fleet.Name</option>
@@ -54,8 +59,8 @@ else
                     </select>
                 </div>
 
-                <div class="d-flex align-items-center" style="width: 50%;">
-                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 185px;">Estado de atualização</label>
+                <div class="d-flex align-items-center" style="width: 35%;">
+                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 175px;">Estado De Atualização</label>
                     <select id="statusOrder" class="form-select w-100"
                             @onchange='e => OnOrderChanged(e, "Status")'>
                         <option value="all">Tudo</option>
@@ -67,11 +72,19 @@ else
                         <option value="outdated">Desatualizado</option>
                     </select>
                 </div>
+
+                <div class="d-flex align-items-center px-2 ms-auto">
+                    <button class="btn btn-color d-flex align-items-center" @onclick="ExportToExcel">
+                        <i class="bi bi-download me-2"></i>
+                        Exportar
+                    </button>
+                </div>
+
             </div>
         </div>
 
         <div class="table-responsive">
-            <table class="table table-custom mt-3" style="min-width: 2000px;">
+            <table class="table table-custom" style="min-width: 2000px;">
                 <thead>
                     <tr>
                         <th style="width: 50px; border-top-left-radius: 5px; border-right: 1px solid white;"></th>
@@ -119,16 +132,16 @@ else
                             </span>
                         </th>
                         <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado</th>
-                        <th style="width: 180px; text-align: center; border-top-right-radius: 5px;">Estado de atualização</th>
+                        <th style="width: 180px; text-align: center; border-top-right-radius: 5px;">Estado De Atualização</th>
                     </tr>
 
                 </thead>
-                <tbody style="max-height: 350px; padding-bottom: 60px;">
+                <tbody style="min-height: 100vh;">
                     @if (FilteredDevices is null || !FilteredDevices.Any())
                     {
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                Sem dados disponíveis
+                                Sem Dados disponíveis
                             </td>
                         </tr>
                     }
@@ -202,6 +215,11 @@ else
                 </BodyTemplate>
             </Modal>
         </div>
+
+        <div class="d-flex justify-content-end mt-3 px-3">
+            <p>@FilteredDevices.Count() dispositivos</p>
+        </div>
+
     </div>
 }
 
@@ -223,6 +241,7 @@ else
     private string? currentSortColumn = "DeviceName";
     private string? currentDeviceUuid;
     private string selectedFleetId = string.Empty;
+    private int deviceCount;
 
     private string _searchTerm = string.Empty;
     private string searchTerm
@@ -250,32 +269,132 @@ else
     {
         try
         {
-            var devicesUrl = "https://app.torizon.io/api/v2beta/devices?limit=200&offset=0";
-            var fleetDevicesUrl = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
-
             if (!await TorizonService.AuthenticateAsync())
             {
                 log.Error("Error authenticating to Torizon Service.");
                 return;
             }
 
-            var apiDevices = await TorizonService.GetItemsAsync<DetailedDevice>(devicesUrl) ?? new List<DetailedDevice>();
-
-            originalDevices = new List<DetailedDevice>(apiDevices);
-            devices = new List<DetailedDevice>(originalDevices);
-
             using var context = DbContextFactory.CreateDbContext();
-            fleets = await context.Fleets.ToListAsync();
+
+            fleets = await context.Fleets
+                .Join(context.EntityFleets, f => f.Id, ef => ef.FleetId, (f, ef) => new { f, ef })
+                .Join(context.Entities, fe => fe.ef.EntityId, e => e.Id, (fe, e) => new { fe.f, e })
+                .Join(context.Users, fe => fe.e.Id, up => up.EntityId, (fe, up) => new { fe.f, up })
+                .Where(x => x.up.Id == LoginService.UserId)
+                .Select(x => x.f)
+                .ToListAsync();
+
+            if (!fleets.Any())
+            {
+                devices = new List<DetailedDevice>();
+                originalDevices = new List<DetailedDevice>();
+                isLoading = false;
+                log.Warn($"No fleets found for user {LoginService.UserId}.");
+                return;
+            }
+
+            var fleetDeviceTasks = fleets.Select(async fleet =>
+            {
+                var url = $"https://app.torizon.io/api/v2beta/fleets/{fleet.Id}/devices";
+                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+                return fleetDevices;
+            });
+
+            var fleetDevicesLists = await Task.WhenAll(fleetDeviceTasks);
+
+            var allEntityDevices = fleetDevicesLists
+                .SelectMany(fd => fd)
+                .GroupBy(d => d.DeviceUuid)
+                .Select(g => g.First())
+                .ToList();
+
+            originalDevices = new List<DetailedDevice>(allEntityDevices);
+            devices = new List<DetailedDevice>(originalDevices);
 
             isLoading = false;
 
-            log.Info("Devices loaded successfully.");
-
+            log.Info($"Loaded {devices.Count} devices for user {LoginService.UserId}.");
             StateHasChanged();
+
+            deviceCount = devices.Count();
         }
         catch (Exception ex)
         {
-            log.Error("Error authenticating to Torizon Service or loading devices.", ex);
+            log.Error("Error loading devices for user.", ex);
+        }
+    }
+
+    private async Task ExportToExcel()
+    {
+        MemoryStream ms = new MemoryStream();
+        using (SpreadsheetDocument spreadsheetDocument = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook))
+        {
+            WorkbookPart workbookPart = spreadsheetDocument.AddWorkbookPart();
+            workbookPart.Workbook = new Workbook();
+
+            WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
+            var sheetData = new SheetData();
+            worksheetPart.Worksheet = new Worksheet(sheetData);
+
+            Row headerRow = new Row();
+            String[] headerNames = {"ID", "Nome", "Hibernação", "Notas", "Data de Criação", "Data de Ativação", "Ultima Vez Visto", "Estado", "Estado de Atualização"};
+            Cell[] headerCells = new Cell[headerNames.Length];
+
+            for(var i = 0; i<headerNames.Length; i++)
+            {
+                headerCells[i] = new Cell();
+                headerCells[i].DataType = CellValues.String;
+                headerCells[i].CellValue = new CellValue(headerNames[i]);
+                headerRow.Append(headerCells[i]);
+            }
+            sheetData.Append(headerRow);
+
+            Row dataRow;
+            Cell[] dataCells;
+
+            foreach (var device in FilteredDevices)
+            {
+                dataRow = new Row();
+
+                dataCells = new Cell[9];
+
+                dataCells[0] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.DeviceId) };
+
+                dataCells[1] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.DeviceName) };
+
+                dataCells[2] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.Hibernated ? "Sim" : "Não") };
+
+                dataCells[3] = new Cell { DataType = CellValues.String, CellValue = new CellValue(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes) };
+
+                dataCells[4] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.CreatedAt.ToString("dd/MM/yyyy HH:mm")) };
+
+                dataCells[5] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.ActivatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-") };
+
+                dataCells[6] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.LastSeen?.ToString("dd/MM/yyyy HH:mm") ?? "-") };
+
+                bool isOnline = device.LastSeen.HasValue && (DateTime.UtcNow - device.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+                dataCells[7] = new Cell { DataType = CellValues.String, CellValue = new CellValue(isOnline ? "Online" : "Offline") };
+
+                dataCells[8] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.DeviceStatus) };
+
+                foreach (var cell in dataCells)
+                    dataRow.Append(cell);
+
+                sheetData.Append(dataRow);
+            }
+
+            Sheets sheets = workbookPart.Workbook.AppendChild(new Sheets());
+
+            Sheet sheet = new Sheet() { Id = workbookPart.GetIdOfPart(worksheetPart), SheetId = 1, Name = "mySheet" };
+            sheets.Append(sheet);
+
+            workbookPart.Workbook.Save();
+            spreadsheetDocument.Save();
+
+            spreadsheetDocument.Dispose();
+
+            await js.InvokeVoidAsync("downloadFile", "Devices.xlsx", Convert.ToBase64String(ms.ToArray()));
         }
     }
 
@@ -333,14 +452,13 @@ else
         {
             if (string.IsNullOrWhiteSpace(selectedFleetId))
             {
-                var allDevices = await TorizonService.GetItemsAsync<DetailedDevice>("https://app.torizon.io/api/v2beta/devices?limit=200&offset=0");
-                devices = allDevices?.ToList() ?? new();
+                devices = new List<DetailedDevice>(originalDevices);
             }
             else
             {
                 var url = $"https://app.torizon.io/api/v2beta/fleets/{selectedFleetId}/devices";
-                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url);
-                devices = fleetDevices?.ToList() ?? new();
+                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+                devices = fleetDevices;
             }
 
             log.Info($"Devices loaded after fleet change: {devices.Count} devices.");
