@@ -1,5 +1,6 @@
 ﻿@page "/manageSecret"
 
+@using log4net
 @inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject SweetAlertService Swal
@@ -39,33 +40,65 @@
     // Integer Variables
     private int refreshTime = 10;
 
+    // Object Variables
+    private static readonly ILog log = LogManager.GetLogger(typeof(Settings));
+
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
+        try
+        {
+            await FilterService.LoadFilterAsync();
 
-        refreshTime = FilterService.RefreshTime;
+            refreshTime = FilterService.RefreshTime;
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading settings. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar as definições.",
+                Text = ex.Message,
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
     }
 
     private async Task ConfirmAndSubmit()
     {
-        if (refreshTime < 10 || refreshTime > 60)
+        try
         {
-            await Swal.FireAsync(new SweetAlertOptions
+            if (refreshTime < 10 || refreshTime > 60)
             {
-                Title = "Por favor coloque um valor entre 10 a 60 segundos!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+                await Swal.FireAsync(new SweetAlertOptions
+                    {
+                        Title = "Por favor coloque um valor entre 10 a 60 segundos!",
+                        Icon = SweetAlertIcon.Warning,
+                        ConfirmButtonColor = "#0B5120"
+                    });
+                return;
+            }
+
+            await FilterService.ApplyTimeFilter(refreshTime);
+
+            await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Filtros aplicados com sucesso!",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonColor = "#0B5120"
+                });
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error confirming and submitting settings. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Erro ao aplicar as definições.",
+                    Text = ex.Message,
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonColor = "#0B5120"
+                });
             return;
         }
-
-        await FilterService.ApplyTimeFilter(refreshTime);
-
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = "Filtros aplicados com sucesso!",
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
     }
 }

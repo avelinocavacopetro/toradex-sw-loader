@@ -1,4 +1,5 @@
-﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
+﻿@using log4net
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject TorizonService TorizonService
 @inject SweetAlertService Swal
 @inject LoginService LoginService
@@ -35,6 +36,7 @@
 
     // Object Variables
     private SessionSsh? link = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(SshLinkModal));
 
     // String Variables
     private string sshLink = string.Empty;
@@ -44,14 +46,26 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (await TorizonService.AuthenticateAsync())
+        try
         {
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (!await TorizonService.AuthenticateAsync())
+            {
+                log.Error("Error authenticating to Torizon Service.");
+                return;
+            }
+
             var sessionUrl = $"https://app.torizon.io/api/v2beta/remote-access/device/{DeviceUuid}/sessions";
             link = await TorizonService.GetSessionSshAsync(sessionUrl);
 
             sshLink = $"ssh -p {link?.ReversePort} torizon@ras.torizon.io";
 
             StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error authenticating to Torizon Service or loading ssh link.", ex);
         }
     }
 

@@ -1,5 +1,6 @@
 ﻿@page "/manageStacks"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -155,6 +156,7 @@ else
     private List<Stack> stacks = new();
     private List<Stack> selectedStacks = new();
     private List<Stack> paginatedStacks = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManageStacks));
 
     private IEnumerable<Stack> FilteredStacks
     {
@@ -210,31 +212,46 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        var filteredProductsIds = FilterService.SelectedProducts.Select(p => p.Id).ToHashSet();
-
-        stacks = await context.Stacks
-            .Where(s => s.Enabled)
-            .Include(s => s.ProductStacks)
-            .ThenInclude(p => p.Product)
-            .OrderBy(s => s.Name)
-            .ToListAsync();
-
-        foreach (var stack in stacks)
+        try
         {
-            stack.ProductStacks = stack.ProductStacks
-                .Where(ps => ps.Product != null && filteredProductsIds.Contains(ps.Product.Id))
-                .ToList();
+            await FilterService.LoadFilterAsync();
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            var filteredProductsIds = FilterService.SelectedProducts.Select(p => p.Id).ToHashSet();
+
+            stacks = await context.Stacks
+                .Where(s => s.Enabled)
+                .Include(s => s.ProductStacks)
+                .ThenInclude(p => p.Product)
+                .OrderBy(s => s.Name)
+                .ToListAsync();
+
+            foreach (var stack in stacks)
+            {
+                stack.ProductStacks = stack.ProductStacks
+                    .Where(ps => ps.Product != null && filteredProductsIds.Contains(ps.Product.Id))
+                    .ToList();
+            }
+
+            selectedStacks = FilterService.SelectedStacks;
+
+            UpdatePage();
+
+            log.Info("Stacks loaded successfully.");
+            isLoading = false;
         }
-
-        selectedStacks = FilterService.SelectedStacks;
-
-        UpdatePage();
-
-        isLoading = false;
+        catch (Exception ex)
+        {
+            log.Error("Error loading stacks. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar stacks",
+                Text = "Ocorreu um erro ao carregar as stacks. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
     }
 
     private void ToggleStack(ChangeEventArgs e, Stack stack)
@@ -264,58 +281,88 @@ else
 
     private async Task ApplyFilter()
     {
-        if (selectedStacks.Count == 0)
+        try
         {
+            if (selectedStacks.Count == 0)
+            {
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Por favor selecione pelo menos uma stack!",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+                return;
+            }
+            else
+            {
+                await FilterService.ApplyStacksFilter(new List<Stack>(selectedStacks));
+
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Filtros aplicados com sucesso!",
+                    Icon = SweetAlertIcon.Success,
+                    ConfirmButtonColor = "#0B5120"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error applying filter. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione pelo menos uma stack!",
-                Icon = SweetAlertIcon.Warning,
+                Title = "Erro ao aplicar filtros",
+                Text = "Ocorreu um erro ao aplicar os filtros. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
             return;
-        }
-        else
-        {
-            await FilterService.ApplyStacksFilter(new List<Stack>(selectedStacks));
-
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Filtros aplicados com sucesso!",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120"
-            });
         }
     }
 
     private async Task DisableStack(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja desativar esta stack?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            isLoading = true;
-
-            using var context = DbContextFactory.CreateDbContext();
-            var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == id);
-
-            if (stackDb != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                stackDb.Enabled = false;
-                await context.SaveChangesAsync();
+                Title = "Deseja desativar esta stack?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
+
+            if (result.IsConfirmed)
+            {
+                isLoading = true;
+
+                using var context = DbContextFactory.CreateDbContext();
+                var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == id);
+
+                if (stackDb != null)
+                {
+                    stackDb.Enabled = false;
+                    await context.SaveChangesAsync();
+                }
+
+                stacks.RemoveAll(s => s.Id == id);
+
+                isLoading = false;
+                StateHasChanged();
             }
-
-            stacks.RemoveAll(s => s.Id == id);
-
-            isLoading = false;
-            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error disabling stack. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao desativar stack",
+                Text = "Ocorreu um erro ao desativar a stack. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            return;
         }
     }
 

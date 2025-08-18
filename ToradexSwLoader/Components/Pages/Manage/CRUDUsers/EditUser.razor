@@ -1,5 +1,6 @@
 ﻿@page "/manageUsers/edit/{UserId:int}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -67,15 +68,36 @@ else
 
             <div class="d-flex align-items-center gap-3 mb-3">
                 <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Função</label>
-                <select class="form-select form-select-sm mx-auto w-50"
+                <select class="form-select form-select-sm mx-auto w-50 h-100"
                         @bind="selectedRoleId"
-                        style="height: 32px; font-size: 1.2rem; text-align: center;">
+                        style="height: 32px; font-size: 1.2rem; text-align: center; border: 1px solid grey;">
                     <option value="">Selecione uma função</option>
                     @foreach (var role in roles)
                     {
                         <option value="@role.Id">@role.Name</option>
                     }
                 </select>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Entidade</label>
+                <div class="d-flex align-items-center w-50 mx-auto" style="gap: 5px;">
+                    <select class="form-select form-select-sm h-100 flex-grow-1"
+                            @bind="selectedEntityId"
+                            style="height: 32px; font-size: 1.2rem; text-align: center; border: 1px solid grey;">
+                        <option value="">Selecione uma entidade</option>
+                        @foreach (var entity in entities)
+                        {
+                            <option value="@entity.Id">@entity.Name</option>
+                        }
+                    </select>
+                    <button type="button"
+                            class="btn btn-danger"
+                            @onclick="() => selectedEntityId = null"
+                            style="height: 32px; display: flex; align-items: center;">
+                        Limpar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -88,6 +110,8 @@ else
 
     // Object Variables
     private List<UserRole> roles = new();
+    private List<Entity> entities = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditUser));
 
     // String Variables
     private string userName = string.Empty;
@@ -96,37 +120,70 @@ else
 
     // Integer Variables
     private int? selectedRoleId = null;
+    private int? selectedEntityId = null;
 
     // Boolean Variables
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
-        roles = await context.Roles.ToListAsync();
-
-        if (user != null)
+        try
         {
-            selectedRoleId = user.UserRoleId;
-            userName = user.UserName;
-            userEmail = user.Email;
-            userPassword = user.Password;
-        }
+            using var context = DbContextFactory.CreateDbContext();
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
+            roles = await context.Roles.ToListAsync();
+            entities = await context.Entities.Where(e => e.Enabled).ToListAsync();
 
-        isLoading = false;
+            if (user != null)
+            {
+                selectedRoleId = user.UserRoleId;
+                selectedEntityId = user.EntityId;
+                userName = user.UserName;
+                userEmail = user.Email;
+                userPassword = user.Password;
+            }
+
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading user or roles. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar dados do utilizador",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/manageUsers");
+        }
     }
 
     private async Task SaveChanges()
     {
-        if(!ValidateUser())
+        try
+        {
+            if (!ValidateUser())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await ChangeUser(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageUsers");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving changes to user. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar alterações",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await ChangeUser(context);
-        await ShowSuccessAlert();    
-        NavigationManager.NavigateTo("/manageUsers");
+        }
     }
 
     private bool ValidateUser()
@@ -190,6 +247,7 @@ else
         userDb.Email = userEmail;
         userDb.Password = userPassword;
         userDb.UserRoleId = selectedRoleId.Value;
+        userDb.EntityId = selectedEntityId;
 
         await context.SaveChangesAsync();
     }

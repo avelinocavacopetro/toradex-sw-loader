@@ -1,4 +1,5 @@
-﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
+﻿@using log4net
+@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
 @inject TorizonService TorizonService
 @inject LoginService LoginService
@@ -69,6 +70,7 @@ else
     private List<SshKey> sshKeys = new();
     private List<SshKey> paginatedKeys = new();
     private SshKey? selectedKey;
+    private static readonly ILog log = LogManager.GetLogger(typeof(SelectUserModel));
 
     // Integer Variables
     private int actualPage = 1;
@@ -82,10 +84,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await TorizonService.AuthenticateAsync())
+        try
         {
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (!await TorizonService.AuthenticateAsync())
+            {
+                log.Error("Error authenticating to Torizon Service.");
+                return;
+            }
+
             var keyUrl = $"https://app.torizon.io/api/v2beta/remote-access/user/public-keys";
             sshKeys = await TorizonService.GetFlatSshKeysAsync(keyUrl);
 
@@ -93,6 +101,10 @@ else
 
             isLoading = false;
             StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error authenticating to Torizon Service or loading ssh keys.", ex);
         }
     }
 
@@ -104,6 +116,8 @@ else
 
         if (selectedKey != null)
         {
+            log.Info($"User {LoginService.UserId} started selecting user '{selectedKey.Name}' for device '{selectedDevice?.DeviceName}'.");
+
             var result = await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Deseja continuar?",
@@ -116,22 +130,32 @@ else
 
             if (result.IsConfirmed)
             {
+                log.Info($"User {LoginService.UserId} confirmed selection of user '{selectedKey.Name}' for device '{selectedDevice?.DeviceName}'.");
+
                 var userAct = new UserActivity
                 {
                     UserId = LoginService.UserId,
-                    ActMessage = $"Selecionou o utilizador: Nome: {selectedKey.Name} para a placa {selectedDevice?.DeviceName}",
-                    ActType = "Manutenção",
+                    ActMessage = $"Selected user: Name: {selectedKey.Name} for device {selectedDevice?.DeviceName}",
+                    ActType = "Maintenance",
                     ActTimeStamp = DateTime.Now
                 };
 
                 context.UserActivities.Add(userAct);
                 await context.SaveChangesAsync();
 
+                log.Info($"User activity successfully saved for user {LoginService.UserId}.");
+
                 await OnNextModal.InvokeAsync(key);
+            }
+            else
+            {
+                log.Info($"User {LoginService.UserId} canceled the selection of user '{selectedKey.Name}'.");
             }
         }
         else
         {
+            log.Warn($"User {LoginService.UserId} attempted to proceed without selecting a valid user.");
+
             await Swal.FireAsync(new SweetAlertOptions
             {
                 Title = "Selecione um utilizador!",

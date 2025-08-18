@@ -57,6 +57,13 @@ body {
     position: relative;
 }
 
+.table-container {
+    max-height: 80vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
+}
+
 .table-custom {
     width: 100%;
     border-collapse: separate;
@@ -73,6 +80,15 @@ body {
         color: white;
         z-index: 10;
     }
+
+    .table-custom thead th{
+        position: sticky;
+        top: 0;
+        background-color: #0c6527;
+        color: white;
+        z-index: 5;
+    }
+
 
     .table-custom tbody {
         display: block;

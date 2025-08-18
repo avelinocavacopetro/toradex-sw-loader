@@ -91,7 +91,9 @@ else
     private Fleet? selectedFleet;
     private List<Fleet> fleets = new();
     private List<Fleet> paginatedFleets = new();
-    
+    private static readonly ILog log = LogManager.GetLogger(typeof(SelectFleet));
+
+
     // Integer Variables
     private int actualPage = 1;
     private int fleetsPerPage = 8;
@@ -104,15 +106,24 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
-        selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-        selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
+            selectedProduct = await context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+            selectedStack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == stackId);
 
-        fleets = new List<Fleet>(FilterService.SelectedFleets);
+            fleets = new List<Fleet>(FilterService.SelectedFleets);
 
-        UpdatePage();
-        isLoading = false;
+            UpdatePage();
+            isLoading = false;
+
+            log.Info("Select fleet page loaded successfully.");
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error loading Select fleet page.", ex);
+        }
     }
 
     private async void SelectFleetName(Fleet fleet)
@@ -123,22 +134,31 @@ else
 
     private async Task OnClick()
     {
-        if (selectedFleet != null)
+        try
         {
-            using var context = DbContextFactory.CreateDbContext();
-            var userAct = new UserActivity
+            if (selectedFleet != null)
             {
-                UserId = LoginService.UserId,
-                ActMessage = $"Selecionou a frota: Nome: {selectedFleet.Name}",
-                ActTimeStamp = DateTime.Now
-            };
+                using var context = DbContextFactory.CreateDbContext();
+                var userAct = new UserActivity
+                {
+                    UserId = LoginService.UserId,
+                    ActMessage = $"Selecionou a frota: Nome: {selectedFleet.Name}",
+                    ActTimeStamp = DateTime.Now
+                };
 
-            context.UserActivities.Add(userAct);
-            await context.SaveChangesAsync();
+                context.UserActivities.Add(userAct);
+                await context.SaveChangesAsync();
 
-            UriHelper.NavigateTo($"/selectBoard/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
-            
+                UriHelper.NavigateTo($"/selectBoard/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(packageId)}/{Uri.EscapeDataString(selectedFleet.Id)}");
+            }
+
+            log.Info($"Fleet '{selectedFleet.Name}' selected");
         }
+        catch (Exception ex)
+        {
+            log.Error("Error selecting fleet.", ex);
+        }
+
     }
 
     private void UpdatePage()

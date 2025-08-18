@@ -1,5 +1,6 @@
 ﻿@page "/manageUsers/add"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -33,7 +34,7 @@
             <input type="text" 
                 @bind="userName"
                 class="form-control w-50 mx-auto" 
-                style="font-size: 1.2rem; text-align: center; border: 1px solid grey" 
+                style="font-size: 1.2rem; text-align: center; border: 1px solid grey;" 
                 maxlength="30"/>
         </div>
 
@@ -42,7 +43,7 @@
             <input type="email"
                    @bind="userEmail"
                    class="form-control w-50 mx-auto"
-                   style="font-size: 1.2rem; text-align: center; border: 1px solid grey" 
+                   style="font-size: 1.2rem; text-align: center; border: 1px solid grey;" 
                    maxlength="50"/>
         </div>
 
@@ -51,19 +52,32 @@
             <input type="password" 
                 @bind="userPassword" 
                 class="form-control w-50 mx-auto" 
-                style="font-size: 1.2rem; text-align: center; border: 1px solid grey" 
+                style="font-size: 1.2rem; text-align: center; border: 1px solid grey;" 
                 maxlength="15"/>
         </div>
 
         <div class="d-flex align-items-center gap-3 mb-3">
             <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Função</label>
-            <select class="form-select form-select-sm mx-auto w-50"
+            <select class="form-select form-select-sm mx-auto w-50 h-100"
                     @bind="selectedRoleId"
-                    style="height: 32px; font-size: 1.2rem;">
+                    style="height: 32px; font-size: 1.2rem; text-align: center; border: 1px solid grey;">
                 <option value="">Selecione uma função</option>
                 @foreach (var role in roles)
                 {
                     <option value="@role.Id">@role.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Entidade</label>
+            <select class="form-select form-select-sm mx-auto w-50 h-100"
+                    @bind="selectedEntityId"
+                    style="height: 32px; font-size: 1.2rem; text-align: center; border: 1px solid grey;">
+                <option value="">Selecione uma entidade</option>
+                @foreach (var entity in entities)
+                {
+                    <option value="@entity.Id">@entity.Name</option>
                 }
             </select>
         </div>
@@ -74,6 +88,8 @@
     // Object Variables
     private List<UserPetrotec> users = new();
     private List<UserRole> roles = new();
+    private List<Entity> entities = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(AddUser));
 
     // String Variables
     private string userName = string.Empty;
@@ -82,34 +98,65 @@
 
     // Integer Variables
     private int? selectedRoleId = null;
+    private int? selectedEntityId = null;
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
 
-        users = await context.Users
-            .Include(u => u.UserRole)
-            .ToListAsync();
+            users = await context.Users
+                .Include(u => u.UserRole)
+                .ToListAsync();
 
-        roles = await context.Roles.ToListAsync();
+            roles = await context.Roles.ToListAsync();
+            entities = await context.Entities.Where(e => e.Enabled).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading user roles. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar dados",
+                Text = "Ocorreu um erro ao carregar os dados necessários.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+        }
     }
 
     private async Task SaveUser()
     {
-        if(!ValidateUser())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await UserExistsAsync(context))
+        try
         {
-            await ShowUserExistsAlert();
+            if (!ValidateUser())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (await UserExistsAsync(context))
+            {
+                await ShowUserExistsAlert();
+                return;
+            }
+
+            await AddUserAsync(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageUsers");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving user. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar utilizador",
+                Text = "Ocorreu um erro ao salvar o utilizador. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
         }
-
-        await AddUserAsync(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageUsers");
     }
 
     private bool ValidateUser()
@@ -184,6 +231,7 @@
         var newUser = new UserPetrotec
         {
             UserRoleId = selectedRoleId.Value,
+            EntityId = selectedEntityId.Value,
             Enabled = true,
             UserName = userName,
             Email = userEmail,

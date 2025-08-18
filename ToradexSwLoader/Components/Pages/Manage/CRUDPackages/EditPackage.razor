@@ -1,5 +1,6 @@
 ﻿@page "/managePackages/edit/{StackId:int}/{PackageId}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject FilterService FilterService
@@ -128,6 +129,7 @@ else
     private List<string> filteredPackageNames = new();
     private List<string> filteredVersionList = new();
     private List<string> filteredVersions = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditPackage));
 
     // String Variables
     private string searchTerm = "";
@@ -146,40 +148,54 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-        packages = await context.Packages.ToListAsync();
-
-        packageNames = packages
-            .Select(p => p.Name)
-            .Distinct()
-            .OrderBy(p => p)
-            .ToHashSet();
-
-        filteredPackageNames = packageNames.ToList();
-
-        await FilterService.LoadFilterAsync();
-
-        var existingPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == PackageId);
-        if (existingPackage != null)
+        try
         {
-            selectedPackage = existingPackage;
-            selectedPackageName = existingPackage.Name;
-            selectedPackageVersion = existingPackage.Version;
-            searchTerm = existingPackage.Name;
-            versionSearchTerm = existingPackage.Version;
+            using var context = DbContextFactory.CreateDbContext();
+            packages = await context.Packages.ToListAsync();
 
-            filteredVersions = packages
-                .Where(p => p.Name == selectedPackageName)
-                .Select(p => p.Version)
-                .OrderByDescending(v => v)
-                .ToList();
+            packageNames = packages
+                .Select(p => p.Name)
+                .Distinct()
+                .OrderBy(p => p)
+                .ToHashSet();
 
-            filteredVersionList = filteredVersions.ToList();
+            filteredPackageNames = packageNames.ToList();
+
+            await FilterService.LoadFilterAsync();
+
+            var existingPackage = await context.Packages.FirstOrDefaultAsync(p => p.Id == PackageId);
+            if (existingPackage != null)
+            {
+                selectedPackage = existingPackage;
+                selectedPackageName = existingPackage.Name;
+                selectedPackageVersion = existingPackage.Version;
+                searchTerm = existingPackage.Name;
+                versionSearchTerm = existingPackage.Version;
+
+                filteredVersions = packages
+                    .Where(p => p.Name == selectedPackageName)
+                    .Select(p => p.Version)
+                    .OrderByDescending(v => v)
+                    .ToList();
+
+                filteredVersionList = filteredVersions.ToList();
+            }
+
+            selectedStackId = StackId;
+            oldPackageId = PackageId;
+            isLoading = false;
+        } catch (Exception ex)
+        {
+            log.Error("Error loading package. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar os dados!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/managePackages");
         }
-
-        selectedStackId = StackId;
-        oldPackageId = PackageId;
-        isLoading = false;
     }
 
     private void FilterPackageNames(ChangeEventArgs e)
@@ -256,22 +272,37 @@ else
 
     private async Task Save()
     {
-        if (!ValidadePackage())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await RemoveCombination(context);
-
-        if (await PackagesExistsAsync(context))
+        try
         {
-            await ShowPackageExistsAlert();
+            if (!ValidadePackage())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await RemoveCombination(context);
+
+            if (await PackagesExistsAsync(context))
+            {
+                await ShowPackageExistsAlert();
+                return;
+            }
+
+            await ChangePackage(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/managePackages");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving package. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar o pacote!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
         }
-
-        await ChangePackage(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/managePackages");
     }
 
     private bool ValidadePackage()

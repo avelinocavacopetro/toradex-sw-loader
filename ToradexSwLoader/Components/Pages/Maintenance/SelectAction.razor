@@ -48,6 +48,7 @@ else
     // Object Variables
     private DetailedDevice? selectedDevice = new();
     private List<StackPackage> stacksPackages = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(SelectAction));
 
     // String Variables
     [Parameter]
@@ -59,42 +60,75 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
-
-        if(await TorizonService.AuthenticateAsync())
+        try
         {
-            await LoadSelectedDeviceAsync();
-            await LoadStackPackagesAsync(context);
-            CheckIfDeviceHasPackage();
-            await FilterService.LoadFilterAsync();
+            using var context = DbContextFactory.CreateDbContext();
 
-            isLoading = false;
+            if (await TorizonService.AuthenticateAsync())
+            {
+                await LoadSelectedDeviceAsync();
+                await LoadStackPackagesAsync(context);
+                CheckIfDeviceHasPackage();
+                await FilterService.LoadFilterAsync();
+
+                isLoading = false;
+            }
+
+            log.Info("Select action page loaded successfully.");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading select action page.", ex);
         }
     }
 
     private async Task LoadSelectedDeviceAsync()
     {
-        var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
-        selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+        try
+        {
+            var detailUrl = $"https://app.torizon.io/api/v2beta/devices/{deviceUuid}";
+            selectedDevice = await TorizonService.GetItemAsync<DetailedDevice>(detailUrl);
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading devices from database", ex);
+        }
     }
 
     private async Task LoadStackPackagesAsync(AppDbContext context)
     {
-        stacksPackages = await context.StackPackages
+        try
+        {
+            stacksPackages = await context.StackPackages
             .Include(pp => pp.Package)
             .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading stack packages from database", ex);
+        }
     }
 
     private void CheckIfDeviceHasPackage()
     {
-        if (selectedDevice?.Packages == null || selectedDevice.Packages.Count < 2)
+        try
         {
-            hasVersion = false;
-            return;
+            if (selectedDevice?.Packages == null || selectedDevice.Packages.Count < 2)
+            {
+                hasVersion = false;
+                return;
+            }
+
+            var devicePackage = selectedDevice.Packages[1].Name;
+            hasVersion = stacksPackages.Any(sp => sp.PackageId == devicePackage);
+
+            log.Info($"Checked device package '{devicePackage}'. Has version: {hasVersion}");
+        }
+        catch(Exception ex)
+        {
+            log.Error("Error while checking if device has package.", ex);
         }
 
-        var devicePackage = selectedDevice.Packages[1].Name;
-        hasVersion = stacksPackages.Any(sp => sp.PackageId == devicePackage);
     }
 
     private void UpdateImage()
@@ -104,18 +138,27 @@ else
 
     private async Task UpdateVersion()
     {
-        if (hasVersion)
+        try
         {
-            UriHelper.NavigateTo($"/updateVersion/{deviceUuid}");
-        }
-        else
-        {
-            await Swal.FireAsync(new SweetAlertOptions
+            if (hasVersion)
             {
-                Title = "Sem suporte",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+                log.Info($"Initiating version update for device '{deviceUuid}'.");
+                UriHelper.NavigateTo($"/updateVersion/{deviceUuid}");
+            }
+            else
+            {
+                log.Warn($"Device '{deviceUuid}' does not have version support.");
+                await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Sem suporte",
+                    Icon = SweetAlertIcon.Warning,
+                    ConfirmButtonColor = "#0B5120"
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error updating version for device '{deviceUuid}'.", ex);
         }
     }
 }

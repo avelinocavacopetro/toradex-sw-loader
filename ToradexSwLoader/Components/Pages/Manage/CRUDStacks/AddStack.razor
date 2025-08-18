@@ -1,5 +1,6 @@
 ﻿@page "/manageStacks/add"
 
+@using log4net  
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -92,6 +93,7 @@
 @code {
     // Object Variables
     private List<Product> selectedProducts = new List<Product>();
+    private static readonly ILog log = LogManager.GetLogger(typeof(AddStack));
 
     private IEnumerable<Product> PaginatedProducts =>
     FilterService.SelectedProducts
@@ -108,8 +110,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-        selectedProducts = new List<Product>();
+        try
+        {
+            await FilterService.LoadFilterAsync();
+            selectedProducts = new List<Product>();
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading products. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar a página",
+                Text = "Ocorreu um erro ao inicializar a página de adicionar stack.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/error");
+        }
     }
 
     private void ToggleProduct(ChangeEventArgs e, Product product)
@@ -129,23 +146,38 @@
 
     private async Task SaveStack()
     {
-        if(!ValidateStack())
-            return;
-
-        if (!ValidateProductCount())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        if (await StackExistsAsync(context))
+        try
         {
-            await ShowStackExistsAlert();
+            if (!ValidateStack())
+                return;
+
+            if (!ValidateProductCount())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            if (await StackExistsAsync(context))
+            {
+                await ShowStackExistsAlert();
+                return;
+            }
+
+            await AddStackAsync(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageStacks");
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error saving stack. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar a stack",
+                Text = "Ocorreu um erro ao tentar salvar a stack.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
         }
-
-        await AddStackAsync(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageStacks");
     }
 
     private bool ValidateStack()

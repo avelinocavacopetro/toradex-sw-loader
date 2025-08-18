@@ -1,5 +1,6 @@
 ﻿@page "/manageUsers"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
@@ -49,12 +50,13 @@ else
             <table class="table mt-3 w-100" style="table-layout: fixed;">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                        <th style="width: 20%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
                                                        border-right: 1px solid white;">Nome do Utilizador</th>
-                        <th style="width: 40%; text-align: center; border-right: 1px solid white;">User</th>
-                        <th style="width: 25%; text-align: center; border-right: 1px solid white;">Função</th>
-                        <th style="width: 35%;"></th>
-                        <th style="width: 35%; border-top-right-radius: 5px;"></th>
+                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">Utilizador</th>
+                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">Função</th>
+                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Entidade</th>
+                        <th style="width: 7.5%;"></th>
+                        <th style="width: 7.5%; border-top-right-radius: 5px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -91,7 +93,17 @@ else
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary py-2 px-3">@user.UserRole?.Name</span>
+                                        @user.UserRole?.Name
+                                    }
+                                </td>
+                                <td class="text-center align-middle">
+                                    @if (user.EntityId is null)
+                                    {
+                                        <text>Sem entidade</text>
+                                    }
+                                    else
+                                    {
+                                        @user.Entity?.Name
                                     }
                                 </td>
                                 <td class="text-center align-middle">
@@ -164,6 +176,7 @@ else
     private List<UserPetrotec> users = new();
     private List<UserPetrotec> paginatedUsers = new();
     private List<UserRole> roles = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(ManageUsers));
 
     private IEnumerable<UserPetrotec> FilteredUsers =>
     string.IsNullOrWhiteSpace(searchTerm)
@@ -206,18 +219,35 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        using var context = DbContextFactory.CreateDbContext();
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
 
-        users = await context.Users
-            .Where(u => u.Enabled)
-            .Include(u => u.UserRole)
-            .ToListAsync();
+            users = await context.Users
+                .Where(u => u.Enabled)
+                .Include(u => u.UserRole)
+                .Include(u => u.Entity)
+                .ToListAsync();
 
-        roles = await context.Roles.ToListAsync();
+            roles = await context.Roles.ToListAsync();
 
-        UpdatePage();
+            UpdatePage();
 
-        isLoading = false;
+            log.Info("Users loaded successfully.");
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error loading users. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro",
+                Text = "Ocorreu um erro ao carregar os dados. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonText = "OK",
+                ConfirmButtonColor = "#d33"
+            });
+        }
     }
 
     private void NavigateToAddUser()
@@ -232,34 +262,50 @@ else
 
     private async Task DisableUser(int id)
     {
-        var result = await Swal.FireAsync(new SweetAlertOptions
+        try
         {
-            Title = "Deseja desativar este utilizador?",
-            Icon = SweetAlertIcon.Warning,
-            ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
-            ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
-        });
-
-        if (result.IsConfirmed)
-        {
-            isLoading = true;
-
-            using var context = DbContextFactory.CreateDbContext();
-            var userDb = await context.Users.FirstOrDefaultAsync(p => p.Id == id);
-
-            if (userDb != null)
+            var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                userDb.Enabled = false;
+                Title = "Deseja desativar este utilizador?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Continuar",
+                ConfirmButtonColor = "#0B5120",
+                CancelButtonText = "Cancelar"
+            });
 
-                await context.SaveChangesAsync();
+            if (result.IsConfirmed)
+            {
+                isLoading = true;
+
+                using var context = DbContextFactory.CreateDbContext();
+                var userDb = await context.Users.FirstOrDefaultAsync(p => p.Id == id);
+
+                if (userDb != null)
+                {
+                    userDb.Enabled = false;
+
+                    await context.SaveChangesAsync();
+                }
+
+                users.RemoveAll(u => u.Id == id);
+
+                isLoading = false;
+                StateHasChanged();
             }
-
-            users.RemoveAll(u => u.Id == id);
-
-            isLoading = false;
-            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Error disabling user with ID {id}. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro",
+                Text = "Ocorreu um erro ao desativar o utilizador. Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonText = "OK",
+                ConfirmButtonColor = "#d33"
+            });
+            return;
         }
     }
 

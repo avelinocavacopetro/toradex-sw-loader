@@ -1,5 +1,6 @@
 ﻿@page "/manageEntities/edit/{EntityId:int}"
 
+@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FilterService FilterService
 @inject SweetAlertService Swal
@@ -127,6 +128,7 @@ else
     // Object Variables
     private List<Fleet> fleets = new();
     private List<Fleet> selectedFleets = new();
+    private static readonly ILog log = LogManager.GetLogger(typeof(EditEntity));
 
     private IEnumerable<Fleet> FilteredFleets =>
     string.IsNullOrWhiteSpace(searchTerm)
@@ -166,24 +168,39 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FilterService.LoadFilterAsync();
-
-        using var context = DbContextFactory.CreateDbContext();
-        fleets = await context.Fleets.ToListAsync();
-        var entity = await context.Entities.FirstOrDefaultAsync(e => e.Id == EntityId);
-
-        if (entity != null)
+        try
         {
-            entityName = entity.Name;
-            observations = entity.Observation;
+            await FilterService.LoadFilterAsync();
 
-            selectedFleets = await context.EntityFleets
-                .Where(ef => ef.EntityId == EntityId)
-                .Select(ef => ef.Fleet!)
-                .ToListAsync();
+            using var context = DbContextFactory.CreateDbContext();
+            fleets = await context.Fleets.ToListAsync();
+            var entity = await context.Entities.FirstOrDefaultAsync(e => e.Id == EntityId);
+
+            if (entity != null)
+            {
+                entityName = entity.Name;
+                observations = entity.Observation;
+
+                selectedFleets = await context.EntityFleets
+                    .Where(ef => ef.EntityId == EntityId)
+                    .Select(ef => ef.Fleet!)
+                    .ToListAsync();
+            }
+
+            isLoading = false;
         }
-
-        isLoading = false;
+        catch (Exception ex)
+        {
+            log.Error("Error loading entity. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao carregar a entidade!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
+            NavigationManager.NavigateTo("/manageEntities");
+        }
     }
 
     private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
@@ -203,17 +220,32 @@ else
 
     private async Task SaveChanges()
     {
-        if (!ValidateEntityName())
+        try
+        {
+            if (!ValidateEntityName())
+                return;
+
+            if (!ValidateFleetCount())
+                return;
+
+            using var context = DbContextFactory.CreateDbContext();
+
+            await ChangeEntity(context);
+            await ShowSuccessAlert();
+            NavigationManager.NavigateTo("/manageEntities");
+        } 
+        catch (Exception ex)
+        {
+            log.Error("Error saving changes to entity. ", ex);
+            await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "Erro ao salvar as alterações!",
+                Text = "Por favor, tente novamente mais tarde.",
+                Icon = SweetAlertIcon.Error,
+                ConfirmButtonColor = "#0B5120"
+            });
             return;
-
-        if (!ValidateFleetCount())
-            return;
-
-        using var context = DbContextFactory.CreateDbContext();
-
-        await ChangeEntity(context);
-        await ShowSuccessAlert();
-        NavigationManager.NavigateTo("/manageEntities");
+        }
     }
 
     private bool ValidateEntityName()
