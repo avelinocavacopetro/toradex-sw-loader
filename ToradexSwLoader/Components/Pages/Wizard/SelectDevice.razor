@@ -9,19 +9,21 @@
 @inject FilterService FilterService 
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
+@inject IStringLocalizer<Resource> localizer
+
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<PageTitle>Selecionar Equipamento</PageTitle>
+<PageTitle>@localizer["SelectEquipment"]</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@localizer["Loading"]...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@localizer["Loading"]...</p>
         </div>
     </div>
 }
@@ -35,13 +37,13 @@ else
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
-        <h3 class="text-center pb-5">Selecionar Equipamento</h3>
+        <h3 class="text-center pb-5">@localizer["SelectEquipment"]</h3>
 
         @if (FilterService.SelectedDevices.Count == 0)
         {
             <div class="d-flex justify-content-center align-items-center" style="min-height:50vh;">
                 <div class="alert alert-dark text-center w-75" role="alert">
-                    Não existem equipamentos disponíveis.
+                    @localizer["NoDevices"]
                 </div>
             </div>
         }
@@ -126,7 +128,7 @@ else
             {
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = "Este dispositivo não tem produtos associados.",
+                    Title = @localizer["DevicesProducts"],
                     Icon = SweetAlertIcon.Warning,
                     ConfirmButtonColor = "#0B5120"
                 });
@@ -174,7 +176,7 @@ else
 
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = "Selecione um dispositivo!",
+                    Title = @localizer["WarningDevice"],
                     Icon = SweetAlertIcon.Warning,
                     ConfirmButtonColor = "#0B5120",
                 });

@@ -1,5 +1,6 @@
 ﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject LoginService LoginService
+@inject IStringLocalizer<Resource> localizer
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
@@ -10,7 +11,7 @@
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
-                        <span class="bi bi-house icon-align" aria-hidden="true"></span> Inicio
+                        <span class="bi bi-house icon-align" aria-hidden="true"></span> @localizer["MenuHome"]
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
@@ -24,7 +25,7 @@
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="maintenance" Match="NavLinkMatch.All">
-                        <span class="bi bi-tools icon-align" aria-hidden="true"></span> Manutenção
+                        <span class="bi bi-tools icon-align" aria-hidden="true"></span> @localizer["MenuManut"]
                     </NavLink>
                 </div>
             }
@@ -33,14 +34,14 @@
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="devices" style="gap: 0.5rem;">
-                        <span class="bi bi-motherboard icon-align" aria-hidden="true"></span> Dispositivos
+                        <span class="bi bi-motherboard icon-align" aria-hidden="true"></span> @localizer["MenuDevice"]
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
                     <a class="nav-link d-flex align-items-center justify-content-between" style="cursor: pointer;" @onclick="ToggleMenu">
                         <div class="d-flex align-items-center gap-2">
                             <i class="bi bi-gear icon-align"></i>
-                            <span class="align-text">Administração</span>
+                            <span class="align-text">@localizer["MenuAdmin"]</span>
                         </div>
 
                         <i class="bi @(menuOpen ? "bi-chevron-up" : "bi-chevron-down") icon-align"></i>
@@ -50,34 +51,34 @@
                     {
                         <div class="pt-1">
                             <NavLink class="nav-link pb-1" href="manageDevices">
-                                <span aria-hidden="true"></span> <i class="bi bi-motherboard icon-align"></i> Gerir Dispositivos
+                                <span aria-hidden="true"></span> <i class="bi bi-motherboard icon-align"></i> @localizer["ManageDevices"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="manageProducts">
-                                <span aria-hidden="true"></span> <i class="bi bi-cpu icon-align"></i> Gerir Produtos
+                                <span aria-hidden="true"></span> <i class="bi bi-cpu icon-align"></i> @localizer["ManageProducts"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="manageStacks">
-                                <span aria-hidden="true"></span> <i class="bi bi-layers icon-align"></i> Gerir Stacks
+                                <span aria-hidden="true"></span> <i class="bi bi-layers icon-align"></i> @localizer["ManageStacks"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="managePackages">
-                                <span aria-hidden="true"></span> <i class="bi bi-file-earmark-code icon-align"></i> Gerir Pacotes
+                                <span aria-hidden="true"></span> <i class="bi bi-file-earmark-code icon-align"></i> @localizer["ManagePackages"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="manageFleets">
-                                <span aria-hidden="true"></span> <i class="bi bi-truck icon-align"></i> Gerir Frotas
+                                <span aria-hidden="true"></span> <i class="bi bi-truck icon-align"></i> @localizer["ManageFleets"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="manageEntities">
-                                <span aria-hidden="true"></span> <i class="bi bi-globe icon-align"></i> Gerir Entidades
+                                <span aria-hidden="true"></span> <i class="bi bi-globe icon-align"></i> @localizer["ManageEntity"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="manageUsers">
-                                <span aria-hidden="true"></span> <i class="bi bi-person icon-align"></i> Gerir Utilizadores
+                                <span aria-hidden="true"></span> <i class="bi bi-person icon-align"></i> @localizer["ManageUsers"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="managePatterns">
-                                <span aria-hidden="true"></span> <i class="bi bi-funnel icon-align"></i> Gerir Patterns
+                                <span aria-hidden="true"></span> <i class="bi bi-funnel icon-align"></i> @localizer["ManagePatterns"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="manageSecret">
-                                <span aria-hidden="true"></span> <i class="bi bi-gear icon-align"></i> Definições
+                                <span aria-hidden="true"></span> <i class="bi bi-gear icon-align"></i> @localizer["Settings"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="adminHistory">
-                                <span aria-hidden="true"></span> <i class="bi bi-journal-text icon-align"></i> Carregamentos
+                                <span aria-hidden="true"></span> <i class="bi bi-journal-text icon-align"></i> @localizer["Updates"]
                             </NavLink>
                         </div>
                     }
@@ -93,7 +94,7 @@
 
 <style>
     .nav-link {
-        font-size: 1rem;
+        font-size: 0.8rem;
         background-color: transparent !important;
         display: flex;
         align-items: center;

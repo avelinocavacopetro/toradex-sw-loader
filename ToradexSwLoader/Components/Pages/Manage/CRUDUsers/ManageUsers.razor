@@ -4,17 +4,18 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Gerir Utilizadores</PageTitle>
+<PageTitle>@localizer["ManageUsers"]</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@localizer["Loading"]...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@localizer["Loading"]...</p>
         </div>
     </div>
 }
@@ -23,14 +24,14 @@ else
     <div class="custom-container">
         <div class="page-title">
             <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
-            <h3 class="pt-2">Gerir Utilizadores</h3>
+            <h3 class="pt-2">@localizer["ManageUsers"]s</h3>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="w-50 position-relative">
                 <input type="text"
                        class="form-control py-2 ps-5"
-                       placeholder="Pesquisar utilizador pelo nome..."
+                       placeholder="@localizer["SearchUser"]"
                        style="border: 1px solid grey;"
                        @bind="searchTerm"
                        @bind:event="oninput" />
@@ -41,7 +42,7 @@ else
                 <button class="btn btn-color btn-lg py-2"
                         style="font-size: 1.25rem;"
                         @onclick="NavigateToAddUser">
-                    <i class="bi bi-plus"></i> Novo
+                    <i class="bi bi-plus"></i> @localizer["New"]
                 </button>
             </div>
         </div>
@@ -50,13 +51,13 @@ else
             <table class="table mt-3 w-100" style="table-layout: fixed;">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th style="width: 20%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                       border-right: 1px solid white;">Nome do Utilizador</th>
-                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">Utilizador</th>
-                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">Função</th>
-                        <th style="width: 20%; text-align: center; border-right: 1px solid white;">Entidade</th>
-                        <th style="width: 7.5%;"></th>
-                        <th style="width: 7.5%; border-top-right-radius: 5px;"></th>
+                        <th style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
+                                                           border-right: 1px solid white;">@localizer["Name"]</th>
+                        <th style="width: 40%; text-align: center; border-right: 1px solid white;">User</th>
+                        <th style="width: 25%; text-align: center; border-right: 1px solid white;">@localizer["Language"]</th>
+                        <th style="width: 25%; text-align: center; border-right: 1px solid white;">@localizer["Function"]</th>
+                        <th style="width: 35%;"></th>
+                        <th style="width: 35%; border-top-right-radius: 5px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,7 +65,7 @@ else
                     {
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                Sem dados disponíveis
+                                @localizer["NoData"]
                             </td>
                         </tr>
                     }
@@ -79,6 +80,9 @@ else
                                 <td style="text-align: center; vertical-align: middle;">
                                     @user.Email
                                 </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    @GetCultureName(user.Culture)
+                                </td>
                                 <td class="text-center align-middle">
                                     @if (editingUserId == user.Id)
                                     {
@@ -87,23 +91,13 @@ else
                                                 style="width: 90%; max-width: 200px; height: 32px;">
                                             @foreach (var role in roles)
                                             {
-                                                <option value="@role.Id" selected="@(role.Id == user.UserRole?.Id)">@role.Name</option>
+                                                <option value="@role.Id" selected="@(role.Id == user.UserRole?.Id)">@GetRoleName(role.Name)</option>
                                             }
                                         </select>
                                     }
                                     else
                                     {
-                                        @user.UserRole?.Name
-                                    }
-                                </td>
-                                <td class="text-center align-middle">
-                                    @if (user.EntityId is null)
-                                    {
-                                        <text>Sem entidade</text>
-                                    }
-                                    else
-                                    {
-                                        @user.Entity?.Name
+                                        <span class="badge bg-secondary py-2 px-3">@GetRoleName(user.UserRole?.Name ?? "")</span>
                                     }
                                 </td>
                                 <td class="text-center align-middle">
@@ -241,13 +235,30 @@ else
             log.Error("Error loading users. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro",
-                Text = "Ocorreu um erro ao carregar os dados. Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["ErrorLoading"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonText = "OK",
                 ConfirmButtonColor = "#d33"
             });
         }
+    }
+
+    public string GetCultureName(string cultureCode)
+    {
+        return cultureCode switch
+        {
+            "pt-PT" => @localizer["Portuguese"],
+            "es-ES" => @localizer["Spanish"],
+            "en-US" => @localizer["English"],
+            "fr-FR" => @localizer["French"],
+            _ => cultureCode 
+        };
+    }
+
+    private string GetRoleName(string roleName)
+    {
+        return localizer[roleName];
     }
 
     private void NavigateToAddUser()
@@ -266,12 +277,12 @@ else
         {
             var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Deseja desativar este utilizador?",
+                Title = @localizer["WantContinue"],
                 Icon = SweetAlertIcon.Warning,
                 ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
+                ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
+                CancelButtonText = @localizer["Cancel"]
             });
 
             if (result.IsConfirmed)
@@ -299,8 +310,8 @@ else
             log.Error($"Error disabling user with ID {id}. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro",
-                Text = "Ocorreu um erro ao desativar o utilizador. Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonText = "OK",
                 ConfirmButtonColor = "#d33"

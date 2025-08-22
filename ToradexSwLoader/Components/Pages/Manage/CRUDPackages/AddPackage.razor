@@ -5,14 +5,15 @@
 @inject SweetAlertService Swal
 @inject FilterService FilterService
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Adicionar Pacote</PageTitle>
+<PageTitle>@localizer["AddPackage"]</PageTitle>
 
 <div class="custom-container">
     <div class="page-title d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
             <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-            <h3 class="ms-2 mb-0">Adicionar Pacote</h3>
+            <h3 class="ms-2 mb-0">@localizer["AddPackage"]</h3>
         </div>
 
         <div class="d-flex gap-3">
@@ -24,7 +25,7 @@
             <button class="btn btn-outline-light border border-white border-2 fs-5"
                     style="width: 150px;"
                     @onclick="Save">
-                <i class="bi bi-floppy"></i> Salvar
+                <i class="bi bi-floppy"></i> @localizer["Save"]
             </button>
         </div>
     </div>
@@ -45,7 +46,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-3 mb-3">
-                <label for="packageInput" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Nome</label>
+                <label for="packageInput" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Name"]</label>
                 <div class="flex-grow-1 position-relative">
                     <input id="packageInput" class="form-control w-100" type="text" style="border: 1px solid grey"
                            @bind="searchTerm"
@@ -72,7 +73,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <label for="versionInput" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Versão</label>
+                <label for="versionInput" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Version"]</label>
                 <div class="flex-grow-1 position-relative">
                     <input id="versionInput" class="form-control w-100" type="text" style="border: 1px solid grey"
                            @bind="versionSearchTerm"
@@ -157,8 +158,8 @@
             log.Error("Error loading packages options. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao carregar os dados",
-                Text = "Ocorreu um erro ao inicializar a página. Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["ErrorLoading"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -263,8 +264,8 @@
             log.Error("Error saving package. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao salvar o pacote",
-                Text = "Ocorreu um erro ao tentar salvar o pacote. Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -278,7 +279,7 @@
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor selecione um stack e um pacote válido!",
+                Title = @localizer["PleaseSelectPackage"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -297,7 +298,7 @@
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Esta combinação já existe!",
+            Title = @localizer["AlreadyExists"],
             Icon = SweetAlertIcon.Warning,
             ConfirmButtonColor = "#0B5120"
         });
@@ -319,7 +320,7 @@
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Pacote adicionado com sucesso!",
+            Title = @localizer["AddedSuccess"],
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });

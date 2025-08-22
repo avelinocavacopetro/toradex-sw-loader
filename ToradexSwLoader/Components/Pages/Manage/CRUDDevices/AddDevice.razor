@@ -4,14 +4,15 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Adicionar Dispositivo</PageTitle>
+<PageTitle>@localizer["AddDevice"]</PageTitle>
 
 <div class="custom-container">
     <div class="page-title d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
             <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-            <h3 class="ms-2 mb-0">Adicionar Dispositivo</h3>
+            <h3 class="ms-2 mb-0">@localizer["AddDevice"]</h3>
         </div>
 
         <div class="d-flex gap-3">
@@ -23,7 +24,7 @@
             <button class="btn btn-outline-light border border-white border-2 fs-5"
                     style="width: 150px;"
                     @onclick="SaveDevice">
-                <i class="bi bi-floppy"></i> Salvar
+                <i class="bi bi-floppy"></i> @localizer["Save"]
             </button>
         </div>
     </div>
@@ -31,8 +32,8 @@
     <div class="edit-form mt-4">
         <div class="d-flex align-items-center gap-3">
             <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
-                Nome do Dispositivo
-                <span style="font-size: 15px;"> (máx. 30 caracteres)</span> :
+                @localizer["Name"]
+                <span style="font-size: 15px;"> (@localizer["max"]. 30 @localizer["Characters"])</span> :
             </label>
             <input type="text" @bind="deviceName"
                    class="form-control"
@@ -73,8 +74,8 @@
             log.Error("Error saving device. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao salvar dispositivo",
-                Text = "Ocorreu um erro. Por favor, tente novamente mais tarde.",
+                Title = @localizer["ErrorSavingDevice"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -88,7 +89,7 @@
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor insira um nome válido!",
+                Title = @localizer["ValidName"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -99,8 +100,8 @@
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Nome muito comprido!",
-                Text = "O nome do dispositivo deve ter no máximo 30 caracteres.",
+                Title = @localizer["LongName"],
+                Text = @localizer["Max30"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -120,7 +121,7 @@
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Este dispositivo já existe!",
+            Title = @localizer["DeviceExists"],
             Icon = SweetAlertIcon.Warning,
             ConfirmButtonColor = "#0B5120"
         });
@@ -142,7 +143,7 @@
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Dispositivo adicionado com sucesso!",
+            Title = @localizer["AddedSuccess"],
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });

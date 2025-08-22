@@ -5,17 +5,18 @@
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Gerir Stacks</PageTitle>
+<PageTitle>@localizer["ManageStacks"]</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@localizer["Loading"]...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@localizer["Loading"]...</p>
         </div>
     </div>
 }
@@ -24,14 +25,14 @@ else
     <div class="custom-container">
         <div class="page-title">
             <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
-            <h3 class="pt-2">Gerir Stacks</h3>
+            <h3 class="pt-2">@localizer["ManageStacks"]</h3>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="w-50 position-relative">
                 <input type="text"
                        class="form-control py-2 ps-5"
-                       placeholder="Pesquisar stack pelo nome..."
+                       placeholder="@localizer["SearchStack"]"
                        style="border: 1px solid grey;"
                        @bind="searchTerm"
                        @bind:event="oninput" />
@@ -42,12 +43,12 @@ else
                 <button class="btn btn-color btn-lg py-2"
                         style="font-size: 1.25rem;"
                         @onclick="NavigateToAddStack">
-                    <i class="bi bi-plus"></i> Novo
+                    <i class="bi bi-plus"></i> @localizer["New"]
                 </button>
                 <button class="btn btn-color btn-lg"
                         style="font-size: 1.25rem;"
                         @onclick="ApplyFilter">
-                    <i class="bi bi-floppy"></i> Aplicar
+                    <i class="bi bi-floppy"></i> @localizer["Apply"]
                 </button>
             </div>
         </div>
@@ -59,15 +60,15 @@ else
                         <th onclick="@(() => SortByColumn("Name"))"
                             style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
                                                    border-right: 1px solid white; cursor: pointer;">
-                            Nome da Stack
+                            @localizer["Name"]
                             <span style="font-size: 0.9rem; margin-left: 5px;
                                                          color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
                                 @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
                             </span>
                         </th>
 
-                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">Produtos Associados</th>
-                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">Ativo</th>
+                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">@localizer["LinkedProducts"]</th>
+                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">@localizer["Active"]</th>
                         <th style="width: 12.5%;"></th>
                         <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
                     </tr>
@@ -77,7 +78,7 @@ else
                     {
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                Sem dados disponíveis
+                                @localizer["NoData"]
                             </td>
                         </tr>
                     }
@@ -246,8 +247,8 @@ else
             log.Error("Error loading stacks. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao carregar stacks",
-                Text = "Ocorreu um erro ao carregar as stacks. Por favor, tente novamente mais tarde.",
+                Title = @localizer["ErrorLoading"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -287,7 +288,7 @@ else
             {
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = "Por favor selecione pelo menos uma stack!",
+                    Title = @localizer["PleaseSelectStack"],
                     Icon = SweetAlertIcon.Warning,
                     ConfirmButtonColor = "#0B5120"
                 });
@@ -299,7 +300,7 @@ else
 
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = "Filtros aplicados com sucesso!",
+                    Title = @localizer["FiltersApplied"],
                     Icon = SweetAlertIcon.Success,
                     ConfirmButtonColor = "#0B5120"
                 });
@@ -310,8 +311,8 @@ else
             log.Error("Error applying filter. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao aplicar filtros",
-                Text = "Ocorreu um erro ao aplicar os filtros. Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -325,12 +326,12 @@ else
         {
             var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Deseja desativar esta stack?",
+                Title = @localizer["WantContinue"],
                 Icon = SweetAlertIcon.Warning,
                 ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
+                ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
+                CancelButtonText = @localizer["Cancel"]
             });
 
             if (result.IsConfirmed)
@@ -357,8 +358,8 @@ else
             log.Error("Error disabling stack. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao desativar stack",
-                Text = "Ocorreu um erro ao desativar a stack. Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });

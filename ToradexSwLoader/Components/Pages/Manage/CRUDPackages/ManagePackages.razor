@@ -4,20 +4,21 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Gerir Pacotes</PageTitle>
+<PageTitle>@localizer["ManagePackages"]</PageTitle>
 
 <div class="custom-container">
     <div class="page-title">
         <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
-        <h3 class="pt-2">Gerir Pacotes</h3>
+        <h3 class="pt-2">@localizer["ManagePackages"]</h3>
     </div>
 
     <div class="d-flex justify-content-between align-items-center mt-4">
         <div class="w-50 position-relative">
             <input type="text"
                    class="form-control py-2 ps-5"
-                   placeholder="Pesquisar pacote pela stack..."
+                   placeholder="@localizer["SearchPackage"]"
                    style="border: 1px solid grey;"
                    @bind="searchTerm"
                    @bind:event="oninput" />
@@ -28,7 +29,7 @@
             <button class="btn btn-color btn-lg py-2"
                     style="font-size: 1.25rem;"
                     @onclick="NavigateToAdd">
-                <i class="bi bi-plus"></i> Novo
+                <i class="bi bi-plus"></i> @localizer["New"]
             </button>
         </div>
     </div>
@@ -46,8 +47,8 @@
                             @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
                         </span>
                     </th>
-                    <th style="width: 30%; text-align: center; border-right: 1px solid white;">Pacote</th>
-                    <th style="width: 15%; text-align: center; border-right: 1px solid white;">Versão</th>
+                    <th style="width: 30%; text-align: center; border-right: 1px solid white;">@localizer["Package"]</th>
+                    <th style="width: 15%; text-align: center; border-right: 1px solid white;">@localizer["Version"]</th>
                     <th style="width: 15%;"></th>
                     <th style="width: 15%;"></th>
                 </tr>
@@ -57,7 +58,7 @@
                 {
                     <tr>
                         <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                            Sem dados disponíveis
+                            @localizer["NoData"]
                         </td>
                     </tr>
                 }
@@ -183,8 +184,8 @@
             log.Error("Error loading packages. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro",
-                Text = "Ocorreu um erro ao carregar os pacotes.",
+                Title = @localizer["Error"],
+                Text = @localizer["ErrorLoading"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonText = "OK"
             });
@@ -233,12 +234,12 @@
         {
             var result = await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Deseja remover?",
+                Title = @localizer["WantContinue"],
                 Icon = SweetAlertIcon.Warning,
                 ShowCancelButton = true,
-                ConfirmButtonText = "Continuar",
+                ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = "Cancelar"
+                CancelButtonText = @localizer["Cancel"]
             });
 
             if (result.IsConfirmed)
@@ -260,8 +261,8 @@
             log.Error("Error removing package. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro",
-                Text = "Ocorreu um erro ao remover o pacote.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonText = "OK"
             });

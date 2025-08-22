@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.JSInterop;
 using System.Text;
 using ToradexSwLoader.Data;
 
@@ -10,6 +12,7 @@ namespace ToradexSwLoader.Services
 
         public int UserId { get; private set; }
         public string Username { get; private set; } = string.Empty;
+        public string UserCulture { get; private set; } = "pt-PT";
 
         public event Action? OnLoginChanged;
 
@@ -20,11 +23,17 @@ namespace ToradexSwLoader.Services
             _dbContextFactory = dbContextFactory;
         }
 
-        public void SetLogin(int userId, string username)
+        public void SetLogin(int userId, string username, string culture)
         {
             UserId = userId;
             Username = username;
+            UserCulture = culture;
             OnLoginChanged?.Invoke();
+        }
+
+        public string GetUserCulture()
+        {
+            return UserCulture ?? "pt-PT"; 
         }
 
         public void Logout()

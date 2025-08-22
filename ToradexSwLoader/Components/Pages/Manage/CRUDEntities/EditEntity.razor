@@ -5,17 +5,18 @@
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Editar Entidade</PageTitle>
+<PageTitle>@localizer["EditEntity"]</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@localizer["Loading"]...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@localizer["Loading"]...</p>
         </div>
     </div>
 }
@@ -25,7 +26,7 @@ else
         <div class="page-title d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-                <h3 class="ms-2 mb-0">Adicionar Entidade</h3>
+                <h3 class="ms-2 mb-0">@localizer["EditEntity"]</h3>
             </div>
 
             <div class="d-flex gap-3">
@@ -37,7 +38,7 @@ else
                 <button class="btn btn-outline-light border border-white border-2 fs-5"
                         style="width: 150px;"
                         @onclick="SaveChanges">
-                    <i class="bi bi-floppy"></i> Salvar
+                    <i class="bi bi-floppy"></i> @localizer["Save"]
                 </button>
             </div>
         </div>
@@ -45,7 +46,7 @@ else
         <div class="edit-form mt-4">
             <div class="d-flex align-items-center gap-3">
                 <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
-                    Nome da Entidade
+                    @localizer["Name"]
                     <span style="font-size: 15px;"> (máx. 50 caracteres)</span> :
                 </label>
                 <input type="text" @bind="entityName"
@@ -54,21 +55,21 @@ else
                        maxlength="50"/>
             </div>
             <div class="d-flex align-items-center gap-3 mt-3">
-                <label for="text" class="pb-4" style="font-size: 1.5rem;">Observações</label>
+                <label for="text" class="pb-4" style="font-size: 1.5rem;">@localizer["Observations"]</label>
                 <textarea @bind="observations"
                           class="form-control w-100 mx-auto"
                           style="font-size: 1.2rem; text-align: center; border: 1px solid grey;"
                           rows="2"
-                          placeholder="Insira uma observação...">
+                          placeholder="@localizer["InsertObservation"]">
                     </textarea>
             </div>
 
             <br />
-            <h4>Selecionar Frota(s):</h4>
+            <h4>@localizer["SelectFleets"]</h4>
 
             <div class="w-50">
                 <input type="text" class="form-control" style="border: 1px solid grey;"
-                       placeholder="Pesquisar frota pelo nome..."
+                       placeholder="@localizer["SearchFleet"]"
                        @bind="searchTerm" @bind:event="oninput" />
             </div>
 
@@ -76,8 +77,8 @@ else
                 <table class="table mt-3 w-100" style="table-layout: fixed;">
                     <thead style="background-color: #0c6527; color: white;">
                         <tr>
-                            <th style="width: 70%; text-align: left; padding-left: 20px;">Frota</th>
-                            <th style="width: 30%; text-align: center;">Selecionar</th>
+                            <th style="width: 70%; text-align: left; padding-left: 20px;">@localizer["Fleet"]</th>
+                            <th style="width: 30%; text-align: center;">@localizer["Select"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -194,8 +195,8 @@ else
             log.Error("Error loading entity. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao carregar a entidade!",
-                Text = "Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -239,8 +240,8 @@ else
             log.Error("Error saving changes to entity. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao salvar as alterações!",
-                Text = "Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -254,7 +255,7 @@ else
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor insira um nome válido!",
+                Title = @localizer["ValidName"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -265,8 +266,8 @@ else
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Nome muito comprido!",
-                Text = "O nome da entidade deve ter no máximo 50 caracteres.",
+                Title = @localizer["LongName"],
+                Text = @localizer["Max30"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -282,7 +283,7 @@ else
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Deve selecionar pelo menos 1 frota!",
+                Title = @localizer["PleaseSelectFleet"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -319,7 +320,7 @@ else
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Entidade editada com sucesso!",
+            Title = @localizer["AddedSuccess"],
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });

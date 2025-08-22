@@ -21,6 +21,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.8" />
     <PackageReference Include="MySql.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Syncfusion.Blazor" Version="30.1.41" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.7" />
@@ -28,6 +29,15 @@
     <PackageReference Include="System.Security.Permissions" Version="9.0.7" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.7" />
     <PackageReference Include="System.Windows.Extensions" Version="9.0.7" />
+    <Compile Update="Locales\Resource.pt-PT.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resource.pt-PT.resx</DependentUpon>
+    </Compile>
+    <EmbeddedResource Update="Locales\Resource.pt-PT.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource.pt-PT.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
 	  <None Update="Log4NetConfig.xml">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
