@@ -4,24 +4,25 @@
 @inject SweetAlertService Swal
 @inject LoginService LoginService
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
 
 <div style="display: flex; align-items: center; flex-direction: column;">
     <p class="fs-5 text-muted text-center mb-2">
-        Utilize o comando abaixo para aceder remotamente ao dispositivo via SSH.
+        @localizer["SSHComand"]
     </p>
     <p class="fs-5 text-muted text-center mb-2">
-        Clique no ícone para copiar.
+        @localizer["ClickCopy"]
     </p>
 
     <h5 class="custom-label text-center px-5">
         @sshLink
-        <span class="bi bi-copy fs-4 px-3" aria-hidden="true" style="cursor:pointer" @onclick="CopyToClipboard" title="Copiar"></span>
+        <span class="bi bi-copy fs-4 px-3" aria-hidden="true" style="cursor:pointer" @onclick="CopyToClipboard" title="@localizer["Copy"]"></span>
     </h5>
 
     @if (copied)
     {
         <div class="text-success text-center mt-2">
-            Comando copiado para a área de transferência!
+            @localizer["Copied"]
         </div>
     }
 </div>

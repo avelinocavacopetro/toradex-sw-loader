@@ -4,17 +4,18 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject FinalProductStateService ProductState
 @inject SweetAlertService Swal
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Histórico de Carregamentos</PageTitle>
+<PageTitle>@localizer["History"]</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@localizer["Loading"]...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@localizer["Loading"]...</p>
         </div>
     </div>
 }
@@ -23,14 +24,14 @@ else
     <div class="custom-container d-flex flex-column">
         <div class="page-title">
             <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
-            <h3 class="pt-2">Histórico de Carregamentos</h3>
+            <h3 class="pt-2">@localizer["History"]</h3>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="w-50 position-relative">
                 <input type="text"
                        class="form-control py-2 ps-5"
-                       placeholder="Pesquisar produto pelo nome..."
+                       placeholder="@localizer["SearchProduct"]"
                        style="border: 1px solid grey;"
                        @bind="searchTerm"
                        @bind:event="oninput" />
@@ -38,10 +39,10 @@ else
             </div>
 
             <div class="d-flex justify-content-end align-items-center gap-2">
-                <label class="mb-0 fw-bold">Início</label>
+                <label class="mb-0 fw-bold">@localizer["Beginning"]</label>
                 <input type="date" class="form-control w-50" style="border: 1px solid grey;" @bind="startDate" max="@today" />
 
-                <label class="mb-0 fw-bold">Fim</label>
+                <label class="mb-0 fw-bold">@localizer["End"]</label>
                 <input type="date" class="form-control w-50" style="border: 1px solid grey;" @bind="endDate" max="@today" />
             </div>
         </div>
@@ -51,18 +52,18 @@ else
                 <thead>
                     <tr>
                         <th style="width: 350px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                               border-right: 1px solid white;">Placa</th>
+                                                   border-right: 1px solid white;">@localizer["Board"]</th>
                         <th style="width: 180px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            Data de Criação
+                            @localizer["CreatedAt"]
                         </th>
                         <th style="width: 170px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            Colaborador
+                            @localizer["Collaborator"]
                         </th>
                         <th style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            Estado
+                            @localizer["State"]
                         </th>
                         <th style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            Estado de Atualização
+                            @localizer["StateUpdate"]
                         </th>
                     </tr>
 
@@ -72,7 +73,7 @@ else
                     {
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                Sem dados disponíveis
+                                @localizer["NoData"]
                             </td>
                         </tr>
                     }
@@ -155,7 +156,13 @@ else
 
     // String Variables
     private string today = DateTime.Today.ToString("yyyy-MM-dd");
-
+    public const string Updated = "Updated";
+    public const string Error = "Error";
+    public const string Pending = "Pending";
+    public const string NotSeen = "NotSeen";
+    public const string Outdated = "Outdated";
+    public const string Scheduled = "Scheduled";
+    public const string Unknown = "Unknown";
     private string _searchTerm = string.Empty;
     private string searchTerm
     {
@@ -207,8 +214,8 @@ else
             log.Error("Error loading history.", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao carregar histórico",
-                Text = "Ocorreu um erro ao carregar o histórico de carregamentos. Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["ErrorLoading"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -230,33 +237,33 @@ else
     {
         var iconHtml = status.ToLower() switch
         {
-            "uptodate" => @"<div class='state'>
+            "uptodate" => $@"<div class='state'>
                                <i class='bi bi-check-circle text-success fs-4'></i>
-                               <span>Atualizado</span>
+                               <span>{localizer[Updated]}</span>
                             </div>",
-            "error" => @"<div class='state'>
+            "error" => $@"<div class='state'>
                             <i class='bi bi-x-circle text-danger fs-4'></i>
-                            <span>Erro</span>
+                            <span>{localizer[Error]}</span>
                          </div>",
-            "updatepending" => @"<div class='state'>
+            "updatepending" => $@"<div class='state'>
                                     <i class='bi bi-clock text-warning fs-4'></i>
-                                    <span>Pendente</span>
+                                    <span>{localizer[Pending]}</span>
                                  </div>",
-            "notseen" => @"<div class='state'>
+            "notseen" => $@"<div class='state'>
                               <i class='bi bi-eye-slash text-muted fs-4'></i>
-                              <span>Não Visto</span>
+                              <span>{localizer[NotSeen]}</span>
                            </div>",
-            "outdated" => @"<div class='state'>
+            "outdated" => $@"<div class='state'>
                                <i class='bi bi-exclamation-circle text-danger fs-4'></i>
-                               <span>Desatualizado</span>
+                               <span>{localizer[Outdated]}</span>
                             </div>",
-            "updatescheduled" => @"<div class='state'>
+            "updatescheduled" => $@"<div class='state'>
                                       <i class='bi bi-calendar-check text-primary fs-4'></i>
-                                      <span>Agendado</span>
+                                      <span>{localizer[Scheduled]}</span>
                                    </div>",
-            _ => @"<div class='state'>
+            _ => $@"<div class='state'>
                       <i class='bi bi-question-circle text-secondary fs-4'></i>
-                      <span>Scheduled</span>
+                      <span>{localizer[Scheduled]}</span>
                    </div>",
         };
 

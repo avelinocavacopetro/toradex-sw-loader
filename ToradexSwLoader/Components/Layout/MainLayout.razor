@@ -1,5 +1,7 @@
 ﻿@using BlazorBootstrap
+@using Microsoft.AspNetCore.Localization
 @using Microsoft.EntityFrameworkCore
+@using ToradexSwLoader.Components.Pages
 @using ToradexSwLoader.Data
 @using ToradexSwLoader.Services
 @inherits LayoutComponentBase
@@ -8,6 +10,9 @@
 @inject LoginService LoginService
 @inject FinalProductStateService ProductState
 @inject SweetAlertService Swal
+@inject IStringLocalizer<Resource> localizer
+@inject IJSRuntime _jsRuntime
+
 
 <div class="layout-container">
     @if (!IsRootPage())
@@ -37,13 +42,13 @@
                     {
                         <div class="user-dropdown">
                             <button @onclick="ChangePassword" class="dropdown-item">
-                                <i class="bi bi-lock mx-1"></i> Mudar Palavra-Passe
+                                <i class="bi bi-lock mx-1"></i> @localizer["ChangePassword"]
                             </button>
                             <button @onclick="OnShowModalClick" class="dropdown-item">
-                                <i class="bi bi-question-circle mx-1"></i> Sobre
+                                <i class="bi bi-question-circle mx-1"></i> @localizer["About"]
                             </button>
                             <button @onclick="Logout" class="dropdown-item">
-                                <i class="bi bi-box-arrow-right mx-1"></i> Terminar Sessão
+                                <i class="bi bi-box-arrow-right mx-1"></i> @localizer["Logout"]
                             </button>
                         </div>
                     }
@@ -63,15 +68,15 @@
         <main class="content-area">
             @Body
 
-            <Modal @ref="modalAbout" Title="Sobre" IsVerticallyCentered="true">
+            <Modal @ref="modalAbout" Title="@localizer["About"]" IsVerticallyCentered="true">
                 <BodyTemplate>
                     <div style="width: 450px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom:10px;">
-                            <strong>Versão:</strong>
+                            <strong>@localizer["Version"]:</strong>
                             <div style="text-align: right; flex-grow: 1;">2.0.0</div>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
-                            <strong>URL Base:</strong>
+                            <strong>@localizer["BaseUrl"]:</strong>
                             <div style="text-align: right; flex-grow: 1;">
                                 https://172.16.50.146:7023/
                             </div>
@@ -80,25 +85,25 @@
                 </BodyTemplate>
             </Modal>
 
-            <Modal @ref="modalPassword" Title="Alterar Palavra-Passe" IsVerticallyCentered="true" OnHidden="ResetPasswordForm">
+            <Modal @ref="modalPassword" Title="@localizer["ChangePassword"]" IsVerticallyCentered="true" OnHidden="ResetPasswordForm">
                 <BodyTemplate>
                     <div class="form-floating mb-3 position-relative">
-                        <input type="password" class="form-control pe-5" @bind="currentPassword" autocomplete="current-password" aria-required="true" placeholder="Palavra-passe atual" id="password" />
-                        <label for="password" class="form-label">Palavra-passe atual</label>
+                        <input type="password" class="form-control pe-5" @bind="currentPassword" autocomplete="current-password" aria-required="true" placeholder="@localizer["CurrentPassword"]" id="password" />
+                        <label for="password" class="form-label">@localizer["CurrentPassword"]</label>
                         <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-3"></i>
                     </div>
                     <div class="form-floating mb-3 position-relative">
-                        <input type="password" class="form-control pe-5" @bind="newPassword" autocomplete="current-password" aria-required="true" placeholder="Nova Palavra-passe" id="password" />
-                        <label for="password" class="form-label">Nova Palavra-passe</label>
+                        <input type="password" class="form-control pe-5" @bind="newPassword" autocomplete="current-password" aria-required="true" placeholder="@localizer["NewPassword"]" id="password" />
+                        <label for="password" class="form-label">@localizer["NewPassword"]</label>
                         <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-3"></i>
                     </div>
                     <div class="form-floating mb-5 position-relative">
-                        <input type="password" class="form-control pe-5" @bind="confirmPassword" autocomplete="current-password" aria-required="true" placeholder="Confirmar Palavra-passe" id="password" />
-                        <label for="password" class="form-label">Confirmar Palavra-passe</label>
+                        <input type="password" class="form-control pe-5" @bind="confirmPassword" autocomplete="current-password" aria-required="true" placeholder="@localizer["ConfirmPassword"]" id="password" />
+                        <label for="password" class="form-label">@localizer["ConfirmPassword"]</label>
                         <i class="bi bi-lock-fill position-absolute top-50 end-0 translate-middle-y me-3"></i>
                     </div>
                     <div class="text-center">
-                        <a class="w-50 btn btn-custom btn-lg btn-color" @onclick="ChangeNewPassword">Alterar</a>
+                        <a class="w-50 btn btn-custom btn-lg btn-color" @onclick="ChangeNewPassword">@localizer["Change"]</a>
                     </div>
                 </BodyTemplate>
             </Modal>
@@ -144,7 +149,7 @@
     private bool openMenu = false;
     private bool sidebarVisible = false;
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         currentTime = DateTime.Now.ToString("HH:mm:ss");
 
@@ -156,7 +161,20 @@
         username = LoginService.Username;
         LoginService.OnLoginChanged += OnLoginChanged;
 
-        return Task.CompletedTask;
+        if (LoginService.IsLoggedIn)
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            var user = await context.Users.FindAsync(LoginService.UserId);
+
+            if (user != null && !string.IsNullOrWhiteSpace(user.Culture))
+            {
+                var culture = new CultureInfo(user.Culture);
+                CultureInfo.CurrentCulture = culture;
+                CultureInfo.CurrentUICulture = culture;
+                Thread.CurrentThread.CurrentCulture = culture;
+                Thread.CurrentThread.CurrentUICulture = culture;
+            }
+        }
     }
 
     private void SidebarIconOnClick()
@@ -182,7 +200,7 @@
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Todos os campos são obrigatórios.",
+                Title = @localizer["RequiredInputs"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -193,7 +211,7 @@
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "As novas palavras-passe não coincidem.!",
+                Title = @localizer["PasswordsMatch"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -206,7 +224,7 @@
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Palavra-passe alterada com sucesso!",
+                Title = @localizer["PasswordsMatch"],
                 Icon = SweetAlertIcon.Success,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -219,7 +237,7 @@
         {
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao alterar a palavra-passe. Verifique a palavra-passe atual.",
+                Title = @localizer["VerifyPassword"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });

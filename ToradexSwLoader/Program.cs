@@ -36,8 +36,20 @@ builder.Services.AddHostedService<DeviceStatusUpdaterService>();
 builder.Services.AddSweetAlert2();
 builder.Services.AddBlazorBootstrap();
 builder.Services.AddSyncfusionBlazor();
+builder.Services.AddLocalization();
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
+
+string[] supportedCultures = ["pt-PT", "en-US", "es-ES"];
+
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("pt-PT")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+
+app.UseRequestLocalization(localizationOptions);
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

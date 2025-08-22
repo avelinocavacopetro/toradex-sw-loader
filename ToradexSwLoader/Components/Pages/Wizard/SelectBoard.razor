@@ -7,17 +7,19 @@
 @inject TorizonService TorizonService
 @inject FilterService FilterService
 @inject SweetAlertService Swal
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Selecionar Placa</PageTitle>
+
+<PageTitle>@localizer["SelectBoard"]</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@localizer["Loading"]...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@localizer["Loading"]...</p>
         </div>
     </div>
 } 
@@ -31,16 +33,16 @@ else
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
-        <h3 class="text-center pb-5">Placas Disponíveis</h3>
+        <h3 class="text-center pb-5">@localizer["AvailableBoard"]</h3>
 
         <table class="table mt-3 w-100">
             <thead style="background-color: #0c6527; color: white;">
                 <tr>
                     <th style="width: 30%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">ID</th>
-                    <th style="width: 25%; padding-left: 20px; border-right: 1px solid white;">Nome</th>
-                    <th style="width: 15%; border-right: 1px solid white; text-align: center;">Data de Criação</th>
-                    <th style="width: 15%; border-right: 1px solid white; text-align: center;">Estado</th>
-                    <th style="width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">Estado de Atualização</th>
+                    <th style="width: 25%; padding-left: 20px; border-right: 1px solid white;">@localizer["Name"]</th>
+                    <th style="width: 15%; border-right: 1px solid white; text-align: center;">@localizer["CreatedAt"]</th>
+                    <th style="width: 15%; border-right: 1px solid white; text-align: center;">@localizer["State"]</th>
+                    <th style="width: 15%; border-right: 1px solid white; border-top-right-radius: 5px; text-align: center;">@localizer["SateUpdate"]</th>
                 </tr>
             </thead>
             <tbody style="height: 60px">
@@ -48,7 +50,7 @@ else
                 {
                     <tr>
                         <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                            Sem dados disponíveis
+                            @localizer["NoData"]
                         </td>
                     </tr>
                 }
@@ -111,6 +113,15 @@ else
 
     [Parameter]
     public string fleetId { get; set; } = string.Empty;
+
+    // String Variables
+    public const string Updated = "Updated";
+    public const string Error = "Error";
+    public const string Pending = "Pending";
+    public const string NotSeen = "NotSeen";
+    public const string Outdated = "Outdated";
+    public const string Scheduled = "Scheduled";
+    public const string Unknown = "Unknown";
 
     // Object Variables
     private DetailedDevice? selectedBoard;
@@ -196,7 +207,7 @@ else
 
                 await Swal.FireAsync(new SweetAlertOptions
                 {
-                    Title = "Selecione uma placa!",
+                    Title = @localizer["NoBoardSelected"],
                     Icon = SweetAlertIcon.Warning,
                     ConfirmButtonColor = "#0B5120",
                 });
@@ -238,33 +249,33 @@ else
     {
         var iconHtml = status.ToLower() switch
         {
-            "uptodate" => @"<div class='state'>
+            "uptodate" => $@"<div class='state'>
                                <i class='bi bi-check-circle text-success fs-4'></i>
-                               <span>Atualizado</span>
+                               <span>{localizer[Updated]}</span>
                             </div>",
-            "error" => @"<div class='state'>
+            "error" => $@"<div class='state'>
                             <i class='bi bi-x-circle text-danger fs-4'></i>
-                            <span>Erro</span>
+                            <span>{localizer[Error]}</span>
                          </div>",
-            "updatepending" => @"<div class='state'>
+            "updatepending" => $@"<div class='state'>
                                     <i class='bi bi-clock text-warning fs-4'></i>
-                                    <span>Pendente</span>
+                                    <span>{localizer[Pending]}</span>
                                  </div>",
-            "notseen" => @"<div class='state'>
+            "notseen" => $@"<div class='state'>
                               <i class='bi bi-eye-slash text-muted fs-4'></i>
-                              <span>Não Visto</span>
+                              <span>{localizer[NotSeen]}</span>
                            </div>",
-            "outdated" => @"<div class='state'>
+            "outdated" => $@"<div class='state'>
                                <i class='bi bi-exclamation-circle text-danger fs-4'></i>
-                               <span>Desatualizado</span>
+                               <span>{localizer[Outdated]}</span>
                             </div>",
-            "updatescheduled" => @"<div class='state'>
+            "updatescheduled" => $@"<div class='state'>
                                       <i class='bi bi-calendar-check text-primary fs-4'></i>
-                                      <span>Agendado</span>
+                                      <span>{localizer[Scheduled]}</span>
                                    </div>",
-            _ => @"<div class='state'>
+            _ => $@"<div class='state'>
                       <i class='bi bi-question-circle text-secondary fs-4'></i>
-                      <span>Scheduled</span>
+                      <span>{localizer[Scheduled]}</span>
                    </div>",
         };
 
