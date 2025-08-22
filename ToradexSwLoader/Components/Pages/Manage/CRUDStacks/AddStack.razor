@@ -5,14 +5,15 @@
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Adicionar Stack</PageTitle>
+<PageTitle>@localizer["AddStack"]</PageTitle>
 
 <div class="custom-container">
     <div class="page-title d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
             <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-            <h3 class="ms-2 mb-0">Adicionar Stack</h3>
+            <h3 class="ms-2 mb-0">@localizer["AddStack"]</h3>
         </div>
 
         <div class="d-flex gap-3">
@@ -24,7 +25,7 @@
             <button class="btn btn-outline-light border border-white border-2 fs-5"
                     style="width: 150px;"
                     @onclick="SaveStack">
-                <i class="bi bi-floppy"></i> Salvar
+                <i class="bi bi-floppy"></i> @localizer["Save"]
             </button>
         </div>
     </div>
@@ -32,8 +33,8 @@
     <div class="edit-form mt-4">
         <div class="d-flex align-items-center gap-3">
             <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
-                Nome da stack
-                <span style="font-size: 15px;"> (máx. 50 caracteres)</span> :
+                @localizer["Name"]
+                <span style="font-size: 15px;"> (@localizer["Max"]. 50 @localizer["Characters"])</span> :
             </label>
             <input type="text" @bind="stackName"
                    class="form-control"
@@ -42,14 +43,14 @@
         </div>
 
         <br />
-        <h4>Selecionar Produto(s):</h4>
+        <h4>@localizer["SelectProducts"]</h4>
 
         <div class="table-wrapper">
             <table class="table mt-3 w-100" style="table-layout: fixed;">
                 <thead style="background-color: #0c6527; color: white;">
                     <tr>
-                        <th style="width: 50%; text-align: left; padding-left: 25px; border-right: 1px solid white;">Produto</th>
-                        <th style="width: 50%; text-align: center;">Selecionar</th>
+                        <th style="width: 50%; text-align: left; padding-left: 25px; border-right: 1px solid white;">@localizer["Product"]</th>
+                        <th style="width: 50%; text-align: center;">@localizer["Select"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -120,8 +121,8 @@
             log.Error("Error loading products. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao carregar a página",
-                Text = "Ocorreu um erro ao inicializar a página de adicionar stack.",
+                Title = @localizer["Error"],
+                Text = @localizer["ErrorLoading"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -171,8 +172,8 @@
             log.Error("Error saving stack. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao salvar a stack",
-                Text = "Ocorreu um erro ao tentar salvar a stack.",
+                Title = @localizer["Error"],
+                Text = @localizer["ErrorSavingStack"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -186,7 +187,7 @@
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor insira um nome válido!",
+                Title = @localizer["ValidName"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -197,8 +198,8 @@
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Nome muito comprido!",
-                Text = "O nome da stack deve ter no máximo 50 caracteres.",
+                Title = @localizer["LongName"],
+                Text = @localizer["Max30"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -214,7 +215,7 @@
         {
            _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Deve selecionar pelo menos 1 produto!",
+                Title = @localizer["PleaseSelectProduct"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -233,7 +234,7 @@
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Esta stack já existe!",
+            Title = @localizer["StackExists"],
             Icon = SweetAlertIcon.Warning,
             ConfirmButtonColor = "#0B5120"
         });
@@ -266,7 +267,7 @@
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Stack adicionada com sucesso!",
+            Title = @localizer["AddedSuccess"],
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });

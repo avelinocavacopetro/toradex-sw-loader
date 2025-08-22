@@ -3,10 +3,11 @@
 @inject TorizonService TorizonService
 @inject SweetAlertService Swal
 @inject LoginService LoginService
+@inject IStringLocalizer<Resource> localizer
 
-<h6 class="pb-5">A sessão termina automaticamente após a duração selecionada. A duração predefinida é de 90 minutos e a sessão pode ser terminada manualmente a qualquer altura.</h6>
+<h6 class="pb-5">@localizer["SessionDurationText"]</h6>
 
-<h6>Duração da sessão de acesso (@FormatDuration(duration))</h6>
+<h6>@localizer["SessionDuration"] (@FormatDuration(duration))</h6>
 
 <div style="display: flex; align-items: center; flex-direction: column;">
     <input type="range"
@@ -18,12 +19,12 @@
 
     <div class="pt-1" style="display: flex; justify-content: space-between; width: 470px; font-size: 0.9rem; color: #666;">
         <p>30 min</p>
-        <p>12 horas</p>
+        <p>12 @localizer["Hour"]s</p>
     </div>
 </div>
 
 <div class="text-center py-5">
-    <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">Criar</button>
+    <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">@localizer["Create"]</button>
 </div>
 
 @code {
@@ -88,11 +89,11 @@
         if (duration == 0)
         {
             log.Warn($"User {LoginService.UserId} attempted to create a session without selecting a duration.");
-            await ShowWarningAsync("Selecione uma duração!");
+            await ShowWarningAsync(@localizer["SelectDuration"]);
             return;
         }
 
-        var confirmed = await ConfirmAsync("Deseja continuar?");
+        var confirmed = await ConfirmAsync(@localizer["WantContinue"]);
         if (!confirmed)
         {
             log.Info($"User {LoginService.UserId} cancelled session creation.");
@@ -114,12 +115,12 @@
 
             if ((int)response.StatusCode == 409)
             {
-                var shouldCancel = await ConfirmAsync("Já existe uma sessão. Deseja apagar a sessão atual?", true);
+                var shouldCancel = await ConfirmAsync(@localizer["SessionsExists"], true);
                 if (shouldCancel)
                 {
                     log.Info($"User {LoginService.UserId} opted to cancel existing session for device {selectedDevice?.DeviceName}.");
                     await TorizonService.CancelSessionAsync(DeviceUuid);
-                    await ShowSuccessAsync("Sessão removida com sucesso!");
+                    await ShowSuccessAsync(@localizer["SessionRemoved"]);
                 }
                 else
                 {
@@ -128,7 +129,7 @@
             }
             else
             {
-                await ShowErrorAsync($"Erro ao criar sessão: {response.StatusCode}");
+                await ShowErrorAsync($"{@localizer["ErrorSession"]}: {response.StatusCode}");
             }
         }
     }
@@ -141,10 +142,10 @@
             Icon = SweetAlertIcon.Warning,
             ShowCancelButton = !showDeny,
             ShowDenyButton = showDeny,
-            ConfirmButtonText = "Continuar",
+            ConfirmButtonText = @localizer["Continue"],
             ConfirmButtonColor = "#0B5120",
-            CancelButtonText = showDeny ? "Não" : "Cancelar",
-            DenyButtonText = showDeny ? "Não" : null
+            CancelButtonText = showDeny ? @localizer["No"] : @localizer["Cancel"],
+            DenyButtonText = showDeny ? @localizer["No"] : null
         };
 
         var result = await Swal.FireAsync(options);
@@ -175,7 +176,7 @@
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Erro",
+            Title = @localizer["Error"],
             Text = message,
             Icon = SweetAlertIcon.Error,
             ConfirmButtonColor = "#0B5120"
@@ -199,7 +200,7 @@
         context.UserActivities.Add(userAct);
         await context.SaveChangesAsync();
 
-        // await ShowSuccessAsync("Sessão criada com sucesso!");
+        await ShowSuccessAsync(@localizer["SessionSuccessful"]);
         await OnNextModal.InvokeAsync();
     }
 }

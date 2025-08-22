@@ -1,0 +1,678 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Abort" xml:space="preserve">
+    <value>Abortar</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>Sobre</value>
+  </data>
+  <data name="ActivatedAt" xml:space="preserve">
+    <value>Data de Ativação</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Ativo</value>
+  </data>
+  <data name="AddDevice" xml:space="preserve">
+    <value>Adicionar Dispositivo</value>
+  </data>
+  <data name="AddedSuccess" xml:space="preserve">
+    <value>Adicionado com sucesso!</value>
+  </data>
+  <data name="AddEntity" xml:space="preserve">
+    <value>Adicionar Entidade</value>
+  </data>
+  <data name="AddPackage" xml:space="preserve">
+    <value>Adicionar Pacote</value>
+  </data>
+  <data name="AddPattern" xml:space="preserve">
+    <value>Adicionar Pattern</value>
+  </data>
+  <data name="AddProduct" xml:space="preserve">
+    <value>Adicionar Produto</value>
+  </data>
+  <data name="AddStack" xml:space="preserve">
+    <value>Adicionar Stack</value>
+  </data>
+  <data name="AddUser" xml:space="preserve">
+    <value>Adicionar Utilizador</value>
+  </data>
+  <data name="Administrador" xml:space="preserve">
+    <value>Administrador</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Tudo</value>
+  </data>
+  <data name="AlreadyExists" xml:space="preserve">
+    <value>Já existe!</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Aplicar</value>
+  </data>
+  <data name="AvailableBoard" xml:space="preserve">
+    <value>Placas Disponíveis</value>
+  </data>
+  <data name="AvailableBoards" xml:space="preserve">
+    <value>Placas Disponíveis</value>
+  </data>
+  <data name="BaseUrl" xml:space="preserve">
+    <value>URL Base</value>
+  </data>
+  <data name="Beginning" xml:space="preserve">
+    <value>Início</value>
+  </data>
+  <data name="Board" xml:space="preserve">
+    <value>Placa</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Change" xml:space="preserve">
+    <value>Alterar</value>
+  </data>
+  <data name="ChangePassword" xml:space="preserve">
+    <value>Mudar Palavra-Passe</value>
+  </data>
+  <data name="Characters" xml:space="preserve">
+    <value>caracteres</value>
+  </data>
+  <data name="ClickCopy" xml:space="preserve">
+    <value>Clique no ícone para copiar.</value>
+  </data>
+  <data name="Collaborator" xml:space="preserve">
+    <value>Colaborador</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Continuar</value>
+  </data>
+  <data name="Copied" xml:space="preserve">
+    <value>Comando copiado para a área de transferência!</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Criar</value>
+  </data>
+  <data name="CreateAccess" xml:space="preserve">
+    <value>Criar sessão de acesso remoto</value>
+  </data>
+  <data name="CreatedAt" xml:space="preserve">
+    <value>Data de Criação</value>
+  </data>
+  <data name="CustomBoard" xml:space="preserve">
+    <value>Customizar Placa</value>
+  </data>
+  <data name="Device" xml:space="preserve">
+    <value>Dispositivo</value>
+  </data>
+  <data name="DeviceExists" xml:space="preserve">
+    <value>Este dispositivo já existe!</value>
+  </data>
+  <data name="Devices" xml:space="preserve">
+    <value>Dispositivos</value>
+  </data>
+  <data name="DevicesProducts" xml:space="preserve">
+    <value>Este dispositivo não tem produtos associados</value>
+  </data>
+  <data name="EditDevice" xml:space="preserve">
+    <value>Editar Dispositivo</value>
+  </data>
+  <data name="EditEntity" xml:space="preserve">
+    <value>Editar Entidade</value>
+  </data>
+  <data name="EditPackage" xml:space="preserve">
+    <value>Editar Pacote</value>
+  </data>
+  <data name="EditPattern" xml:space="preserve">
+    <value>Editar Pattern</value>
+  </data>
+  <data name="EditProduct" xml:space="preserve">
+    <value>Editar Produto</value>
+  </data>
+  <data name="EditStack" xml:space="preserve">
+    <value>Editar Stack</value>
+  </data>
+  <data name="EditUser" xml:space="preserve">
+    <value>Editar Utilizador</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>Fim</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>Inglês</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Erro</value>
+  </data>
+  <data name="ErrorLoading" xml:space="preserve">
+    <value>Erro ao carregar</value>
+  </data>
+  <data name="ErrorSavingDevice" xml:space="preserve">
+    <value>Erro ao guardar dispositivo</value>
+  </data>
+  <data name="ErrorSavingProduct" xml:space="preserve">
+    <value>Erro ao guardar o produto</value>
+  </data>
+  <data name="ErrorSavingStack" xml:space="preserve">
+    <value>Error ao guardar stack</value>
+  </data>
+  <data name="ErrorSession" xml:space="preserve">
+    <value>Erro ao criar sessão</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Exportar</value>
+  </data>
+  <data name="FiltersApplied" xml:space="preserve">
+    <value>Filtros aplicados!</value>
+  </data>
+  <data name="Fleet" xml:space="preserve">
+    <value>Frota</value>
+  </data>
+  <data name="Function" xml:space="preserve">
+    <value>Função</value>
+  </data>
+  <data name="Hibernation" xml:space="preserve">
+    <value>Hibernação</value>
+  </data>
+  <data name="History" xml:space="preserve">
+    <value>Histórico de Carregamentos</value>
+  </data>
+  <data name="Hour" xml:space="preserve">
+    <value>hora</value>
+  </data>
+  <data name="InsertObservation" xml:space="preserve">
+    <value>Insira uma observação...</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Linguagem</value>
+  </data>
+  <data name="LastSeen" xml:space="preserve">
+    <value>Última Vez Visto</value>
+  </data>
+  <data name="LastUpdate" xml:space="preserve">
+    <value>Última Atualização</value>
+  </data>
+  <data name="LastUpdates" xml:space="preserve">
+    <value>Últimos Carregamentos</value>
+  </data>
+  <data name="LinkedDevices" xml:space="preserve">
+    <value>Dispositivos Associados</value>
+  </data>
+  <data name="LinkedFleets" xml:space="preserve">
+    <value>Frotas Associadas</value>
+  </data>
+  <data name="LinkedProducts" xml:space="preserve">
+    <value>Produtos Associados</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>A carregar</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Terminar sessão</value>
+  </data>
+  <data name="LongEmail" xml:space="preserve">
+    <value>Email muito comprido</value>
+  </data>
+  <data name="LongName" xml:space="preserve">
+    <value>Nome muito comprido</value>
+  </data>
+  <data name="LongPass" xml:space="preserve">
+    <value>Palavra-passe muito comprida</value>
+  </data>
+  <data name="ManageDevices" xml:space="preserve">
+    <value>Gerir Dispositivos</value>
+  </data>
+  <data name="ManageEntity" xml:space="preserve">
+    <value>Gerir Entidades</value>
+  </data>
+  <data name="ManageFleets" xml:space="preserve">
+    <value>Gerir Frotas</value>
+  </data>
+  <data name="ManagePackages" xml:space="preserve">
+    <value>Gerir Pacotes</value>
+  </data>
+  <data name="ManagePatterns" xml:space="preserve">
+    <value>Gerir Patterns</value>
+  </data>
+  <data name="ManageProducts" xml:space="preserve">
+    <value>Gerir Produtos</value>
+  </data>
+  <data name="ManageStacks" xml:space="preserve">
+    <value>Gerir Stacks</value>
+  </data>
+  <data name="ManageUsers" xml:space="preserve">
+    <value>Gerir Utilizadores</value>
+  </data>
+  <data name="Max" xml:space="preserve">
+    <value>máx</value>
+  </data>
+  <data name="Max30" xml:space="preserve">
+    <value>Deve ter no máximo 30 caracteres</value>
+  </data>
+  <data name="Max60Seconds" xml:space="preserve">
+    <value>Tempo de atualização de dados (máx. 60 seg.)</value>
+  </data>
+  <data name="MenuAdmin" xml:space="preserve">
+    <value>Administração</value>
+  </data>
+  <data name="MenuDevice" xml:space="preserve">
+    <value>Dispositivos</value>
+  </data>
+  <data name="MenuHome" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="MenuManut" xml:space="preserve">
+    <value>Manutenção</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>minutos</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Novo</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Não</value>
+  </data>
+  <data name="NoBoardSelected" xml:space="preserve">
+    <value>Selecione uma placa!</value>
+  </data>
+  <data name="NoData" xml:space="preserve">
+    <value>Sem dados disponíveis</value>
+  </data>
+  <data name="NoDevices" xml:space="preserve">
+    <value>Não existem equipamentos disponíveis.</value>
+  </data>
+  <data name="NoEntity" xml:space="preserve">
+    <value>Sem Entidade</value>
+  </data>
+  <data name="NoFleets" xml:space="preserve">
+    <value>Não existem frotas disponíveis.</value>
+  </data>
+  <data name="NoPackageSelected" xml:space="preserve">
+    <value>Selecione um software!</value>
+  </data>
+  <data name="NoPackagesFound" xml:space="preserve">
+    <value>Não foram encontrados pacotes para este dispositivo.</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>Notas</value>
+  </data>
+  <data name="NotSeen" xml:space="preserve">
+    <value>Não Visto</value>
+  </data>
+  <data name="Observations" xml:space="preserve">
+    <value>Observações</value>
+  </data>
+  <data name="Operador" xml:space="preserve">
+    <value>Operador</value>
+  </data>
+  <data name="Outdated" xml:space="preserve">
+    <value>Desatualizado</value>
+  </data>
+  <data name="Package" xml:space="preserve">
+    <value>Pacote</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Palavra-Passe</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Pendente</value>
+  </data>
+  <data name="PleaseSelectDevice" xml:space="preserve">
+    <value>Por favor selecione pelo menos um dispositivo</value>
+  </data>
+  <data name="PleaseSelectEntity" xml:space="preserve">
+    <value>Por favor selecione pelo menos uma entidade!</value>
+  </data>
+  <data name="PleaseSelectFleet" xml:space="preserve">
+    <value>Por favor selecione pelo menos uma frota!</value>
+  </data>
+  <data name="PleaseSelectPackage" xml:space="preserve">
+    <value>Por favor selecione um stack e um pacote válido!</value>
+  </data>
+  <data name="PleaseSelectPattern" xml:space="preserve">
+    <value>Por favor selecione pelo menos uma pattern!</value>
+  </data>
+  <data name="PleaseSelectPckg" xml:space="preserve">
+    <value>Por favor selecione um pacote!</value>
+  </data>
+  <data name="PleaseSelectProduct" xml:space="preserve">
+    <value>Por favor selecione pelo menos um produto!</value>
+  </data>
+  <data name="PleaseSelectStack" xml:space="preserve">
+    <value>Por favor selecione pelo menos uma stack!</value>
+  </data>
+  <data name="PleaseTime" xml:space="preserve">
+    <value>Por favor coloque um valor entre 10 a 60 segundos</value>
+  </data>
+  <data name="Portuguese" xml:space="preserve">
+    <value>Português</value>
+  </data>
+  <data name="Product" xml:space="preserve">
+    <value>Produto</value>
+  </data>
+  <data name="ProductExists" xml:space="preserve">
+    <value>Este produto já existe!</value>
+  </data>
+  <data name="ProductsStack" xml:space="preserve">
+    <value>Este produto não tem stacks associadas.</value>
+  </data>
+  <data name="RemoteAcess" xml:space="preserve">
+    <value>Acesso Remoto</value>
+  </data>
+  <data name="RequestError" xml:space="preserve">
+    <value>Erro ao efetuar o pedido</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Scheduled" xml:space="preserve">
+    <value>Agendado</value>
+  </data>
+  <data name="SearchDevice" xml:space="preserve">
+    <value>Pesquisar dispositivo pelo nome...</value>
+  </data>
+  <data name="SearchEntity" xml:space="preserve">
+    <value>Pesquisar entidade pelo nome...</value>
+  </data>
+  <data name="SearchFleet" xml:space="preserve">
+    <value>Pesquisar frota pelo nome...</value>
+  </data>
+  <data name="SearchPackage" xml:space="preserve">
+    <value>Pesquisar pacote pela stack...</value>
+  </data>
+  <data name="SearchPattern" xml:space="preserve">
+    <value>Pesquisar pattern pelo nome...</value>
+  </data>
+  <data name="SearchProduct" xml:space="preserve">
+    <value>Pesquisar produto pelo nome...</value>
+  </data>
+  <data name="SearchStack" xml:space="preserve">
+    <value>Pesquisar stack pelo nome...</value>
+  </data>
+  <data name="SearchUser" xml:space="preserve">
+    <value>Pesquisar utilizador pelo nome...</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>Selecionar</value>
+  </data>
+  <data name="SelectAction" xml:space="preserve">
+    <value>Selecionar Ação</value>
+  </data>
+  <data name="SelectBoard" xml:space="preserve">
+    <value>Selecionar Placa</value>
+  </data>
+  <data name="SelectDevices" xml:space="preserve">
+    <value>Selecionar Dispositivo(s):</value>
+  </data>
+  <data name="SelectDuration" xml:space="preserve">
+    <value>Selecione uma duração!</value>
+  </data>
+  <data name="SelectEquipment" xml:space="preserve">
+    <value>Selecionar Equipamento</value>
+  </data>
+  <data name="SelectFleet" xml:space="preserve">
+    <value>Selecionar Frota</value>
+  </data>
+  <data name="SelectFleets" xml:space="preserve">
+    <value>Selecionar Frota(s):</value>
+  </data>
+  <data name="SelectFunction" xml:space="preserve">
+    <value>Selecione uma função</value>
+  </data>
+  <data name="SelectLanguage" xml:space="preserve">
+    <value>Selecione uma linguagem</value>
+  </data>
+  <data name="SelectOneFleet" xml:space="preserve">
+    <value>Selecione uma frota</value>
+  </data>
+  <data name="SelectPackages" xml:space="preserve">
+    <value>Selecionar Pacote</value>
+  </data>
+  <data name="SelectProduct" xml:space="preserve">
+    <value>Selecionar Produto</value>
+  </data>
+  <data name="SelectProducts" xml:space="preserve">
+    <value>Selecionar Produto(s):</value>
+  </data>
+  <data name="SelectStack" xml:space="preserve">
+    <value>Selecionar Stack</value>
+  </data>
+  <data name="SelectUser" xml:space="preserve">
+    <value>Selecionar Utilizador</value>
+  </data>
+  <data name="SessionDuration" xml:space="preserve">
+    <value>Duração da sessão de acesso</value>
+  </data>
+  <data name="SessionDurationText" xml:space="preserve">
+    <value>A sessão termina automaticamente após a duração selecionada. A duração predefinida é de 90 minutos e a sessão pode ser terminada manualmente a qualquer altura.</value>
+  </data>
+  <data name="SessionRemoved" xml:space="preserve">
+    <value>Sessão removida com sucesso!</value>
+  </data>
+  <data name="SessionsExists" xml:space="preserve">
+    <value>Já existe uma sessão. Deseja apagar a sessão atual?</value>
+  </data>
+  <data name="SessionSuccessful" xml:space="preserve">
+    <value>Sessão criada com sucesso!</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Definições</value>
+  </data>
+  <data name="SSHComand" xml:space="preserve">
+    <value>Utilize o comando abaixo para aceder remotamente ao dispositivo via SSH.</value>
+  </data>
+  <data name="StackExists" xml:space="preserve">
+    <value>Esta stack já existe!</value>
+  </data>
+  <data name="StacksPackages" xml:space="preserve">
+    <value>Esta stack não tem pacotes associados.</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+  <data name="StateUpdate" xml:space="preserve">
+    <value>Estado de Atualização</value>
+  </data>
+  <data name="SuccessfulRequest" xml:space="preserve">
+    <value>Pedido efetuado com sucesso!</value>
+  </data>
+  <data name="Técnico" xml:space="preserve">
+    <value>Técnico</value>
+  </data>
+  <data name="TryAgain" xml:space="preserve">
+    <value>Tente novamente mais tarde.</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Atualizar</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>Atualizado</value>
+  </data>
+  <data name="UpdatePackage" xml:space="preserve">
+    <value>Atualizar Pacote</value>
+  </data>
+  <data name="Updates" xml:space="preserve">
+    <value>Carregamentos</value>
+  </data>
+  <data name="UpdateVersion" xml:space="preserve">
+    <value>Atualizar Versão</value>
+  </data>
+  <data name="UpToDate" xml:space="preserve">
+    <value>Atualizado</value>
+  </data>
+  <data name="ValidName" xml:space="preserve">
+    <value>Por favor insira um nome válido!</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Versão</value>
+  </data>
+  <data name="VisualizeSSH" xml:space="preserve">
+    <value>Visualizar SSH</value>
+  </data>
+  <data name="WantContinue" xml:space="preserve">
+    <value>Deseja continuar?</value>
+  </data>
+  <data name="WarningDevice" xml:space="preserve">
+    <value>Selecione um dispositivo!</value>
+  </data>
+  <data name="WithoutDevices" xml:space="preserve">
+    <value>Sem Dispositivos</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>Hora</value>
+  </data>
+  <data name="Gestor" xml:space="preserve">
+    <value>Gestor</value>
+  </data>
+  <data name="HomePage" xml:space="preserve">
+    <value>Página Inicial</value>
+  </data>
+  <data name="Spanish" xml:space="preserve">
+    <value>Espanhol</value>
+  </data>
+  <data name="CurrentPassword" xml:space="preserve">
+    <value>Palavra-passe atual</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nova Palavra-passe</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirmar palavra-passe</value>
+  </data>
+  <data name="RequiredInputs" xml:space="preserve">
+    <value>Todos os campos são obrigatorios.</value>
+  </data>
+  <data name="PasswordsMatch" xml:space="preserve">
+    <value>As palavras-passe não coincidem!</value>
+  </data>
+  <data name="PasswordChanged" xml:space="preserve">
+    <value>Palavra-passe alterada com sucesso!</value>
+  </data>
+  <data name="VerifyPassword" xml:space="preserve">
+    <value>Erro ao alterar palavra-passe. Verifique a palavra-passe atual.</value>
+  </data>
+  <data name="ProductAborted" xml:space="preserve">
+    <value>Produto abortado com sucesso.</value>
+  </data>
+</root>

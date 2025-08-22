@@ -7,17 +7,18 @@
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject NavigationManager Navigation
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Página Inicial</PageTitle>
+<PageTitle>@L("HomePage")</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@L("Loading")...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@L("Loading")...</p>
         </div>
     </div>
 }
@@ -26,7 +27,7 @@ else
     <div class="custom-container d-flex flex-column">
         <div class="page-title">
             <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
-            <h3 class="pt-2">Últimos Carregamentos</h3>
+            <h3 class="pt-2">@L("LastUpdates")</h3>
         </div>
 
         <div class="table-responsive">
@@ -34,10 +35,10 @@ else
                 <thead>
                     <tr>
                         <th style="width: 350px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                       border-right: 1px solid white;">Placa</th>
-                        <th style="width: 180px; text-align: center; border-right: 1px solid white;">Hora</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">Estado de Atualização</th>
+                                                               border-right: 1px solid white;">@L("Board")</th>
+                        <th style="width: 180px; text-align: center; border-right: 1px solid white;">@L("Time")</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">@L("State")</th>
+                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">@L("StateUpdate")</th>
                         <th style="width: 180px; text-align: center; border-top-right-radius: 5px;"></th>
                     </tr>
                 </thead>
@@ -46,7 +47,7 @@ else
                     {
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                Sem dados disponíveis
+                                @L("NoData")
                             </td>
                         </tr>
                     }
@@ -68,7 +69,7 @@ else
                                     {
                                         <button class="btn btn-danger btn-sm" style="width: 75%;"
                                                 @onclick="@(() => AbortOperation(finalProduct))">
-                                            <i class="bi bi-x-circle"></i> Abortar
+                                            <i class="bi bi-x-circle"></i> @L("Abort")
                                         </button>
                                     }
                                 </td>
@@ -78,11 +79,11 @@ else
                 </tbody>
             </table>
         </div>
-        
+
         <div class="sticky-footer-center">
-            Última atualização: @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
+            @L("LastUpdate"): @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
         </div>
-    </div> 
+    </div>
 }
 
 @code {
@@ -90,6 +91,14 @@ else
     private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
     private IReadOnlyList<FinalProduct> finalProducts = new List<FinalProduct>();
     private static readonly ILog log = LogManager.GetLogger(typeof(Home));
+
+    // String Variables
+    public const string Updated = "Updated";
+    public const string Error = "Error";
+    public const string Pending = "Pending";
+    public const string NotSeen = "NotSeen";
+    public const string Outdated = "Outdated";
+    public const string Scheduled = "Scheduled";
 
     // Boolean Variables
     bool isLoading = true;
@@ -121,6 +130,20 @@ else
         catch (Exception ex)
         {
             log.Error("Error loading home page.", ex);
+        }
+    }
+
+    private string L(string key)
+    {
+        var originalCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = new CultureInfo(LoginService.GetUserCulture());
+            return localizer[key];
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = originalCulture;
         }
     }
 
@@ -177,15 +200,15 @@ else
 
         var result = await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Deseja abortar?",
+            Title = L("WantContinue"),
             Icon = SweetAlertIcon.Warning,
             ShowCancelButton = true,
-            ConfirmButtonText = "Continuar",
+            ConfirmButtonText = L("Continue"),
             ConfirmButtonColor = "#0B5120",
-            CancelButtonText = "Cancelar"
+            CancelButtonText = L("Cancel")
         });
 
-        if(result.IsConfirmed)
+        if (result.IsConfirmed)
         {
             try
             {
@@ -207,7 +230,7 @@ else
 
                     await Swal.FireAsync(new SweetAlertOptions
                     {
-                        Title = "Produto abortado com sucesso",
+                        Title = L("ProductAborted"),
                         Icon = SweetAlertIcon.Success,
                         ConfirmButtonColor = "#0B5120",
                     });
@@ -228,7 +251,8 @@ else
                     log.Error($"Failed to abort product {productToRemove.Id}. Response: {content}");
                 }
 
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 log.Error("Error authenticating to Torizon Service or aborting product.", ex);
             }
@@ -239,33 +263,33 @@ else
     {
         var iconHtml = status.ToLower() switch
         {
-            "uptodate" => @"<div class='state'>
+            "uptodate" => $@"<div class='state'>
                                <i class='bi bi-check-circle text-success fs-4'></i>
-                               <span>Atualizado</span>
+                               <span>{L(Updated)}</span>
                             </div>",
-            "error" => @"<div class='state'>
+            "error" => $@"<div class='state'>
                             <i class='bi bi-x-circle text-danger fs-4'></i>
-                            <span>Erro</span>
+                            <span>{L(Error)}</span>
                          </div>",
-            "updatepending" => @"<div class='state'>
+            "updatepending" => $@"<div class='state'>
                                     <i class='bi bi-clock text-warning fs-4'></i>
-                                    <span>Pendente</span>
+                                    <span>{L(Pending)}</span>
                                  </div>",
-            "notseen" => @"<div class='state'>
+            "notseen" => $@"<div class='state'>
                               <i class='bi bi-eye-slash text-muted fs-4'></i>
-                              <span>Não Visto</span>
+                              <span>{L(NotSeen)}</span>
                            </div>",
-            "outdated" => @"<div class='state'>
+            "outdated" => $@"<div class='state'>
                                <i class='bi bi-exclamation-circle text-danger fs-4'></i>
-                               <span>Desatualizado</span>
+                               <span>{L(Outdated)}</span>
                             </div>",
-            "updatescheduled" => @"<div class='state'>
+            "updatescheduled" => $@"<div class='state'>
                                       <i class='bi bi-calendar-check text-primary fs-4'></i>
-                                      <span>Agendado</span>
+                                      <span>{L(Scheduled)}</span>
                                    </div>",
-            _ => @"<div class='state'>
+            _ => $@"<div class='state'>
                       <i class='bi bi-question-circle text-secondary fs-4'></i>
-                      <span>Scheduled</span>
+                      <span>{L(Scheduled)}</span>
                    </div>",
         };
 
@@ -275,22 +299,9 @@ else
     private MarkupString CheckOnlineStatus(FinalProduct product)
     {
         bool isOnline = product.LastSeen.HasValue && (DateTime.UtcNow - product.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
-        string iconHtml = string.Empty;
-
-        if (isOnline)
-        {
-            iconHtml = @"<div class='state'>
-                        <i class='bi bi-circle-fill text-success fs-4'></i>
-                        <span>Online</span>
-                     </div>";
-        }
-        else
-        {
-            iconHtml = @"<div class='state'>
-                        <i class='bi bi-x-circle text-danger fs-4'></i>
-                        <span>Offline</span>
-                     </div>";
-        }
+        string iconHtml = isOnline
+            ? @"<div class='state'><i class='bi bi-circle-fill text-success fs-4'></i><span>Online</span></div>"
+            : @"<div class='state'><i class='bi bi-x-circle text-danger fs-4'></i><span>Offline</span></div>";
 
         return new MarkupString(iconHtml);
     }

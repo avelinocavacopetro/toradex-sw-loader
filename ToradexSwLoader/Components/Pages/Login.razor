@@ -1,9 +1,13 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Localization
 @using log4net
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject NavigationManager UriHelper
 @inject LoginService LoginService
+@inject IJSRuntime _jsRuntime
+@inject IHttpContextAccessor HttpContextAccessor
+
 
 <PageTitle>Log in</PageTitle>
 
@@ -135,70 +139,106 @@
     private string inputEmail = string.Empty;
     private string inputPassword = string.Empty;
     private string? errorMessage = string.Empty;
+    private string? savedEmail;
+    private string? savedPassword;
+    private string? culture;
 
     // Boolean Variables
     private bool isLoading = true;
+    private bool _autoLoginInProgress = false;
 
     private async Task RegisterLogin()
     {
         try
         {
             if (string.IsNullOrWhiteSpace(inputEmail))
-            {
-                errorMessage = "O campo Email não pode estar vazio";
-                return;
-            }
+            { errorMessage = "O campo Email não pode estar vazio"; return; }
 
             if (string.IsNullOrWhiteSpace(inputPassword))
-            {
-                errorMessage = "O campo Password não pode estar vazio";
-                return;
-            }
+            { errorMessage = "O campo Password não pode estar vazio"; return; }
 
             if (!inputEmail.EndsWith("@petrotec.com"))
-            {
-                errorMessage = "O email inserido não é petrotec.com";
-                return;
-            }
+            { errorMessage = "O email inserido não é petrotec.com"; return; }
 
             using var context = DbContextFactory.CreateDbContext();
             var user = await context.Users.FirstOrDefaultAsync(u => u.Email == inputEmail);
 
             if (user == null || user.Password != inputPassword)
-            {
-                errorMessage = "Email ou palavra-passe inválidos";
-                return;
-            }
+            { errorMessage = "Email ou palavra-passe inválidos"; return; }
 
-            var loginLog = new LoginLog
-            {
-                UserId = user.Id,
-                Email = inputEmail,
-                LoginTimeStamp = DateTime.Now
-            };
+            var culture = new CultureInfo(user.Culture);
+            var requestCulture = new RequestCulture(culture, culture);
+            var cookieName = CookieRequestCultureProvider.DefaultCookieName;
+            var cookieValue = CookieRequestCultureProvider.MakeCookieValue(requestCulture);
+            await _jsRuntime.InvokeVoidAsync("setCookie", cookieName, cookieValue, 365);
 
-            context.LoginLogs.Add(loginLog);
-            await context.SaveChangesAsync();
+            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "pendingAutoLogin", "1");
+            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "loginEmail", inputEmail);
+            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "loginPassword", inputPassword);
 
-            LoginService.SetLogin(user.Id, user.UserName);
-
-            EnterLogin();
+            await _jsRuntime.InvokeVoidAsync("eval", "location.reload()");
         }
         catch (Exception ex)
         {
             log.Error($"Error trying to login into {inputEmail}: ", ex);
         }
-        finally
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _autoLoginInProgress) return;
+
+        await _jsRuntime.InvokeVoidAsync("blazorLog", "OnAfterRenderAsync firstRender");
+
+        var pending = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "pendingAutoLogin");
+        if (pending == "1")
         {
-            isLoading = false;
+            _autoLoginInProgress = true;
+
+            var savedEmail = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "loginEmail");
+            var savedPassword = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "loginPassword");
+
+            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "pendingAutoLogin");
+            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "loginEmail");
+            await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "loginPassword");
+
+            if (!string.IsNullOrEmpty(savedEmail) && !string.IsNullOrEmpty(savedPassword))
+            {
+                await CompleteLoginAfterReload(savedEmail, savedPassword);
+            }
         }
     }
 
-    private void EnterLogin()
+    private async Task CompleteLoginAfterReload(string email, string password)
     {
-        if (!isLoading)
+        try
         {
-            UriHelper.NavigateTo($"/home");
+            using var context = DbContextFactory.CreateDbContext();
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null || user.Password != password)
+            {
+                errorMessage = "Email ou palavra-passe inválidos";
+                StateHasChanged();
+                return;
+            }
+
+            LoginService.SetLogin(user.Id, user.UserName, user.Culture);
+
+            var loginLog = new LoginLog
+            {
+                UserId = user.Id,
+                Email = email,
+                LoginTimeStamp = DateTime.Now
+            };
+            context.LoginLogs.Add(loginLog);
+            await context.SaveChangesAsync();
+
+            UriHelper.NavigateTo("/home");
+        }
+        catch (Exception ex)
+        {
+            log.Error($"Auto-login after reload failed for {email}: ", ex);
         }
     }
 }

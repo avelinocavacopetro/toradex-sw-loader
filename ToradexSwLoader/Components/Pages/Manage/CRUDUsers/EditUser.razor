@@ -4,17 +4,18 @@
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
+@inject IStringLocalizer<Resource> localizer
 
-<PageTitle>Editar Utilizador</PageTitle>
+<PageTitle>@localizer["EditUser"]</PageTitle>
 
 @if (isLoading)
 {
     <div class="center">
         <div class="text-center mt-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">A carregar...</span>
+                <span class="visually-hidden">@localizer["Loading"]...</span>
             </div>
-            <p class="mt-3">A carregar...</p>
+            <p class="mt-3">@localizer["Loading"]...</p>
         </div>
     </div>
 }
@@ -24,7 +25,7 @@ else
         <div class="page-title d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-                <h3 class="ms-2 mb-0">Adicionar Utilizador</h3>
+                <h3 class="ms-2 mb-0">@localizer["EditUser"]</h3>
             </div>
 
             <div class="d-flex gap-3">
@@ -36,14 +37,14 @@ else
                 <button class="btn btn-outline-light border border-white border-2 fs-5"
                         style="width: 150px;"
                         @onclick="SaveChanges">
-                    <i class="bi bi-floppy"></i> Salvar
+                    <i class="bi bi-floppy"></i> @localizer["Save"]
                 </button>
             </div>
         </div>
 
         <div class="edit-form mt-4">
             <div class="d-flex align-items-center gap-3 mb-3">
-                <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Nome</label>
+                <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Name"]</label>
                 <input type="text"
                        @bind="userName"
                        class="form-control w-50 mx-auto"
@@ -59,7 +60,7 @@ else
             </div>
 
             <div class="d-flex align-items-center gap-3 mb-3">
-                <label for="password" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Palavra-passe</label>
+                <label for="password" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Password"]</label>
                 <input type="password"
                        @bind="userPassword"
                        class="form-control w-50 mx-auto"
@@ -67,14 +68,14 @@ else
             </div>
 
             <div class="d-flex align-items-center gap-3 mb-3">
-                <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">Função</label>
-                <select class="form-select form-select-sm mx-auto w-50 h-100"
+                <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Function"]</label>
+                <select class="form-select form-select-sm mx-auto w-50"
                         @bind="selectedRoleId"
-                        style="height: 32px; font-size: 1.2rem; text-align: center; border: 1px solid grey;">
+                        style="height: 40px; font-size: 1.2rem; text-align: center;">
                     <option value="">Selecione uma função</option>
                     @foreach (var role in roles)
                     {
-                        <option value="@role.Id">@role.Name</option>
+                        <option value="@role.Id">@GetRoleName(role.Name)</option>
                     }
                 </select>
             </div>
@@ -99,6 +100,19 @@ else
                     </button>
                 </div>
             </div>
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Language"]</label>
+                <select id="cultureSelect"
+                        class="form-select form-select-sm mx-auto w-50"
+                        style="height: 40px; font-size: 1.2rem;"
+                        @bind="userCulture">
+                    <option value="">@localizer["SelectLanguage"]</option>
+                    <option value="pt-PT">@localizer["Portuguese"]</option>
+                    <option value="en-US">@localizer["English"]</option>
+                    <option value="es-ES">@localizer["Spanish"]</option>
+                </select>
+            </div>
         </div>
     </div>
 }
@@ -117,6 +131,8 @@ else
     private string userName = string.Empty;
     private string userEmail = string.Empty;
     private string userPassword = string.Empty;
+    private string userCulture = string.Empty;
+    private string currentCulture = string.Empty;
 
     // Integer Variables
     private int? selectedRoleId = null;
@@ -141,6 +157,7 @@ else
                 userName = user.UserName;
                 userEmail = user.Email;
                 userPassword = user.Password;
+                userCulture = user.Culture;
             }
 
             isLoading = false;
@@ -150,13 +167,18 @@ else
             log.Error("Error loading user or roles. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao carregar dados do utilizador",
-                Text = "Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["ErrorLoading"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
             NavigationManager.NavigateTo("/manageUsers");
         }
+    }
+
+    private string GetRoleName(string roleName)
+    {
+        return localizer[roleName];
     }
 
     private async Task SaveChanges()
@@ -177,8 +199,8 @@ else
             log.Error("Error saving changes to user. ", ex);
             await Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Erro ao salvar alterações",
-                Text = "Por favor, tente novamente mais tarde.",
+                Title = @localizer["Error"],
+                Text = @localizer["TryAgain"],
                 Icon = SweetAlertIcon.Error,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -192,7 +214,7 @@ else
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Por favor insira dados válidos!",
+                Title = @localizer["ValidName"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -203,8 +225,8 @@ else
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Nome muito comprido!",
-                Text = "O nome de utilizador deve ter no máximo 30 caracteres.",
+                Title = @localizer["LongName"],
+                Text = @localizer["Max30"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -215,8 +237,8 @@ else
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Email muito comprido!",
-                Text = "O email deve ter no máximo 50 caracteres.",
+                Title = @localizer["LongEmail"],
+                Text = @localizer["Max30"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -227,8 +249,8 @@ else
         {
             _ = Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "Palavra-passe muito comprida!",
-                Text = "A palavra-passe deve ter no máximo 15 caracteres.",
+                Title = @localizer["LongPass"],
+                Text = @localizer["Max30"],
                 Icon = SweetAlertIcon.Warning,
                 ConfirmButtonColor = "#0B5120"
             });
@@ -246,6 +268,7 @@ else
         userDb.UserName = userName;
         userDb.Email = userEmail;
         userDb.Password = userPassword;
+        userDb.Culture = userCulture;
         userDb.UserRoleId = selectedRoleId.Value;
         userDb.EntityId = selectedEntityId;
 
@@ -256,7 +279,7 @@ else
     {
         await Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "Utilizador editado com sucesso!",
+            Title = @localizer["AddedSuccess"],
             Icon = SweetAlertIcon.Success,
             ConfirmButtonColor = "#0B5120"
         });
