@@ -1,11 +1,11 @@
 ﻿@page "/manageEntities"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle>@localizer["ManageEntity"]</PageTitle>
 
@@ -53,112 +53,167 @@ else
             </div>
         </div>
 
-        <div class="pb-5">
-            <table class="table mt-3 w-100" style="table-layout: fixed;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th onclick="@(() => SortByColumn("Name"))"
-                            style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                           border-right: 1px solid white; cursor: pointer;">
-                            @localizer["Name"]
-                            <span style="font-size: 0.9rem; margin-left: 5px;
-                                                                 color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">@localizer["LinkedFleets"]</th>
-                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">@localizer["State"]</th>
-                        <th style="width: 12.5%;"></th>
-                        <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (PaginatedEntities is null || !PaginatedEntities.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                @localizer["NoData"]
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var entity in PaginatedEntities)
-                        {
-                            <tr class="table-light" style="height: 60px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                    @entity.Name
-                                </td>
-                                <td class="text-center" style="vertical-align: middle;">
-                                    @if (entity.EntityFleets?.Any() == true)
-                                    {
-                                        <ul class="mb-0 ps-3">
-                                            @foreach (var ef in entity.EntityFleets)
-                                            {
-                                                <li style="list-style-type: none;">@ef.Fleet?.Name</li>
-                                            }
-                                        </ul>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted" style="font-size:18px;">Sem Frotas</span>
-                                    }
-                                </td>
-                                <td class="text-center align-middle p-0">
-                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                           id="toggle-@entity.Id"
-                                           @onchange="(e => ToggleEntity(e, entity))"
-                                           checked="@selectedEntities.Any(e => e.Id == entity.Id)" />
-                                </td>
-                                <td class="text-center align-middle">
+        <div class="card-body pb-2 px-0 mt-2">
+            <div class="table-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@FilteredEntities.AsQueryable()"
+                           ItemKey="@(pe => pe.Id)">
+
+                    <!--- Coluna das opções --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="options-buttons-header">
+                                @localizer["Options"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="options-buttons">
+                                <div>
                                     <button class="btn btn-outline-success btn-sm py-1 px-2"
-                                            title="Editar Entidade"
-                                            @onclick="() => NavigateToEditEntity(entity.Id)">
+                                            title="Editar"
+                                            @onclick="() => NavigateToEditEntity(context.Id)"
+                                            style="border-radius: 5px;">
                                         <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                     </button>
-                                </td>
-                                <td class="text-center align-middle">
+                                </div>
+                                <div>
                                     <button class="btn btn-outline-danger btn-sm py-1 px-2"
-                                            title="Remover Entidade"
-                                            @onclick="() => DisableEntity(entity.Id)">
+                                            title="Desativar"
+                                            @onclick="() => DisableEntity(context.Id)"
+                                            style="border-radius: 5px;">
                                         <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                     </button>
+                                </div>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna dos nomes das entidades --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left" style="cursor: pointer" onclick="@(() => SortByColumn("Name"))">
+                                @localizer["Name"]
+                                <span style="font-size: 1rem; margin-left: 5px;
+                                                                     color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                <span style="font-size: 1rem;">
+                                    @context.Name
+                                </span>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna das frotas associadas --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["LinkedFleets"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @if (context.EntityFleets?.Any() == true)
+                                {
+                                    <span style="font-size: 1rem;">
+                                        @string.Join(", ", context.EntityFleets
+                                                                        .Where(ef => ef.Fleet != null)
+                                                                        .Select(ef => ef.Fleet!.Name.Trim()))
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size: 1rem;">
+                                        @localizer["WithoutFleets"]
+                                    </span>
+                                }
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna das observações de uma entidade --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["Observations"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            @if (string.IsNullOrEmpty(context.Observation))
+                            {
+                                <div class="body-table-center">
+                                    <span style="font-size: 1rem;">
+                                        -
+                                    </span>
+                                </div>
+                            } 
+                            else
+                            {
+                                <div class="body-table-left">
+                                    <span style="font-size: 1rem;">
+                                        @context.Observation
+                                    </span>
+                                </div>
+                            }
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado (Ativo ou não) --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["Active"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@context.Id"
+                                       @onchange="(e => ToggleEntity(e, context))"
+                                       checked="@selectedEntities.Any(e => e.Id == context.Id)"
+                                       style="border-radius: 5px;" />
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                @if (!FilteredEntities.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
                                 </td>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                }
+            </div>
 
-        </div>
-
-        <div class="sticky-footer-right">
-            <div class="d-flex justify-content-end align-items-center gap-3">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                        &lt;
-                    </button>
-
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextPage" disabled="@(!CanGoNext)">
-                        &gt;
-                    </button>
-                </div>
+            <div class="d-flex justify-content-end mt-3 px-3">
+                <p>
+                    @(FilteredEntities.Count())
+                    @(FilteredEntities.Count() > 1
+                                    ? localizer["Entities"]
+                                    : localizer["Entity"])
+                </p>
             </div>
         </div>
     </div>
 }
 
 @code {
-    // Object Variables
-    private List<Entity> entities = new();
-    private List<Entity> selectedEntities = new();
-    private List<Entity> paginatedEntities = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(ManageEntities));
+    // Variáveis: Object
+    List<Entity> entities = new();
+    List<Entity> selectedEntities = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(ManageEntities));
 
-    private IEnumerable<Entity> FilteredEntities
+    IEnumerable<Entity> FilteredEntities
     {
         get
         {
@@ -177,16 +232,11 @@ else
         }
     }
 
-    private IEnumerable<Entity> PaginatedEntities =>
-    FilteredEntities
-        .Skip((actualPage - 1) * entitiesPerPage)
-        .Take(entitiesPerPage);
+    // Variáveis: String
+    string currentSortColumn = "Name";
 
-    // String Variables
-    private string currentSortColumn = "Name";
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -194,21 +244,13 @@ else
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                actualPage = 1;
             }
         }
     }
 
-    // Integer Variables 
-    private int actualPage = 1;
-    private int entitiesPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredEntities.Count() / entitiesPerPage);
-
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool isNameAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool isNameAscending = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -230,31 +272,31 @@ else
             foreach (var entity in entities)
             {
                 entity.EntityFleets = entity.EntityFleets
-                    .Where(ef => ef.Fleet != null && filteredFleetsIds.Contains(ef.Fleet.Id))
+                    .Where(ef => ef.Fleet != null)
                     .ToList();
+
+                foreach (var ef in entity.EntityFleets)
+                {
+                    _log.Info($"Fleet: {ef.Fleet?.Name} - Id: {ef.Fleet?.Id}");
+                }
             }
 
             selectedEntities = FilterService.SelectedEntities;
 
             UpdatePage();
 
-            log.Info("Entities loaded successfully.");
+            _log.Info("Entities loaded successfully.");
             isLoading = false;
         } 
         catch (Exception ex)
         {
-            log.Error("Error loading entities. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading entities. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
         }
     }
 
-    private void ToggleEntity(ChangeEventArgs e, Entity entity)
+    void ToggleEntity(ChangeEventArgs e, Entity entity)
     {
         var isChecked = e.Value is bool b && b;
 
@@ -269,57 +311,42 @@ else
         }
     }
 
-    private void NavigateToAddEntity()
+    void NavigateToAddEntity()
     {
         NavigationManager.NavigateTo("/manageEntities/add");
     }
 
-    private void NavigateToEditEntity(int id)
+    void NavigateToEditEntity(int id)
     {
         NavigationManager.NavigateTo($"/manageEntities/edit/{id}");
     }
 
-    private async Task ApplyFilter()
+    async Task ApplyFilter()
     {
         try
         {
             if (selectedEntities.Count == 0)
             {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["PleaseSelectEntity"],
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowWarning(@localizer["PleaseSelectEntity"]);
                 return;
             }
             else
             {
                 await FilterService.ApplyEntitiesFilter(new List<Entity>(selectedEntities));
 
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["FilterApplied"],
-                    Icon = SweetAlertIcon.Success,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowSuccess(@localizer["FilterApplied"]);
             }
         }
         catch (Exception ex)
         {
-            log.Error("Error applying filter. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error applying filter. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private async Task DisableEntity(int id)
+    async Task DisableEntity(int id)
     {
         try
         {
@@ -330,7 +357,8 @@ else
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
@@ -358,6 +386,8 @@ else
                 FilterService.SelectedEntities.RemoveAll(e => e.Id == id);
                 await FilterService.SaveFilterAsync();
 
+                ToastService.ShowSuccess(@localizer["EntityDisableSuccess"]);
+
                 UpdatePage();
 
                 isLoading = false;
@@ -366,19 +396,14 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error disabling entity. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error disabling entity. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private void SortByColumn(string columnName)
+    void SortByColumn(string columnName)
     {
         if (currentSortColumn == columnName)
         {
@@ -389,33 +414,10 @@ else
             currentSortColumn = columnName;
             isNameAscending = true;
         }
-
-        actualPage = 1;
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedEntities = FilteredEntities
-                                 .Skip((actualPage - 1) * entitiesPerPage)
-                                 .Take(entitiesPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);
     }
 }

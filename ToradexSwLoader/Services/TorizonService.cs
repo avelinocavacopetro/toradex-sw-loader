@@ -8,18 +8,18 @@ namespace ToradexSwLoader.Services
 {
     public class TorizonService
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _apiClientId;
-        private readonly string _apiSecret;
-        private readonly string _tokenUrl;
-        private string _accessToken;
+        readonly HttpClient _httpClient;
+        readonly string _apiClientId;
+        readonly string _apiSecret;
+        readonly string _tokenUrl;
+        string? _accessToken;
 
         public TorizonService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
-            _apiClientId = configuration["Torizon:ClientId"];
-            _apiSecret = configuration["Torizon:Secret"];
-            _tokenUrl = configuration["Torizon:TokenUrl"];
+            _apiClientId = configuration["Torizon:ClientId"] ?? "";
+            _apiSecret = configuration["Torizon:Secret"] ?? "";
+            _tokenUrl = configuration["Torizon:TokenUrl"] ?? "";
         }
 
         public async Task<bool> AuthenticateAsync()
@@ -225,7 +225,7 @@ namespace ToradexSwLoader.Services
             return await _httpClient.PostAsJsonAsync("https://app.torizon.io/api/v2beta/updates", deviceDto);
         }
 
-        private string FormatDuration(int durationMinutes)
+        string FormatDuration(int durationMinutes)
         {
             var ts = TimeSpan.FromMinutes(durationMinutes);
 

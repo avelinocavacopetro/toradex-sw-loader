@@ -1,11 +1,10 @@
 ﻿@page "/managePackages/edit/{StackId:int}/{PackageId}"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject SweetAlertService Swal
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject FilterService FilterService
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle>@localizer["EditPackage"]</PageTitle>
 
@@ -26,7 +25,7 @@ else
         <div class="page-title d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-                <h3 class="ms-2 mb-0">@localizer["EditEntity"]</h3>
+                <h3 class="ms-2 mb-0">@localizer["EditPackage"]</h3>
             </div>
 
             <div class="d-flex gap-3">
@@ -48,7 +47,7 @@ else
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <label for="stackSelect" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">Stack</label>
                     <div class="flex-grow-1">
-                        <select id="stackSelect" class="form-control w-100" @bind="selectedStackId">
+                        <select id="stackSelect" class="form-control w-100" @bind="selectedStackId" style="border: 1px solid grey">
                             <option value="0">Selecione um stack</option>
                             @foreach (var stack in FilterService.SelectedStacks)
                             {
@@ -61,7 +60,7 @@ else
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <label for="packageInput" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">@localizer["Name"]</label>
                     <div class="flex-grow-1 position-relative">
-                        <input id="packageInput" class="form-control w-100" type="text"
+                        <input id="packageInput" class="form-control w-100" type="text" style="border: 1px solid grey"
                                @bind="searchTerm"
                                @oninput="FilterPackageNames"
                                @onfocus="() => showSuggestions = true"
@@ -87,7 +86,7 @@ else
                 <div class="d-flex align-items-center gap-3">
                     <label for="versionInput" class="col-form-label" style="width: 120px; font-size: 18px; font-weight: bold;">@localizer["Version"]</label>
                     <div class="flex-grow-1 position-relative">
-                        <input id="versionInput" class="form-control w-100" type="text"
+                        <input id="versionInput" class="form-control w-100" type="text" style="border: 1px solid grey"
                                @bind="versionSearchTerm"
                                @oninput="FilterVersions"
                                @onfocus="() => showVersionSuggestions = true"
@@ -114,38 +113,37 @@ else
     </div>
 }
 
-
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int StackId { get; set; }
 
     [Parameter]
-    public string PackageId { get; set; }
+    public string? PackageId { get; set; }
 
-    // Object Variables
-    private Package? selectedPackage;
-    private HashSet<string> packageNames = new();
-    private List<Package> packages = new();
-    private List<string> filteredPackageNames = new();
-    private List<string> filteredVersionList = new();
-    private List<string> filteredVersions = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(EditPackage));
+    // Variáveis: Object
+    Package? selectedPackage = new();
+    HashSet<string> packageNames = new();
+    List<Package> packages = new();
+    List<string> filteredPackageNames = new();
+    List<string> filteredVersionList = new();
+    List<string> filteredVersions = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(EditPackage));
 
-    // String Variables
-    private string searchTerm = "";
-    private string versionSearchTerm = "";
-    private string? selectedPackageName;
-    private string? selectedPackageVersion;
-    private string? oldPackageId;
+    // Variáveis: String
+    string searchTerm = "";
+    string versionSearchTerm = "";
+    string? selectedPackageName;
+    string? selectedPackageVersion;
+    string? oldPackageId;
 
-    // Boolean Variables
-    private bool showSuggestions = false;
-    private bool showVersionSuggestions = false;
-    private bool isLoading = true;
+    // Variáveis: Boolean
+    bool showSuggestions = false;
+    bool showVersionSuggestions = false;
+    bool isLoading = true;
 
-    // Integer Variables
-    private int selectedStackId;
+    // Variáveis: Integer
+    int selectedStackId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,19 +185,14 @@ else
             isLoading = false;
         } catch (Exception ex)
         {
-            log.Error("Error loading package. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading package. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
             NavigationManager.NavigateTo("/managePackages");
         }
     }
 
-    private void FilterPackageNames(ChangeEventArgs e)
+    void FilterPackageNames(ChangeEventArgs e)
     {
         searchTerm = e.Value?.ToString() ?? "";
         showSuggestions = true;
@@ -216,7 +209,7 @@ else
         }
     }
 
-    private void SelectPackage(string name)
+    void SelectPackage(string name)
     {
         selectedPackageName = name;
         searchTerm = name;
@@ -232,13 +225,13 @@ else
         versionSearchTerm = "";
     }
 
-    private async Task HideSuggestions()
+    async Task HideSuggestions()
     {
         await Task.Delay(200);
         showSuggestions = false;
     }
 
-    private void FilterVersions(ChangeEventArgs e)
+    void FilterVersions(ChangeEventArgs e)
     {
         versionSearchTerm = e.Value?.ToString() ?? "";
         showVersionSuggestions = true;
@@ -255,7 +248,7 @@ else
         }
     }
 
-    private void SelectVersion(string version)
+    void SelectVersion(string version)
     {
         selectedPackageVersion = version;
         versionSearchTerm = version;
@@ -265,13 +258,13 @@ else
             p.Name == selectedPackageName && p.Version == selectedPackageVersion);
     }
 
-    private async Task HideVersionSuggestions()
+    async Task HideVersionSuggestions()
     {
         await Task.Delay(200);
         showVersionSuggestions = false;
     }
 
-    private async Task Save()
+    async Task Save()
     {
         try
         {
@@ -284,45 +277,37 @@ else
 
             if (await PackagesExistsAsync(context))
             {
-                await ShowPackageExistsAlert();
+                ToastService.ShowWarning(@localizer["AlreadyExists"]);
                 return;
             }
 
             await ChangePackage(context);
-            await ShowSuccessAlert();
+
+            ToastService.ShowSuccess(@localizer["EditedSuccess"]);
+
             NavigationManager.NavigateTo("/managePackages");
         }
         catch (Exception ex)
         {
-            log.Error("Error saving package. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving package. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private bool ValidadePackage()
+    bool ValidadePackage()
     {
         if (selectedPackage == null)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["PleaseSelectPckg"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["PleaseSelectPckg"]);
             return false;
         }
 
         return true;
     }
 
-    private async Task RemoveCombination(AppDbContext context)
+    async Task RemoveCombination(AppDbContext context)
     {
         var oldEntry = await context.StackPackages
             .FirstOrDefaultAsync(sp => sp.StackId == StackId && sp.PackageId == oldPackageId);
@@ -333,45 +318,25 @@ else
         }
     }
 
-    private async Task<bool> PackagesExistsAsync(AppDbContext context)
+    async Task<bool> PackagesExistsAsync(AppDbContext context)
     {
         return await context.StackPackages.AnyAsync(sp =>
-            sp.StackId == StackId && sp.PackageId == selectedPackage.Id);
+            sp.StackId == StackId && sp.PackageId == selectedPackage!.Id);
     }
 
-    private async Task ShowPackageExistsAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AlreadyExists"],
-            Icon = SweetAlertIcon.Warning,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private async Task ChangePackage(AppDbContext context)
+    async Task ChangePackage(AppDbContext context)
     {
         var newEntry = new StackPackage
         {
             StackId = StackId,
-            PackageId = selectedPackage.Id
+            PackageId = selectedPackage!.Id
         };
 
         context.StackPackages.Add(newEntry);
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/managePackages");
     }

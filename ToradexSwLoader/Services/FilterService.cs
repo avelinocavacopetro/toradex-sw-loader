@@ -8,7 +8,7 @@ namespace ToradexSwLoader.Services
 {
     public class FilterService
     {
-        private readonly IDbContextFactory<AppDbContext> _contextFactory;
+        readonly IDbContextFactory<AppDbContext> _contextFactory;
         public event Action? OnFilterChanged;
 
         public int OnlineTime { get; set; }
@@ -65,7 +65,7 @@ namespace ToradexSwLoader.Services
                                  : JsonSerializer.Deserialize<List<Entity>>(filter.SelectedEntitiesJson, options) ?? new List<Entity>();
             }
         }
-        
+     
         public async Task SaveFilterAsync()
         {
             using var context = _contextFactory.CreateDbContext();
@@ -98,7 +98,7 @@ namespace ToradexSwLoader.Services
             OnFilterChanged?.Invoke();
         }
 
-        private async Task ApplyFilterAsync<T>(Action<List<T>> setFilter, List<T> value)
+        async Task ApplyFilterAsync<T>(Action<List<T>> setFilter, List<T> value)
         {
             setFilter(value);
             await SaveFilterAsync();
@@ -129,9 +129,15 @@ namespace ToradexSwLoader.Services
         public Task ApplyEntitiesFilter(List<Entity> entities) =>
             ApplyFilterAsync(e => SelectedEntities = e, entities);
 
-        public async Task ApplyTimeFilter(int newTime)
+        public async Task ApplyRefreshTimeFilter(int newTime)
         {
             RefreshTime = newTime;
+            await SaveFilterAsync();
+        }
+
+        public async Task ApplyOnlineTimeFilter(int newTime)
+        {
+            OnlineTime = newTime;
             await SaveFilterAsync();
         }
     }

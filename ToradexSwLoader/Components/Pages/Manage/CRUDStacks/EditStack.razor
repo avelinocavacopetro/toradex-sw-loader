@@ -1,11 +1,10 @@
 ﻿@page "/manageStacks/edit/{StackId:int}"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject FilterService FilterService
-@inject SweetAlertService Swal
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject FilterService FilterService
+@inject NavigationManager NavigationManager
 
 <PageTitle>@localizer["EditStacks"]</PageTitle>
 
@@ -26,7 +25,7 @@ else
         <div class="page-title d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-                <h3 class="ms-2 mb-0">@localizer["EditStacks"]</h3>
+                <h3 class="ms-2 mb-0">@localizer["EditStack"]</h3>
             </div>
 
             <div class="d-flex gap-3">
@@ -58,47 +57,66 @@ else
             <br />
             <h4>@localizer["SelectProducts"]</h4>
 
-            <div class="table-wrapper">
-                <table class="table mt-3 w-100" style="table-layout: fixed;">
-                    <thead style="background-color: #0c6527; color: white;">
-                        <tr>
-                            <th style="width: 50%; text-align: left; padding-left: 25px; border-right: 1px solid white;">Produto</th>
-                            <th style="width: 50%; text-align: center;">Selecionar</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var product in PaginatedProducts)
-                        {
-                            <tr class="table-light" style="height: 45px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 25px;">
-                                    @product.Name
-                                </td>
-                                <td class="text-center align-middle p-0">
+            <div class="w-50">
+                <input type="text" class="form-control" style="border: 1px solid grey;"
+                       placeholder="Pesquisar produto pelo nome..."
+                       @bind="searchTerm" @bind:event="oninput" />
+            </div>
+
+            <div class="card-body pb-2 px-0 mb-0 mt-3">
+                <div class="table-add-edit-responsive border rounded-2">
+                    <QuickGrid Class="table table-striped m-0"
+                               Items="@FilteredProducts.AsQueryable()"
+                               ItemKey="@(pd => pd.Id)">
+
+                        <!--- Coluna dos nomes dos produtos --->
+                        <TemplateColumn>
+                            <HeaderTemplate>
+                                <div class="header-table-left">
+                                    @localizer["Product"]
+                                </div>
+                            </HeaderTemplate>
+                            <ChildContent>
+                                <div class="body-table-left">
+                                    @context.Name
+                                </div>
+                            </ChildContent>
+                        </TemplateColumn>
+
+                        <!--- Coluna do estado (Selecionado ou não) --->
+                        <TemplateColumn>
+                            <HeaderTemplate>
+                                <div class="header-table-center">
+                                    @localizer["Select"]
+                                </div>
+                            </HeaderTemplate>
+                            <ChildContent>
+                                <div class="body-table-center">
                                     <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                           id="toggle-@product.Id"
-                                           @onchange="(e => ToggleProduct(e, product))"
-                                           checked="@selectedProducts.Any(p => p.Id == product.Id)" />
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                                           id="toggle-@context.Id"
+                                           @onchange="(e => ToggleProduct(e, context))"
+                                           checked="@selectedProducts.Any(p => p.Id == context.Id)" />
+                                </div>
+                            </ChildContent>
+                        </TemplateColumn>
+                    </QuickGrid>
 
-                <div class="sticky-footer-right">
-                    <div class="d-flex justify-content-end align-items-center gap-3">
-                        <span>@currentProductPage - @TotalProductPages de @TotalProductPages</span>
-                        <div class="d-flex gap-2">
-                            <button class="btn custom-outline-button btn-lg"
-                                    @onclick="PrevProductPage" disabled="@(currentProductPage == 1)">
-                                &lt;
-                            </button>
+                    @if (!FilteredProducts.Any())
+                    {
+                        <table class="table table-striped m-0">
+                            <tbody>
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                        @localizer["NoData"]
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    }
+                </div>
 
-                            <button class="btn custom-outline-button btn-lg"
-                                    @onclick="NextProductPage" disabled="@(currentProductPage == TotalProductPages)">
-                                &gt;
-                            </button>
-                        </div>
-                    </div>
+                <div class="d-flex justify-content-end mt-3 px-3">
+                    <p>@FilteredProducts.Count() @localizer["Product"]&#40s&#41</p>
                 </div>
             </div>
         </div>
@@ -106,35 +124,47 @@ else
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int StackId { get; set; }
 
-    // Object Variables
-    private List<Product> selectedProducts = new List<Product>();
-    private static readonly ILog log = LogManager.GetLogger(typeof(EditStack));
+    // Variáveis: Object
+    List<Product> selectedProducts = new();
+    List<Product> products = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(EditStack));
 
-    private IEnumerable<Product> PaginatedProducts =>
-        FilterService.SelectedProducts
-            .Skip((currentProductPage - 1) * productsPerPage)
-            .Take(productsPerPage);
+    IEnumerable<Product> FilteredProducts =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? products
+            : products.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    // String Variables
-    private string stackName = string.Empty;
+    // Variáveis: Integer
+    const int NameLength = 50;
 
-    // Boolean Variables
-    private bool isLoading = true;
+    // Variáveis: String
+    string stackName = string.Empty;
+    string _searchTerm = string.Empty;
+    string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+            }
+        }
+    }
 
-    // Integer Variables
-    private int currentProductPage = 1;
-    private int productsPerPage = 3;
-    private int TotalProductPages => (int)Math.Ceiling((double)FilterService.SelectedProducts.Count / productsPerPage);
+    // Variáveis: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             await FilterService.LoadFilterAsync();
+            products = FilterService.SelectedProducts;
 
             using var context = DbContextFactory.CreateDbContext();
             var stack = await context.Stacks.FirstOrDefaultAsync(s => s.Id == StackId);
@@ -153,19 +183,14 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error loading stack. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading stack. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             NavigationManager.NavigateTo("/manageStacks");
         }
     }
 
-    private void ToggleProduct(ChangeEventArgs e, Product product)
+    void ToggleProduct(ChangeEventArgs e, Product product)
     {
         var isChecked = e.Value is bool b && b;
 
@@ -180,7 +205,7 @@ else
         }
     }
 
-    private async Task SaveChanges()
+    async Task SaveChanges()
     {
         try
         {
@@ -193,68 +218,49 @@ else
             using var context = DbContextFactory.CreateDbContext();
 
             await ChangeStack(context);
-            await ShowSuccessAlert();
+            
+            ToastService.ShowSuccess(@localizer["EditedSuccess"]);
+
             NavigationManager.NavigateTo("/manageStacks");
         }
         catch (Exception ex)
         {
-            log.Error("Error saving changes. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving changes. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private bool ValidateStack()
+    bool ValidateStack()
     {
         if (string.IsNullOrWhiteSpace(stackName))
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ValidName"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ValidName"]);
             return false;
         }
 
-        if (stackName.Length > 50)
+        if (stackName.Length > NameLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongName"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongName"]}. {@localizer["Max50"]}");
             return false;
         }
 
         return true;
     }
 
-    private bool ValidateProductCount()
+    bool ValidateProductCount()
     {
         if (selectedProducts.Count < 1)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["PleaseSelectProduct"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["PleaseSelectProduct"]);
             return false;
         }
 
         return true;
     }
 
-    private async Task ChangeStack(AppDbContext context)
+    async Task ChangeStack(AppDbContext context)
     {
         var stackDb = await context.Stacks.FirstOrDefaultAsync(s => s.Id == StackId);
         if (stackDb == null) return;
@@ -276,30 +282,8 @@ else
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/manageStacks");
-    }
-
-    private void PrevProductPage()
-    {
-        if (currentProductPage > 1)
-            currentProductPage--;
-    }
-
-    private void NextProductPage()
-    {
-        if (currentProductPage < TotalProductPages)
-            currentProductPage++;
     }
 }

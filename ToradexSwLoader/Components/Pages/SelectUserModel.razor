@@ -1,11 +1,11 @@
-﻿@using log4net
-@inject IDbContextFactory<AppDbContext> DbContextFactory
+﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
 @inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -24,64 +24,59 @@
 }
 else
 {
-    <table class="table mt-3 w-100">
-        <thead style="background-color: #0c6527; color: white;">
-            <tr>
-                <th style="padding-left: 20px; border-top-left-radius: 5px; border-top-right-radius: 5px;">@localizer["Name"]</th>
-            </tr>
-        </thead>
-        <tbody style="height: 50px;">
-            @foreach (var key in paginatedKeys)
-            {
-                <tr @onclick="@(() => OnClick(key))" style="cursor:pointer;">
-                    <td style="padding-left: 20px;">@key.Name</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card-body pb-2 px-0 mt-2">
+        <div class="table-responsive border rounded-2">
+            <QuickGrid Class="table table-striped m-0"
+                       Items="@sshKeys.AsQueryable()"
+                       ItemKey="@(pk => pk.Id)">
 
-    <div class="d-flex justify-content-end pe-lg-0">
-        <div class="d-flex justify-content-between align-items-center gap-3 ms-auto">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
-
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
-            </div>
+                <!--- Coluna dos nomes --->
+                <TemplateColumn>
+                    <HeaderTemplate>
+                        <div class="header-table-left">
+                            @localizer["Name"]
+                        </div>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <div class="body-table-left" style="cursor:pointer;" @onclick="@(() => OnClick(context))">
+                            @context.Name
+                        </div>
+                    </ChildContent>
+                </TemplateColumn>
+            </QuickGrid>
         </div>
+
+        @if (!sshKeys.Any())
+        {
+            <table class="table table-striped m-0">
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                            @localizer["NoData"]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        }
     </div>
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public string? DeviceUuid { get; set; }
 
     [Parameter] 
     public EventCallback<SshKey> OnNextModal { get; set; }
 
-    // Object Variables
-    private DetailedDevice? selectedDevice = new();
-    private List<SshKey> sshKeys = new();
-    private List<SshKey> paginatedKeys = new();
-    private SshKey? selectedKey;
-    private static readonly ILog log = LogManager.GetLogger(typeof(SelectUserModel));
+    // Variáveis: Object
+    DetailedDevice? selectedDevice = new();
+    List<SshKey> sshKeys = new();
+    SshKey? selectedKey = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(SelectUserModel));
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int keysPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)sshKeys.Count / keysPerPage);
-
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,7 +86,7 @@ else
 
             if (!await TorizonService.AuthenticateAsync())
             {
-                log.Error("Error authenticating to Torizon Service.");
+                _log.Error("Error authenticating to Torizon Service.");
                 return;
             }
 
@@ -105,11 +100,11 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error authenticating to Torizon Service or loading ssh keys.", ex);
+            _log.Error("Error authenticating to Torizon Service or loading ssh keys.", ex);
         }
     }
 
-    private async Task OnClick(SshKey key)
+    async Task OnClick(SshKey key)
     {
         using var context = DbContextFactory.CreateDbContext();
 
@@ -117,7 +112,7 @@ else
 
         if (selectedKey != null)
         {
-            log.Info($"User {LoginService.UserId} started selecting user '{selectedKey.Name}' for device '{selectedDevice?.DeviceName}'.");
+            _log.Info($"User {LoginService.UserId} started selecting user '{selectedKey.Name}' for device '{selectedDevice?.DeviceName}'.");
 
             var result = await Swal.FireAsync(new SweetAlertOptions
             {
@@ -126,12 +121,13 @@ else
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
             {
-                log.Info($"User {LoginService.UserId} confirmed selection of user '{selectedKey.Name}' for device '{selectedDevice?.DeviceName}'.");
+                _log.Info($"User {LoginService.UserId} confirmed selection of user '{selectedKey.Name}' for device '{selectedDevice?.DeviceName}'.");
 
                 var userAct = new UserActivity
                 {
@@ -144,51 +140,25 @@ else
                 context.UserActivities.Add(userAct);
                 await context.SaveChangesAsync();
 
-                log.Info($"User activity successfully saved for user {LoginService.UserId}.");
+                _log.Info($"User activity successfully saved for user {LoginService.UserId}.");
 
                 await OnNextModal.InvokeAsync(key);
             }
             else
             {
-                log.Info($"User {LoginService.UserId} canceled the selection of user '{selectedKey.Name}'.");
+                _log.Info($"User {LoginService.UserId} canceled the selection of user '{selectedKey.Name}'.");
             }
         }
         else
         {
-            log.Warn($"User {LoginService.UserId} attempted to proceed without selecting a valid user.");
+            _log.Warn($"User {LoginService.UserId} attempted to proceed without selecting a valid user.");
 
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["SelectUser"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+            ToastService.ShowWarning(@localizer["SelectUser"]);
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedKeys = sshKeys
-                                 .Skip((actualPage - 1) * keysPerPage)
-                                 .Take(keysPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);
     }
 }

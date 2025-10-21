@@ -1,11 +1,10 @@
 ﻿@page "/manageEntities/edit/{EntityId:int}"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject FilterService FilterService
-@inject SweetAlertService Swal
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject FilterService FilterService
+@inject NavigationManager NavigationManager
 
 <PageTitle>@localizer["EditEntity"]</PageTitle>
 
@@ -73,48 +72,65 @@ else
                        @bind="searchTerm" @bind:event="oninput" />
             </div>
 
-            <div class="table-wrapper">
-                <table class="table mt-3 w-100" style="table-layout: fixed;">
-                    <thead style="background-color: #0c6527; color: white;">
-                        <tr>
-                            <th style="width: 70%; text-align: left; padding-left: 20px;">@localizer["Fleet"]</th>
-                            <th style="width: 30%; text-align: center;">@localizer["Select"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var fleet in PaginatedFleets)
-                        {
-                            <tr class="table-light" style="height: 50px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                    @fleet.Name
-                                </td>
-                                <td class="text-center align-middle p-0">
-                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                           id="toggle-@fleet.Id"
-                                           @onchange="(e => ToggleFleet(e, fleet))"
-                                           checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="card-body pb-2 px-0 mb-0 mt-3">
+                <div class="table-add-edit-responsive border rounded-2">
+                    <QuickGrid Class="table table-striped m-0"
+                               Items="@FilteredFleets.AsQueryable()"
+                               ItemKey="@(pf => pf.Id)">
 
-                <div class="sticky-footer-right">
-                    <div class="d-flex justify-content-end align-items-center gap-3">
-                        <span>@currentFleetPage - @TotalFleetPages de @TotalFleetPages</span>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-secondary"
-                                    @onclick="PrevFleetPage"
-                                    disabled="@(currentFleetPage == 1)">
-                                &lt;
-                            </button>
-                            <button class="btn btn-outline-secondary"
-                                    @onclick="NextFleetPage"
-                                    disabled="@(currentFleetPage == TotalFleetPages)">
-                                &gt;
-                            </button>
-                        </div>
-                    </div>
+                        <!--- Coluna dos nomes das frotas --->
+                        <TemplateColumn>
+                            <HeaderTemplate>
+                                <div class="header-table-left">
+                                    @localizer["Fleet"]
+                                </div>
+                            </HeaderTemplate>
+                            <ChildContent>
+                                <div class="body-table-left">
+                                    @context.Name
+                                </div>
+                            </ChildContent>
+                        </TemplateColumn>
+
+                        <!--- Coluna do estado (Selecionado ou não) --->
+                        <TemplateColumn>
+                            <HeaderTemplate>
+                                <div class="header-table-center">
+                                    @localizer["Select"]
+                                </div>
+                            </HeaderTemplate>
+                            <ChildContent>
+                                <div class="body-table-center">
+                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                           id="toggle-@context.Id"
+                                           @onchange="(e => ToggleFleet(e, context))"
+                                           checked="@selectedFleets.Any(f => f.Id == context.Id)" />
+                                </div>
+                            </ChildContent>
+                        </TemplateColumn>
+                    </QuickGrid>
+
+                    @if (!FilteredFleets.Any())
+                    {
+                        <table class="table table-striped m-0">
+                            <tbody>
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                        @localizer["NoData"]
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-end mt-3 px-3">
+                    <p>
+                        @(FilteredFleets.Count())
+                        @(FilteredFleets.Count() > 1
+                                            ? $"{localizer["Fleet"]}(s)"
+                                            : localizer["Fleet"])
+                    </p>
                 </div>
             </div>
         </div>
@@ -122,31 +138,29 @@ else
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int EntityId { get; set; }
 
-    // Object Variables
-    private List<Fleet> fleets = new();
-    private List<Fleet> selectedFleets = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(EditEntity));
+    // Variáveis: Object
+    List<Fleet> fleets = new();
+    List<Fleet> selectedFleets = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(EditEntity));
 
-    private IEnumerable<Fleet> FilteredFleets =>
-    string.IsNullOrWhiteSpace(searchTerm)
-        ? fleets
-        : fleets.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    IEnumerable<Fleet> FilteredFleets =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? fleets
+            : fleets.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<Fleet> PaginatedFleets =>
-    FilteredFleets
-        .Skip((currentFleetPage - 1) * fleetsPerPage)
-        .Take(fleetsPerPage);
+    // Variáveis: Integer
+    const int NameLength = 50;
 
-    // String Variables 
-    private string entityName = string.Empty;
-    private string observations = string.Empty;
+    // Variáveis: String
+    string entityName = string.Empty;
+    string observations = string.Empty;
 
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -154,18 +168,12 @@ else
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                currentFleetPage = 1;
             }
         }
     }
 
-    // Boolean Variables
-    private bool isLoading = true;
-
-    // Integer Variables
-    private int currentFleetPage = 1;
-    private int fleetsPerPage = 3;
-    private int TotalFleetPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
+    // Variáveis: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -174,7 +182,7 @@ else
             await FilterService.LoadFilterAsync();
 
             using var context = DbContextFactory.CreateDbContext();
-            fleets = await context.Fleets.ToListAsync();
+            fleets = await context.Fleets.OrderBy(f => f.Name).ToListAsync();
             var entity = await context.Entities.FirstOrDefaultAsync(e => e.Id == EntityId);
 
             if (entity != null)
@@ -192,19 +200,14 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error loading entity. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading entity. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             NavigationManager.NavigateTo("/manageEntities");
         }
     }
 
-    private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
+    void ToggleFleet(ChangeEventArgs e, Fleet fleet)
     {
         var isChecked = e.Value is bool b && b;
 
@@ -219,7 +222,7 @@ else
         }
     }
 
-    private async Task SaveChanges()
+    async Task SaveChanges()
     {
         try
         {
@@ -232,68 +235,49 @@ else
             using var context = DbContextFactory.CreateDbContext();
 
             await ChangeEntity(context);
-            await ShowSuccessAlert();
+            
+            ToastService.ShowSuccess(@localizer["EditedSuccess"]);
+
             NavigationManager.NavigateTo("/manageEntities");
         } 
         catch (Exception ex)
         {
-            log.Error("Error saving changes to entity. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving changes to entity. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private bool ValidateEntityName()
+    bool ValidateEntityName()
     {
         if (string.IsNullOrWhiteSpace(entityName))
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ValidName"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ValidName"]);
             return false;
         }
 
-        if (entityName.Length > 50)
+        if (entityName.Length > NameLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongName"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongName"]}. {@localizer["Max50"]}");
             return false;
         }
 
         return true;
     }
 
-    private bool ValidateFleetCount()
+    bool ValidateFleetCount()
     {
         if (selectedFleets.Count < 1)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["PleaseSelectFleet"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["PleaseSelectFleet"]);
             return false;
         }
 
         return true;
     }
 
-    private async Task ChangeEntity(AppDbContext context)
+    async Task ChangeEntity(AppDbContext context)
     {
         var entityDb = await context.Entities.FirstOrDefaultAsync(e => e.Id == EntityId);
         if (entityDb == null) return;
@@ -316,30 +300,8 @@ else
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/manageEntities");
-    }
-
-    private void PrevFleetPage()
-    {
-        if (currentFleetPage > 1)
-            currentFleetPage--;
-    }
-
-    private void NextFleetPage()
-    {
-        if (currentFleetPage < TotalFleetPages)
-            currentFleetPage++;
     }
 }

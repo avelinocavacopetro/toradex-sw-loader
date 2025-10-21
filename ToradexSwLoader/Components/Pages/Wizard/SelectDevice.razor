@@ -3,14 +3,13 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
 @inject LoginService LoginService
 @inject FilterService FilterService 
 @inject NavigationManager UriHelper
-@inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
-
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -33,11 +32,11 @@ else
         <a href="#"
            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
            class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
+           style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
-        <h3 class="text-center pb-5">@localizer["SelectEquipment"]</h3>
+        <h3 class="text-center pb-5">@localizer["SelectDevice"]</h3>
 
         @if (FilterService.SelectedDevices.Count == 0)
         {
@@ -52,7 +51,7 @@ else
             <div class="grid-container">
                 @foreach (var device in FilterService.SelectedDevices)
                 {
-                    <div class="grid-item" @onclick="() => ChooseDevice(device)">
+                    <div class="grid-item" style="cursor: pointer;" @onclick="() => ChooseDevice(device)">
                         @device.Name
                     </div>
                 }
@@ -60,15 +59,16 @@ else
         }
 
         <div class="sticky-footer-right">
-            <div class="d-flex align-items-center gap-3 justify-content-end">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
+            <div class="d-flex justify-content-end">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="custom-outline-button btn-lg"
                             @onclick="PrevPage" disabled="@(!CanGoPrev)">
                         &lt;
                     </button>
 
-                    <button class="btn custom-outline-button btn-lg"
+                    <span>@actualPage - @TotalPages de @TotalPages</span>
+
+                    <button class="custom-outline-button btn-lg"
                             @onclick="NextPage" disabled="@(!CanGoNext)">
                         &gt;
                     </button>
@@ -79,21 +79,21 @@ else
 }
 
 @code {
-    // Object Variables
-    private Device? selectedDevice;
-    private List<Device> allDevices = new();
-    private List<Device> paginatedDevices = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(SelectDevice));
+    // Variáveis: Object
+    Device? selectedDevice = new();
+    List<Device> allDevices = new();
+    List<Device> paginatedDevices = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(SelectDevice));
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int devicesPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)allDevices.Count / devicesPerPage);
+    // Variáveis: Integer
+    int actualPage = 1;
+    int devicesPerPage = 8;
+    int TotalPages => (int)Math.Ceiling((double)allDevices.Count / devicesPerPage);
 
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool CanGoNext => actualPage < TotalPages;
+    bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,16 +107,16 @@ else
             isLoading = false;
             StateHasChanged();
 
-            log.Info("Select device page loaded successfully.");
+            _log.Info("Select device page loaded successfully.");
         }
         catch(Exception ex)
         {
-            log.Error("Error loading Select device page.", ex);
+            _log.Error("Error loading Select device page.", ex);
         }
 
     }
 
-    private async Task ChooseDevice(Device device)
+    async Task ChooseDevice(Device device)
     {
         try
         {
@@ -126,27 +126,22 @@ else
 
             if (!hasProducts)
             {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["DevicesProducts"],
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowWarning(@localizer["DevicesProducts"]);
                 return;
             }
 
             selectedDevice = device;
             await OnClick();
 
-            log.Info($"Device '{device.Name}' selected");
+            _log.Info($"Device '{device.Name}' selected");
         }
         catch(Exception ex)
         {
-            log.Error("Error choosing device", ex);
+            _log.Error("Error choosing device", ex);
         }
     }
 
-    private async Task OnClick()
+    async Task OnClick()
     {
         try
         {
@@ -166,29 +161,24 @@ else
                 context.UserActivities.Add(userAct);
                 await context.SaveChangesAsync();
 
-                log.Info($"Device '{selectedDevice.Name}' selected");
+                _log.Info($"Device '{selectedDevice.Name}' selected");
 
                 UriHelper.NavigateTo($"/selectProduct/{selectedDevice.Id}");
             }
             else
             {
-                log.Warn("No device selected.");
+                _log.Warn("No device selected.");
 
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["WarningDevice"],
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120",
-                });
+                ToastService.ShowWarning(@localizer["WarningDevice"]);
             }
         }
         catch(Exception ex)
         {
-            log.Error("Error choosing device", ex);
+            _log.Error("Error choosing device", ex);
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
         paginatedDevices = allDevices
                                  .Skip((actualPage - 1) * devicesPerPage)
@@ -196,7 +186,7 @@ else
                                  .ToList();
     }
 
-    private void NextPage()
+    void NextPage()
     {
         if (CanGoNext)
         {
@@ -205,7 +195,7 @@ else
         }
     }
 
-    private void PrevPage()
+    void PrevPage()
     {
         if (CanGoPrev)
         {

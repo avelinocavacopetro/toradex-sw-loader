@@ -1,12 +1,12 @@
 ﻿@page "/selectStack/{deviceId:int}/{productId:int}"
 
-<PageTitle>@localizer["SelectStack"]</PageTitle>
-
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject NavigationManager UriHelper
 @inject LoginService LoginService
-@inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
+
+<PageTitle>@localizer["SelectStack"]</PageTitle>
 
 @if (isLoading)
 {
@@ -25,7 +25,7 @@ else
         <a href="#"
            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
            class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
+           style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
@@ -34,22 +34,23 @@ else
         <div class="grid-container">
             @foreach (var stack in paginatedStacks)
             {
-                <div class="grid-item" @onclick="() => SelectStackName(stack)">
+                <div class="grid-item" style="cursor: pointer;" @onclick="() => SelectStackName(stack)">
                     @stack.Name
                 </div>
             }
         </div>
 
         <div class="sticky-footer-right">
-            <div class="d-flex align-items-center gap-3 justify-content-end">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
+            <div class="d-flex justify-content-end">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="custom-outline-button btn-lg"
                             @onclick="PrevPage" disabled="@(!CanGoPrev)">
                         &lt;
                     </button>
 
-                    <button class="btn custom-outline-button btn-lg"
+                    <span>@actualPage - @TotalPages de @TotalPages</span>
+
+                    <button class="custom-outline-button btn-lg"
                             @onclick="NextPage" disabled="@(!CanGoNext)">
                         &gt;
                     </button>
@@ -60,31 +61,30 @@ else
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int deviceId { get; set; }
 
     [Parameter]
     public int productId { get; set; }
 
-    // Object Variables
-    private Device? selectedDevice;
-    private Product? selectedProduct;
-    private Stack? selectedStack;
-    private List<Stack> stacks = new();
-    private List<Stack> paginatedStacks = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(SelectStack));
+    // Variáveis: Object
+    Device? selectedDevice = new();
+    Product? selectedProduct = new();
+    Stack? selectedStack = new();
+    List<Stack> stacks = new();
+    List<Stack> paginatedStacks = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(SelectStack));
 
+    // Variáveis: Integer
+    int actualPage = 1;
+    int stacksPerPage = 8;
+    int TotalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int stacksPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)stacks.Count / stacksPerPage);
-
-    // Boolean Variables
-    private bool isLoading = false;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = false;
+    bool CanGoNext => actualPage < TotalPages;
+    bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,27 +104,22 @@ else
             UpdatePage();
             isLoading = false;
 
-            log.Info("Select stack page loaded successfully.");
+            _log.Info("Select stack page loaded successfully.");
         }
         catch(Exception ex)
         {
-            log.Error("Error loading Select stack page.", ex);
+            _log.Error("Error loading Select stack page.", ex);
         }  
     }
 
-    private async Task SelectStackName(Stack stack)
+    async Task SelectStackName(Stack stack)
     {
         using var context = DbContextFactory.CreateDbContext();
 
         bool hasPackages = await context.StackPackages.AnyAsync(sp => sp.StackId == stack.Id);
         if (!hasPackages)
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["StacksPackages"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["StacksPackages"]);
             return;
         }
 
@@ -132,7 +127,7 @@ else
         await OnClick();
     }
 
-    private async Task OnClick()
+    async Task OnClick()
     {
         try
         {
@@ -150,18 +145,18 @@ else
                 context.UserActivities.Add(userAct);
                 await context.SaveChangesAsync();
 
-                log.Info($"Stack '{selectedStack.Name}' selected.");
+                _log.Info($"Stack '{selectedStack.Name}' selected.");
 
                 UriHelper.NavigateTo($"/packages/{deviceId}/{productId}/{selectedStack.Id}");
             }
         }
         catch(Exception ex)
         {
-            log.Error("Error selecting stack.", ex);
+            _log.Error("Error selecting stack.", ex);
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
         paginatedStacks = stacks
                               .Skip((actualPage - 1) * stacksPerPage)
@@ -169,7 +164,7 @@ else
                               .ToList();
     }
 
-    private void NextPage()
+    void NextPage()
     {
         if (CanGoNext)
         {
@@ -178,7 +173,7 @@ else
         }
     }
 
-    private void PrevPage()
+    void PrevPage()
     {
         if (CanGoPrev)
         {

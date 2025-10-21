@@ -1,11 +1,11 @@
 ﻿@page "/managePatterns"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle> @localizer["ManagePatterns"]</PageTitle>
 
@@ -53,96 +53,109 @@ else
             </div>
         </div>
 
-        <div class="pb-5">
-            <table class="table mt-3 w-100" style="table-layout: fixed;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th onclick="@(() => SortByColumn("NameContains"))"
-                            style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                           border-right: 1px solid white; cursor: pointer;">
-                            @localizer["Name"]
-                            <span style="font-size: 0.9rem; margin-left: 5px;
-                                                                     color: @(currentSortColumn == "NameContains" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "NameContains" ? (isNameContainsAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th style="width: 30%; text-align: center; padding-left: 10px; border-right: 1px solid white;"> @localizer["Active"]</th>
-                        <th style="width: 20%;"></th>
-                        <th style="width: 20%; border-top-right-radius: 5px;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (PaginatedPatterns is null || !PaginatedPatterns.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                @localizer["NoData"]
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var pattern in PaginatedPatterns)
-                        {
-                            <tr class="table-light" style="height: 60px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                    @pattern.NameContains
-                                </td>
-                                <td class="text-center align-middle p-0">
-                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                           id="toggle-@pattern.Id"
-                                           @onchange="(e => TogglePattern(e, pattern))"
-                                           checked="@selectedPatterns.Any(p => p.Id == pattern.Id)" />
-                                </td>
-                                <td class="text-center align-middle">
+        <div class="card-body pb-2 px-0 mt-2">
+            <div class="table-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@FilteredPatterns.AsQueryable()"
+                           ItemKey="@(pp => pp.Id)">
+
+                    <!--- Coluna das opções --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="options-buttons-header">
+                                @localizer["Options"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="options-buttons">
+                                <div>
                                     <button class="btn btn-outline-success btn-sm py-1 px-2"
                                             title="Editar"
-                                            @onclick="() => NavigateToEditPattern(pattern.Id)">
+                                            @onclick="() => NavigateToEditPattern(context.Id)">
                                         <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                     </button>
-                                </td>
-                                <td class="text-center align-middle">
+                                </div>
+                                <div>
                                     <button class="btn btn-outline-danger btn-sm py-1 px-2"
                                             title="Desativar"
-                                            @onclick="() => DisablePattern(pattern.Id)">
+                                            @onclick="() => DisablePattern(context.Id)">
                                         <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                     </button>
+                                </div>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do nome das patterns --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left" style="cursor: pointer;" onclick="@(() => SortByColumn("NameContains"))">
+                                @localizer["Name"]
+                                <span style="font-size: 1rem; margin-left: 5px;
+                                                                         color: @(currentSortColumn == "NameContains" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "NameContains" ? (isNameContainsAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @context.NameContains
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado (Ativo ou não) --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["Active"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@context.Id"
+                                       @onchange="(e => TogglePattern(e, context))"
+                                       checked="@selectedPatterns.Any(p => p.Id == context.Id)"
+                                       style="border-radius: 5px;" />
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                @if (!FilteredPatterns.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
                                 </td>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                }
+            </div>
 
-        </div>
-
-        <div class="sticky-footer-right">
-            <div class="d-flex justify-content-end align-items-center gap-3">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                        &lt;
-                    </button>
-
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextPage" disabled="@(!CanGoNext)">
-                        &gt;
-                    </button>
-                </div>
+            <div class="d-flex justify-content-end mt-3 px-3">
+                <p>
+                    @(FilteredPatterns.Count())
+                    @(FilteredPatterns.Count() > 1
+                                    ? localizer["Patterns"]
+                                    : localizer["Pattern"])
+                </p>
             </div>
         </div>
     </div>
 }
 
 @code {
-    // Object Variables
-    private List<Pattern> patterns = new();
-    private List<Pattern> selectedPatterns = new();
-    private List<Pattern> paginatedPatterns = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(ManagePatterns));
+    // Variáveis: Object
+    List<Pattern> patterns = new();
+    List<Pattern> selectedPatterns = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(ManagePatterns));
 
-    private IEnumerable<Pattern> FilteredPatterns
+    IEnumerable<Pattern> FilteredPatterns
     {
         get
         {
@@ -161,16 +174,11 @@ else
         }
     }
 
-    private IEnumerable<Pattern> PaginatedPatterns =>
-    FilteredPatterns
-        .Skip((actualPage - 1) * patternsPerPage)
-        .Take(patternsPerPage);
+    // Variáveis: String
+    string currentSortColumn = "NameContains";
 
-    // String Variables
-    private string currentSortColumn = "NameContains";
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -178,21 +186,13 @@ else
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                actualPage = 1;
             }
         }
     }
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int patternsPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredPatterns.Count() / patternsPerPage);
-
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool isNameContainsAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool isNameContainsAscending = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -206,28 +206,24 @@ else
             selectedPatterns = FilterService.SelectedPatterns
                 .Select(sp => patterns.FirstOrDefault(p => p.Id == sp.Id))
                 .Where(p => p != null)
+                .Select(p => p!)
                 .ToList();
 
             UpdatePage();
 
-            log.Info("Pattern loaded successfully.");
+            _log.Info("Pattern loaded successfully.");
             isLoading = false;
         } 
         catch (Exception ex)
         {
-            log.Error("Error loading patterns.  ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading patterns.  ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
             return;
         }
     }
 
-    private void TogglePattern(ChangeEventArgs e, Pattern pattern)
+    void TogglePattern(ChangeEventArgs e, Pattern pattern)
     {
         var isChecked = e.Value is bool b && b;
 
@@ -242,28 +238,23 @@ else
         }
     }
 
-    private void NavigateToAddPattern()
+    void NavigateToAddPattern()
     {
         NavigationManager.NavigateTo("/managePatterns/add");
     }
 
-    private void NavigateToEditPattern(int id)
+    void NavigateToEditPattern(int id)
     {
         NavigationManager.NavigateTo($"/managePatterns/edit/{id}");
     }
 
-    private async Task ApplyFilter()
+    async Task ApplyFilter()
     {
         try
         {
             if (selectedPatterns.Count == 0)
             {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["PleaseSelectPattern"],
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowWarning(@localizer["PleaseSelectPattern"]);
                 return;
             }
 
@@ -273,29 +264,18 @@ else
                 )
             );
 
-
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["FiltersApplied"],
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowSuccess(@localizer["FiltersApplied"]);
         } 
         catch (Exception ex)
         {
-            log.Error("Error applying filter. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error applying filter. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private async Task DisablePattern(int id)
+    async Task DisablePattern(int id)
     {
         try
         {
@@ -306,7 +286,8 @@ else
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
@@ -324,25 +305,22 @@ else
 
                 patterns.RemoveAll(d => d.Id == id);
 
+                ToastService.ShowSuccess(@localizer["PatternDisableSuccess"]);
+
                 isLoading = false;
                 StateHasChanged();
             }
         } 
         catch (Exception ex)
         {
-            log.Error("Error disabling pattern. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error disabling pattern. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private void SortByColumn(string columnName)
+    void SortByColumn(string columnName)
     {
         if (currentSortColumn == columnName)
         {
@@ -353,33 +331,10 @@ else
             currentSortColumn = columnName;
             isNameContainsAscending = true;
         }
-
-        actualPage = 1;
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedPatterns = FilteredPatterns
-                                 .Skip((actualPage - 1) * patternsPerPage)
-                                 .Take(patternsPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);
     }
 }

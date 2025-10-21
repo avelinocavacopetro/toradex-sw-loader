@@ -1,19 +1,18 @@
 ﻿using ToradexSwLoader.Models;
-using System.Timers;
 
 namespace ToradexSwLoader.Services
 {
     public class FinalProductStateService
     {
-        private List<FinalProduct> _finalProducts = new();
+        List<FinalProduct> _finalProducts = new();
         public IReadOnlyList<FinalProduct> FinalProducts => _finalProducts;
-        private DateTime _lastUpdate;
+        DateTime _lastUpdate;
         public DateTime LastUpdate => _lastUpdate;
-        private readonly IServiceProvider _serviceProvider;
+        readonly IServiceProvider _serviceProvider;
 
         public event Action? OnChange;
 
-        private readonly System.Timers.Timer _refreshTimer;
+        readonly System.Timers.Timer _refreshTimer;
 
         public FinalProductStateService(IServiceProvider serviceProvider)
         {
@@ -32,14 +31,14 @@ namespace ToradexSwLoader.Services
             _refreshTimer.Start();
         }
 
-        private int GetRefreshTimeFromScopedFilter()
+        int GetRefreshTimeFromScopedFilter()
         {
             using var scope = _serviceProvider.CreateScope();
             var filterService = scope.ServiceProvider.GetRequiredService<FilterService>();
             return filterService.RefreshTime;
         }
 
-        private double GetValidInterval(int refreshTimeSeconds)
+        double GetValidInterval(int refreshTimeSeconds)
         {
             if (refreshTimeSeconds < 10 || refreshTimeSeconds > 60)
                 return 10_000;
@@ -67,7 +66,7 @@ namespace ToradexSwLoader.Services
             }
         }
 
-        private bool AreListsEqual(List<FinalProduct> oldList, List<FinalProduct> newList)
+        bool AreListsEqual(List<FinalProduct> oldList, List<FinalProduct> newList)
         {
             if (oldList.Count != newList.Count) return false;
 

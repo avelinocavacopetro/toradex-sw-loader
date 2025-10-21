@@ -133,7 +133,7 @@
     <value>Add Device</value>
   </data>
   <data name="AddedSuccess" xml:space="preserve">
-    <value>Added with success!</value>
+    <value>Added successfully!</value>
   </data>
   <data name="AddEntity" xml:space="preserve">
     <value>Add Entity</value>
@@ -164,9 +164,6 @@
   </data>
   <data name="Apply" xml:space="preserve">
     <value>Apply</value>
-  </data>
-  <data name="AvailableBoard" xml:space="preserve">
-    <value>Available Boards</value>
   </data>
   <data name="AvailableBoards" xml:space="preserve">
     <value>Available Boards</value>
@@ -310,7 +307,7 @@
     <value>Last Refresh</value>
   </data>
   <data name="LastUpdates" xml:space="preserve">
-    <value>Last Updates</value>
+    <value>Last Loads</value>
   </data>
   <data name="LinkedDevices" xml:space="preserve">
     <value>Linked Devices</value>
@@ -364,7 +361,7 @@
     <value>max</value>
   </data>
   <data name="Max30" xml:space="preserve">
-    <value>Should have max 30 characters</value>
+    <value>Must have a maximum of 30 characters</value>
   </data>
   <data name="Max60Seconds" xml:space="preserve">
     <value>Data update time (max. 60 sec.)</value>
@@ -378,7 +375,7 @@
   <data name="MenuHome" xml:space="preserve">
     <value>Home</value>
   </data>
-  <data name="MenuManut" xml:space="preserve">
+  <data name="MenuMaintence" xml:space="preserve">
     <value>Maintenance </value>
   </data>
   <data name="Minutes" xml:space="preserve">
@@ -438,9 +435,6 @@
   <data name="Pending" xml:space="preserve">
     <value>Pending</value>
   </data>
-  <data name="PleaseSelectDevice" xml:space="preserve">
-    <value>Please select at least a device!</value>
-  </data>
   <data name="PleaseSelectEntity" xml:space="preserve">
     <value>Please select at least an entity!</value>
   </data>
@@ -462,7 +456,7 @@
   <data name="PleaseSelectStack" xml:space="preserve">
     <value>Please select at least a stack!</value>
   </data>
-  <data name="PleaseTime" xml:space="preserve">
+  <data name="PleaseRefreshTime" xml:space="preserve">
     <value>Please write a number between 10 and 60 seconds</value>
   </data>
   <data name="Portuguese" xml:space="preserve">
@@ -528,8 +522,8 @@
   <data name="SelectDuration" xml:space="preserve">
     <value>Select a duration!</value>
   </data>
-  <data name="SelectEquipment" xml:space="preserve">
-    <value>Select Equipment</value>
+  <data name="SelectDevice" xml:space="preserve">
+    <value>Select Device</value>
   </data>
   <data name="SelectFleet" xml:space="preserve">
     <value>Select Fleet</value>
@@ -612,8 +606,8 @@
   <data name="UpdatePackage" xml:space="preserve">
     <value>Update Package</value>
   </data>
-  <data name="Updates" xml:space="preserve">
-    <value>Updates</value>
+  <data name="Loads" xml:space="preserve">
+    <value>Loads</value>
   </data>
   <data name="UpdateVersion" xml:space="preserve">
     <value>Update Version</value>
@@ -637,7 +631,7 @@
     <value>Select a device!</value>
   </data>
   <data name="WithoutDevices" xml:space="preserve">
-    <value>Without Devices</value>
+    <value>Without dvices</value>
   </data>
   <data name="Time" xml:space="preserve">
     <value>Time</value>
@@ -663,7 +657,7 @@
   <data name="RequiredInputs" xml:space="preserve">
     <value>All inputs are required.</value>
   </data>
-  <data name="PasswordsMatch" xml:space="preserve">
+  <data name="PasswordsNoMatch" xml:space="preserve">
     <value>The new passwords do not match!</value>
   </data>
   <data name="PasswordChanged" xml:space="preserve">
@@ -674,5 +668,116 @@
   </data>
   <data name="ProductAborted" xml:space="preserve">
     <value>Product aborted with success.</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="WithoutProducts" xml:space="preserve">
+    <value>Without products</value>
+  </data>
+  <data name="WithoutFleets" xml:space="preserve">
+    <value>Without fleets</value>
+  </data>
+  <data name="LinkedEntity" xml:space="preserve">
+    <value>Linked Entity</value>
+  </data>
+  <data name="WithoutEntity" xml:space="preserve">
+    <value>Without entity</value>
+  </data>
+  <data name="Entity" xml:space="preserve">
+    <value>Entity</value>
+  </data>
+  <data name="EditedSuccess" xml:space="preserve">
+    <value>Edited successfully!</value>
+  </data>
+  <data name="ShowNotAdmin" xml:space="preserve">
+    <value>This user cannot remove the entity</value>
+  </data>
+  <data name="EntityRemoved" xml:space="preserve">
+    <value>Entity removed successfully!</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="Pattern" xml:space="preserve">
+    <value>Pattern</value>
+  </data>
+  <data name="Patterns" xml:space="preserve">
+    <value>Patterns</value>
+  </data>
+  <data name="Entities" xml:space="preserve">
+    <value>Entities</value>
+  </data>
+  <data name="NoEntityAssociatedMessage" xml:space="preserve">
+    <value>You have to associate an entity</value>
+  </data>
+  <data name="NoEntityAssociated" xml:space="preserve">
+    <value>No associated entity</value>
+  </data>
+  <data name="PasswordsMatch" xml:space="preserve">
+    <value>Password changed successfully!</value>
+  </data>
+  <data name="SelectMoreDevices" xml:space="preserve">
+    <value>Select at least one device</value>
+  </data>
+  <data name="FilterError" xml:space="preserve">
+    <value>Error applying filters</value>
+  </data>
+  <data name="ErrorDisablingDevice" xml:space="preserve">
+    <value>Error disabling device</value>
+  </data>
+  <data name="SelectOneBoard" xml:space="preserve">
+    <value>Select a board</value>
+  </data>
+  <data name="NoSupport" xml:space="preserve">
+    <value>No support</value>
+  </data>
+  <data name="ImageSuccess" xml:space="preserve">
+    <value>Image updated successfully</value>
+  </data>
+  <data name="ImageError" xml:space="preserve">
+    <value>Error updating image</value>
+  </data>
+  <data name="VersionSuccess" xml:space="preserve">
+    <value>Version updated successfully</value>
+  </data>
+  <data name="VersionError" xml:space="preserve">
+    <value>Error updating version</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="Max50" xml:space="preserve">
+    <value>Must have a maximum of 50 characters</value>
+  </data>
+  <data name="Max15" xml:space="preserve">
+    <value>Must have a maximum of 15 characters</value>
+  </data>
+  <data name="Max30Minutes" xml:space="preserve">
+    <value>State Time (max. 30 min.)</value>
+  </data>
+  <data name="PleaseOnlineTime" xml:space="preserve">
+    <value>Please write a number between 1 and 30 minutes</value>
+  </data>
+  <data name="DeviceDisableSuccess" xml:space="preserve">
+    <value>Device disabled successfully!</value>
+  </data>
+  <data name="PackageRemoveSuccess" xml:space="preserve">
+    <value>Package removed successfully!</value>
+  </data>
+  <data name="ProductDisableSuccess" xml:space="preserve">
+    <value>Product successfully deactivated!</value>
+  </data>
+  <data name="StackDisableSuccess" xml:space="preserve">
+    <value>Stack successfully deactivated!</value>
+  </data>
+  <data name="EntityDisableSuccess" xml:space="preserve">
+    <value>Entity successfully deactivated!</value>
+  </data>
+  <data name="UserDisableSuccess" xml:space="preserve">
+    <value>User successfully deactivated!</value>
+  </data>
+  <data name="PatternDisableSuccess" xml:space="preserve">
+    <value>Pattern disabled successfully!</value>
   </data>
 </root>

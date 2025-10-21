@@ -1,10 +1,9 @@
 ﻿@page "/manageUsers/edit/{UserId:int}"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject SweetAlertService Swal
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
 
 <PageTitle>@localizer["EditUser"]</PageTitle>
 
@@ -71,7 +70,7 @@ else
                 <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Function"]</label>
                 <select class="form-select form-select-sm mx-auto w-50"
                         @bind="selectedRoleId"
-                        style="height: 40px; font-size: 1.2rem; text-align: center;">
+                        style="height: 40px; font-size: 1.2rem; text-align: center; border: 1px solid grey;">
                     <option value="">Selecione uma função</option>
                     @foreach (var role in roles)
                     {
@@ -94,7 +93,7 @@ else
                     </select>
                     <button type="button"
                             class="btn btn-danger"
-                            @onclick="() => selectedEntityId = null"
+                            @onclick="RemoveEntity"
                             style="height: 32px; display: flex; align-items: center;">
                         Limpar
                     </button>
@@ -105,7 +104,7 @@ else
                 <label for="text" class="col-form-label" style="width: 150px; font-size: 1.25rem; font-weight: bold;">@localizer["Language"]</label>
                 <select id="cultureSelect"
                         class="form-select form-select-sm mx-auto w-50"
-                        style="height: 40px; font-size: 1.2rem;"
+                        style="height: 40px; font-size: 1.2rem; text-align: center; border: 1px solid grey;"
                         @bind="userCulture">
                     <option value="">@localizer["SelectLanguage"]</option>
                     <option value="pt-PT">@localizer["Portuguese"]</option>
@@ -118,28 +117,32 @@ else
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int UserId { get; set; }
 
-    // Object Variables
-    private List<UserRole> roles = new();
-    private List<Entity> entities = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(EditUser));
+    // Variáveis: Object
+    List<UserRole> roles = new();
+    List<Entity> entities = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(EditUser));
 
-    // String Variables
-    private string userName = string.Empty;
-    private string userEmail = string.Empty;
-    private string userPassword = string.Empty;
-    private string userCulture = string.Empty;
-    private string currentCulture = string.Empty;
+    // Variáveis: String
+    string userName = string.Empty;
+    string userEmail = string.Empty;
+    string userPassword = string.Empty;
+    string userCulture = string.Empty;
+    string currentCulture = string.Empty;
 
-    // Integer Variables
-    private int? selectedRoleId = null;
-    private int? selectedEntityId = null;
+    // Variáveis: Integer
+    int? selectedRoleId = null;
+    int? selectedEntityId = null;
+    const int NameLength = 30;
+    const int EmailLength = 50;
+    const int PasswordLength = 15;
+    const int AdminRoleId = 1;
 
-    // Boolean Variables
-    private bool isLoading = true;
+    // Variáveis: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,24 +167,19 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error loading user or roles. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading user or roles. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
             NavigationManager.NavigateTo("/manageUsers");
         }
     }
 
-    private string GetRoleName(string roleName)
+    string GetRoleName(string roleName)
     {
         return localizer[roleName];
     }
 
-    private async Task SaveChanges()
+    async Task SaveChanges()
     {
         try
         {
@@ -191,76 +189,50 @@ else
             using var context = DbContextFactory.CreateDbContext();
 
             await ChangeUser(context);
-            await ShowSuccessAlert();
+
+            ToastService.ShowSuccess(@localizer["EditedSuccess"]);
+
             NavigationManager.NavigateTo("/manageUsers");
         }
         catch (Exception ex)
         {
-            log.Error("Error saving changes to user. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving changes to user. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private bool ValidateUser()
+    bool ValidateUser()
     {
         if (string.IsNullOrWhiteSpace(userName) & string.IsNullOrWhiteSpace(userEmail) & string.IsNullOrWhiteSpace(userPassword))
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ValidName"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ValidName"]);
             return false;
         }
 
-        if (userName.Length > 30)
+        if (userName.Length > NameLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongName"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongName"]}. {@localizer["Max30"]}");
             return false;
         }
 
-        if (userEmail.Length > 50)
+        if (userEmail.Length > EmailLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongEmail"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongEmail"]}. {@localizer["Max50"]}");
             return false;
         }
 
-        if (userPassword.Length > 15)
+        if (userPassword.Length > PasswordLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongPass"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongPass"]}. {@localizer["Max15"]}");
             return false;
         }
 
         return true;
     }
 
-    private async Task ChangeUser(AppDbContext context)
+    async Task ChangeUser(AppDbContext context)
     {
         var userDb = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
         if (userDb == null) return;
@@ -269,23 +241,32 @@ else
         userDb.Email = userEmail;
         userDb.Password = userPassword;
         userDb.Culture = userCulture;
-        userDb.UserRoleId = selectedRoleId.Value;
+        userDb.UserRoleId = selectedRoleId!.Value;
         userDb.EntityId = selectedEntityId;
 
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
+    async Task RemoveEntity()
     {
-        await Swal.FireAsync(new SweetAlertOptions
+        using var context = DbContextFactory.CreateDbContext();
+        var userDb = await context.Users.FirstOrDefaultAsync(u => u.Id == UserId);
+
+        if (userDb == null) return;
+
+        if (userDb.UserRoleId != AdminRoleId)
         {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
+            ToastService.ShowWarning(@localizer["ShowNotAdmin"]);
+
+            return;
+        }
+
+        selectedEntityId = null;
+
+        ToastService.ShowSuccess(@localizer["EntityRemoved"]);
     }
 
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/manageUsers");
     }
