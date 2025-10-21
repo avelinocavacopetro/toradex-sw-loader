@@ -1,10 +1,8 @@
-﻿@using log4net
-@inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject TorizonService TorizonService
-@inject SweetAlertService Swal
-@inject LoginService LoginService
+﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
 @inject IStringLocalizer<Resource> localizer
+@inject TorizonService TorizonService
+@inject LoginService LoginService
 
 <div style="display: flex; align-items: center; flex-direction: column;">
     <p class="fs-5 text-muted text-center mb-2">
@@ -28,22 +26,22 @@
 </div>
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public string? DeviceUuid { get; set; }
 
     [Parameter]
     public EventCallback OnCloseModal { get; set; }
 
-    // Object Variables
-    private SessionSsh? link = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(SshLinkModal));
+    // Variáveis: Object
+    SessionSsh? link = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(SshLinkModal));
 
-    // String Variables
-    private string sshLink = string.Empty;
+    // Variáveis: String
+    string sshLink = string.Empty;
 
-    // Boolean Variables
-    private bool copied = false;
+    // Variáveis: Boolean
+    bool copied = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -53,7 +51,7 @@
 
             if (!await TorizonService.AuthenticateAsync())
             {
-                log.Error("Error authenticating to Torizon Service.");
+                _log.Error("Error authenticating to Torizon Service.");
                 return;
             }
 
@@ -66,11 +64,11 @@
         }
         catch (Exception ex)
         {
-            log.Error("Error authenticating to Torizon Service or loading ssh link.", ex);
+            _log.Error("Error authenticating to Torizon Service or loading ssh link.", ex);
         }
     }
 
-    private async Task CopyToClipboard()
+    async Task CopyToClipboard()
     {
         if (!string.IsNullOrWhiteSpace(sshLink) && JS != null)
         {

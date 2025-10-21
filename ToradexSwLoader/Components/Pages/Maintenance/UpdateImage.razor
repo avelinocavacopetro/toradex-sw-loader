@@ -3,12 +3,13 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -31,75 +32,77 @@ else
         <a href="#"
            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
            class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
+           style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
         <h3 class="text-center pb-5">@localizer["UpdatePackage"]</h3>
 
-        <table class="table mt-3 w-100">
-            <thead style="background-color: #0c6527; color: white;">
-                <tr>
-                    <th style="width: 50%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">@localizer["Name"]</th>
-                    <th style="width: 50%; border-top-right-radius: 5px; text-align: center;">@localizer["Version"]</th>
-                </tr>
-            </thead>
-            <tbody style="height: 60px;">
-                @foreach (var package in paginatedPackages)
+        <div class="card-body pb-2 px-0 mt-2">
+            <div class="table-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="stacksPackages.AsQueryable()"
+                           ItemKey="@(pp => pp.StackId + pp.PackageId)">
+
+                    <!--- Coluna dos nomes dos pacotes --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Name"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left" style="cursor: pointer;" @onclick="() => SelectRow(context.Package!)">
+                                @context.Package?.Name
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna das versões --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Version"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left" style="cursor: pointer;" @onclick="() => SelectRow(context.Package!)">
+                                @context.Package?.Version
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                @if (!stacksPackages.Any())
                 {
-                    if (package?.Package != null)
-                    {
-                        <tr @onclick="() => SelectRow(package.Package)">
-                            <td title="@package.Package.Name" style="width: 50%; padding-left: 20px; vertical-align: middle;">
-                                @package.Package.Name
-                            </td>
-                            <td style="width: 50%; text-align: center; vertical-align: middle;">@package.Package.Version</td>
-                        </tr>
-                    }
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 }
-            </tbody>
-        </table>
-
-        <div class="sticky-footer-right">
-            <div class="d-flex align-items-center gap-3 justify-content-end">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                        &lt;
-                    </button>
-
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextPage" disabled="@(!CanGoNext)">
-                        &gt;
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 }
 
 @code {
-    // Object Variables
-    private DetailedDevice? selectedDevice = new();
-    private Package? selectedPackage;
-    private List<StackPackage> paginatedPackages = new();
-    private List<StackPackage> stacksPackages = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(UpdateImage));
+    // Variáveis: Object
+    DetailedDevice? selectedDevice = new();
+    Package? selectedPackage;
+    List<StackPackage> stacksPackages = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(UpdateImage));
 
-    // String Variables
+    // Variáveis: String
     [Parameter]
     public string? deviceUuid { get; set; }
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int packagesPerPage = 6;
-    private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
-
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -124,19 +127,21 @@ else
                 StateHasChanged();
             }
 
-            log.Info("Update Image page loaded successfully.");
+            _log.Info("Update Image page loaded successfully.");
         }
         catch (Exception ex)
         {
-            log.Error("Error loading Update Image page.", ex);
+            _log.Error("Error loading Update Image page.", ex);
         }
     }
 
-    private async Task SelectRow(Package package)
+    async Task SelectRow(Package package)
     {
         try
         {
             using var context = DbContextFactory.CreateDbContext();
+
+            selectedPackage = package;
 
             if (selectedPackage != null)
             {
@@ -145,9 +150,10 @@ else
                     Title = "Deseja continuar?",
                     Icon = SweetAlertIcon.Warning,
                     ShowCancelButton = true,
-                    ConfirmButtonText = "Continuar",
+                    ConfirmButtonText =  @localizer["Continue"],
                     ConfirmButtonColor = "#0B5120",
-                    CancelButtonText = "Cancelar"
+                    CancelButtonText = @localizer["Cancel"],
+                    CancelButtonColor = "#dc3545"
                 });
 
                 if (result.IsConfirmed)
@@ -163,7 +169,7 @@ else
                     var deviceDto = new DeviceDTO
                     {
                         PackageIds = new List<string> { selectedPackage.Id.ToString() },
-                        Devices = new List<string> { deviceUuid.ToString() },
+                        Devices = new List<string> { deviceUuid!.ToString() },
                     };
 
                     var response = await TorizonService.SendUpdateAsync(deviceDto);
@@ -173,26 +179,15 @@ else
                         context.UserActivities.Add(userAct);
                         await context.SaveChangesAsync();
 
-                        log.Info($"Software '{selectedPackage.Name}' selected for update.");
+                        _log.Info($"Software '{selectedPackage.Name}' selected for update.");
 
-                        await Swal.FireAsync(new SweetAlertOptions
-                        {
-                            Title = "Imagem atualizada com sucesso!",
-                            Icon = SweetAlertIcon.Success,
-                            ConfirmButtonColor = "#0B5120"
-                        });
+                        ToastService.ShowSuccess(@localizer["ImageSuccess"]);
 
                         UriHelper.NavigateTo("/home");
                     }
                     else
                     {
-                        await Swal.FireAsync(new SweetAlertOptions
-                        {
-                            Title = "Erro ao atualizar imagem",
-                            Icon = SweetAlertIcon.Warning,
-                            Text = $"{response.StatusCode}",
-                            ConfirmButtonColor = "#0B5120"
-                        });
+                        ToastService.ShowError(@localizer["ImageError"]);
 
                         var errorContent = await response.Content.ReadAsStringAsync();
                     }
@@ -200,45 +195,19 @@ else
             }
             else
             {
-                log.Warn("No image selected before attempting update.");
+                _log.Warn("No image selected before attempting update.");
 
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = "Selecione um software!",
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120",
-                });
+                ToastService.ShowWarning(@localizer["NoPackageSelected"]);
             }
         } 
         catch (Exception ex)
         {
-            log.Error("Error selecting image for update.", ex);
+            _log.Error("Error selecting image for update.", ex);
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedPackages = stacksPackages
-                                 .Skip((actualPage - 1) * packagesPerPage)
-                                 .Take(packagesPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);        
     }
 }

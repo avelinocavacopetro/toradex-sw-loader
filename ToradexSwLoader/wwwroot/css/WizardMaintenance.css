@@ -3,24 +3,33 @@
 */
 
 .grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 300px));
-    justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
     gap: 25px;
     padding: 10px;
 }
 
 .grid-item {
+    flex: 0 1 calc(25% - 25px);
+    min-width: 10rem;
+    max-width: 20rem;
+    height: clamp(10rem, 20vh, 15rem);
     background-color: #0c6527;
     color: white;
     text-align: center;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 30px 15px;
-    font-size: 22px;
+    padding: 15px;
+    font-size: 1.5rem;
     border-radius: 5px;
     white-space: normal;
+}
+
+
+.grid-container:has(.grid-item:nth-child(-n+4):last-child) {
+    justify-content: center;
 }
 
 .grid-container-action {
@@ -43,9 +52,7 @@
     white-space: normal;
 }
 
-.pag-bts {
-    visibility: hidden;
-}
+/*****************************************************************/
 
 /*
     CSS para a página de costumização das placas
@@ -72,22 +79,12 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    /*min-height: 30vh;*/
 }
 
+/*****************************************************************/
+
 @media (max-width: 1024px) {
-    .pag-bts {
-        visibility: visible;
-    }
-
     .grid-container {
-        grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: repeat(2, 150px);
-        gap: 15px;
-    }
-
-    .grid-item {
-        font-size: 22px;
-        padding: 15px;
+        gap: 20px;
     }
 }

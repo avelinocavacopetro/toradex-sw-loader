@@ -37,6 +37,7 @@ namespace ToradexSwLoader.Models
         public List<DeviceFleet>? Fleets { get; set; }
 
         [JsonPropertyName("devicePackages")]
+        [NotMapped]
         public List<DevicePackage>? Packages { get; set; }
     }
 }

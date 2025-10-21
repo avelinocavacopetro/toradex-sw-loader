@@ -1,10 +1,9 @@
 ﻿@page "/managePatterns/add"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject SweetAlertService Swal
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
 
 <PageTitle> @localizer["AddPatern"]</PageTitle>
 
@@ -12,7 +11,7 @@
     <div class="page-title d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center">
             <i class="bi bi-card-list icon-align fs-3" style="padding-left: 10px;"></i>
-            <h3 class="ms-2 mb-0"> @localizer["AddPatern"]</h3>
+            <h3 class="ms-2 mb-0"> @localizer["AddPattern"]</h3>
         </div>
 
         <div class="d-flex gap-3">
@@ -37,20 +36,23 @@
             </label>
             <input type="text" @bind="pattern"
                    class="form-control"
-                   style="font-size: 1.2rem;" 
+                   style="font-size: 1.2rem; border: 1px solid grey;"
                    maxlength="50"/>
         </div>
     </div>
 </div>
 
 @code {
-    // String Variables
-    private string pattern = string.Empty;
+    // Variáveis: Integer
+    const int PatternLength = 50;
 
-    // Object Variables
-    private static readonly ILog log = LogManager.GetLogger(typeof(AddPattern));
+    // Variáveis: String
+    public string pattern = string.Empty;
 
-    private async Task SavePattern()
+    // Variáveis: Object
+    static readonly ILog _log = LogManager.GetLogger(typeof(AddPattern));
+
+    async Task SavePattern()
     {
         try
         {
@@ -61,73 +63,54 @@
 
             if (await PatternExistsAsync(context))
             {
-                await ShowPatternExistsAlert();
+                ShowPatternExistsAlert();
                 return;
             }
 
             await AddPatternAsync(context);
-            await ShowSuccessAlert();
+            
+            ToastService.ShowSuccess(@localizer["AddedSuccess"]);
+
             NavigationManager.NavigateTo("/managePatterns");
         } 
         catch (Exception ex)
         {
-            log.Error("Error saving pattern. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text =  @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving pattern. ", ex);
+
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }   
     }
 
-    private bool ValidadePattern()
+    public bool ValidadePattern()
     {
         if (string.IsNullOrWhiteSpace(pattern))
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ValidName"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ValidName"]);
             return false;
         }
 
-        if (pattern.Length > 50)
+        if (pattern.Length > PatternLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongName"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongName"]}. {@localizer["Max50"]}");
             return false;
         }
 
         return true;
     }
 
-    private async Task<bool> PatternExistsAsync(AppDbContext context)
+    async Task<bool> PatternExistsAsync(AppDbContext context)
     {
         return await context.Patterns.AnyAsync(p => p.NameContains.ToLower() == pattern.Trim().ToLower());
     }
 
-    private async Task ShowPatternExistsAlert()
+    void ShowPatternExistsAlert()
     {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AlreadyExists"],
-            Icon = SweetAlertIcon.Warning,
-            ConfirmButtonColor = "#0B5120"
-        });
+        ToastService.ShowWarning(@localizer["AlreadyExists"]);
         return;
     }
 
-    private async Task AddPatternAsync(AppDbContext context)
+    async Task AddPatternAsync(AppDbContext context)
     {
         var newPattern = new Pattern
         {
@@ -139,17 +122,7 @@
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/managePatterns");
     }

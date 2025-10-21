@@ -3,13 +3,12 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
 @inject NavigationManager UriHelper
-@inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
-
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -32,56 +31,60 @@ else
         <a href="#"
            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
            class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
+           style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
         <h3 class="text-center pb-5">@localizer["SelectPackages"]</h3>
 
-        <table class="table mt-3 w-100">
-            <thead style="background-color: #0c6527; color: white;">
-                <tr>
-                    <th style="width: 50%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">@localizer["Name"]</th>
-                    <th style="width: 50%; text-align: center; border-top-right-radius: 5px;">@localizer["Version"]</th>
-                </tr>
-            </thead>
-            <tbody style="height: 60px;">
-                @if (paginatedPackages is null || !paginatedPackages.Any())
-                {
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                            @localizer["NoData"]
-                        </td>
-                    </tr>
-                }
-                else 
-                {
-                    @foreach (var package in paginatedPackages)
-                    {
-                        if (package?.Package != null)
-                        {
-                            <tr @onclick="() => SelectRow(package.Package)">
-                                <td title="@package.Package.Name" style="vertical-align: middle; padding-left: 20px;">
-                                    @package.Package.Name
-                                </td>
-                                <td style="text-align: center; vertical-align: middle;">@package.Package.Version</td>
-                            </tr>
-                        }
-                    }
-                }
-            </tbody>
-        </table>
+        <div class="card-body pb-2 px-0 mt-2">
+            <div class="border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@paginatedPackages.AsQueryable()"
+                           ItemKey="@(pp => pp.PackageId)">
+
+                    <!--- Coluna dos nomes dos pacotes --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Name"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left" style="cursor: pointer;" @onclick="() => SelectRow(context.Package!)">
+                                @context.Package?.Name
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna das versões dos pacotes --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Version"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left" style="cursor: pointer;" @onclick="() => SelectRow(context.Package!)">
+                                @context.Package?.Version
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+            </div>
+        </div>
 
         <div class="sticky-footer-right">
-            <div class="d-flex align-items-center gap-3 justify-content-end">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
+            <div class="d-flex justify-content-end">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="custom-outline-button btn-lg"
                             @onclick="PrevPage" disabled="@(!CanGoPrev)">
                         &lt;
                     </button>
 
-                    <button class="btn custom-outline-button btn-lg"
+                    <span>@actualPage - @TotalPages de @TotalPages</span>
+
+                    <button class="custom-outline-button btn-lg"
                             @onclick="NextPage" disabled="@(!CanGoNext)">
                         &gt;
                     </button>
@@ -92,7 +95,7 @@ else
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int deviceId { get; set; }
 
@@ -102,24 +105,24 @@ else
     [Parameter]
     public int stackId { get; set; }
 
-    // Object Variables
-    private Device? selectedDevice;
-    private Product? selectedProduct;
-    private Stack? selectedStack;
-    private Package? selectedPackage;
-    private List<StackPackage> paginatedPackages = new();
-    private List<StackPackage> stacksPackages = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(SelectPackages));
+    // Variáveis: Object
+    Device? selectedDevice = new();
+    Product? selectedProduct = new();
+    Stack? selectedStack = new();
+    Package? selectedPackage = new();
+    List<StackPackage> paginatedPackages = new();
+    List<StackPackage> stacksPackages = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(SelectPackages));
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int packagesPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
+    // Variáveis: Integer
+    int actualPage = 1;
+    int packagesPerPage = 8;
+    int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
 
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool CanGoNext => actualPage < TotalPages;
+    bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,15 +145,15 @@ else
             isLoading = false;
             StateHasChanged();
 
-            log.Info("Select packages page loaded successfully.");
+            _log.Info("Select packages page loaded successfully.");
         }
         catch(Exception ex)
         {
-            log.Error("Error loading Select packages page.", ex);
+            _log.Error("Error loading Select packages page.", ex);
         }
     }
 
-    private async Task SelectRow(Package package)
+    async Task SelectRow(Package package)
     {
         try
         {
@@ -171,29 +174,24 @@ else
                 context.UserActivities.Add(userAct);
                 await context.SaveChangesAsync();
 
-                log.Info($"Package '{selectedPackage.Name}' selected.");
+                _log.Info($"Package '{selectedPackage.Name}' selected.");
 
                 UriHelper.NavigateTo($"/selectFleet/{deviceId}/{productId}/{stackId}/{Uri.EscapeDataString(selectedPackage.Id)}");
             }
             else
             {
-                log.Warn("No package selected.");
+                _log.Warn("No package selected.");
 
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["NoPackageSelected"],
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120",
-                });
+                ToastService.ShowWarning(@localizer["NoPackageSelected"]);
             }
         }
         catch(Exception ex)
         {
-            log.Error("Error selecting package.", ex);
+            _log.Error("Error selecting package.", ex);
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
         paginatedPackages = stacksPackages
                                  .Skip((actualPage - 1) * packagesPerPage)
@@ -201,7 +199,7 @@ else
                                  .ToList();
     }
 
-    private void NextPage()
+    void NextPage()
     {
         if (CanGoNext)
         {
@@ -210,7 +208,7 @@ else
         }
     }
 
-    private void PrevPage()
+    void PrevPage()
     {
         if (CanGoPrev)
         {

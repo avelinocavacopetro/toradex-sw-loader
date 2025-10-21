@@ -1,13 +1,11 @@
 ﻿@page "/"
-@using Microsoft.AspNetCore.Localization
-@using log4net
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject NavigationManager UriHelper
-@inject LoginService LoginService
 @inject IJSRuntime _jsRuntime
 @inject IHttpContextAccessor HttpContextAccessor
-
+@inject IToastService ToastService
+@inject NavigationManager UriHelper
+@inject LoginService LoginService
 
 <PageTitle>Log in</PageTitle>
 
@@ -21,16 +19,6 @@
     </div>
 
     <main class="flex-grow-1">
-        <div class="d-flex justify-content-center pb-5">
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div class="alert alert-danger alert-dismissible fade show w-25" role="alert">
-                    @errorMessage
-                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => errorMessage = null"></button>
-                </div>
-            }
-        </div>
-
         <div class="center-login pt-5">
             <div class="login-box position-relative shadow">
                 <div class="user-icon-login shadow-sm">
@@ -60,7 +48,7 @@
 
     <footer class="text-center pb-5">
         <div class="d-flex justify-content-between align-items-center w-100 px-4" style="color:white;">
-            <span class="text-start" style="font-size: 15px; opacity:0.5;">v 2.0.0</span>
+            <span class="text-start" style="font-size: 15px; opacity:0.5;">v 2.0.2</span>
             <span style="font-size: 15px; opacity:0.5;">&copy; 2025 Petrotec</span>
             <a class="text-end" href="https://www.petrotec.com/" target="_blank">
                 <img class="footer-logo" style="opacity:0.5;" src="images/petrotec_logo_white.png" />
@@ -132,39 +120,50 @@
 </style>
 
 @code {
-    // Object Variables
-    private static readonly ILog log = LogManager.GetLogger(typeof(Login));
+    // Variáveis: Object
+    static readonly ILog _log = LogManager.GetLogger(typeof(Login));
 
-    // String Variables
-    private string inputEmail = string.Empty;
-    private string inputPassword = string.Empty;
-    private string? errorMessage = string.Empty;
-    private string? savedEmail;
-    private string? savedPassword;
-    private string? culture;
+    // Variáveis: String
+    string inputEmail = string.Empty;
+    string inputPassword = string.Empty;
+    string? savedEmail;
+    string? savedPassword;
+    string? culture;
 
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool _autoLoginInProgress = false;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool _autoLoginInProgress = false;
 
-    private async Task RegisterLogin()
+    async Task RegisterLogin()
     {
         try
         {
             if (string.IsNullOrWhiteSpace(inputEmail))
-            { errorMessage = "O campo Email não pode estar vazio"; return; }
+            { 
+                ToastService.ShowError("O campo Email não pode estar vazio");
+                return; 
+            }
 
             if (string.IsNullOrWhiteSpace(inputPassword))
-            { errorMessage = "O campo Password não pode estar vazio"; return; }
+            { 
+                ToastService.ShowError("O campo Password não pode estar vazio");
+                return;
+            }
 
             if (!inputEmail.EndsWith("@petrotec.com"))
-            { errorMessage = "O email inserido não é petrotec.com"; return; }
+            { 
+                ToastService.ShowError("O email inserido não é petrotec.com");
+                return; 
+            }
 
             using var context = DbContextFactory.CreateDbContext();
             var user = await context.Users.FirstOrDefaultAsync(u => u.Email == inputEmail);
 
             if (user == null || user.Password != inputPassword)
-            { errorMessage = "Email ou palavra-passe inválidos"; return; }
+            { 
+                ToastService.ShowError("Email ou palavra-passe inválidos");
+                return; 
+            }
 
             var culture = new CultureInfo(user.Culture);
             var requestCulture = new RequestCulture(culture, culture);
@@ -180,7 +179,7 @@
         }
         catch (Exception ex)
         {
-            log.Error($"Error trying to login into {inputEmail}: ", ex);
+            _log.Error($"Error trying to login into {inputEmail}: ", ex);
         }
     }
 
@@ -209,7 +208,7 @@
         }
     }
 
-    private async Task CompleteLoginAfterReload(string email, string password)
+    async Task CompleteLoginAfterReload(string email, string password)
     {
         try
         {
@@ -218,7 +217,7 @@
 
             if (user == null || user.Password != password)
             {
-                errorMessage = "Email ou palavra-passe inválidos";
+                ToastService.ShowError("Email ou palavra-passe inválidos");
                 StateHasChanged();
                 return;
             }
@@ -238,7 +237,7 @@
         }
         catch (Exception ex)
         {
-            log.Error($"Auto-login after reload failed for {email}: ", ex);
+            _log.Error($"Auto-login after reload failed for {email}: ", ex);
         }
     }
 }

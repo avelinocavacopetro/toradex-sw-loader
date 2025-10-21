@@ -1,17 +1,13 @@
-﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ToradexSwLoader.Data;
-using ToradexSwLoader.Models;
-
 
 namespace ToradexSwLoader.Services
 {
     public class DeviceStatusUpdaterService : BackgroundService
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly TorizonService _torizonService;
-        private readonly ILogger<DeviceStatusUpdaterService> _logger;
+        readonly IServiceProvider _serviceProvider;
+        readonly TorizonService _torizonService;
+        readonly ILogger<DeviceStatusUpdaterService> _logger;
 
         public DeviceStatusUpdaterService(
             IServiceProvider serviceProvider,
@@ -66,7 +62,7 @@ namespace ToradexSwLoader.Services
             }
         }
 
-        private async Task UpdateDeviceStatusesAsync()
+        async Task UpdateDeviceStatusesAsync()
         {
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -105,6 +101,5 @@ namespace ToradexSwLoader.Services
                 stateService.NotifyChanged();
             }
         }
-
     }
 }

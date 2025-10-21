@@ -2,11 +2,12 @@
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject NavigationManager UriHelper
 @inject LoginService LoginService
 @inject TorizonService TorizonService
 @inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle>@localizer["CustomBoard"]</PageTitle>
 
@@ -24,75 +25,76 @@
 else
 {
     <div class="custom-container d-flex flex-column">
-        @if (!isEditing)
-        {
-             <a href="#"
-               onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
-               class="text-black"
-               style="cursor: @(isLoading ? "default" : "pointer");">
-                <i class="bi bi-arrow-left fs-1"></i>
-            </a>
+        <a href="#"
+            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
+            class="text-black"
+            style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
+            <i class="bi bi-arrow-left fs-1"></i>
+        </a>
 
+        <div class="page-wrapper">
             <div style="display:flex; justify-content:center;">
                 <div class="text-center">
                     <table class="summary w-75" style="border-collapse: collapse;">
                         <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">@localizer["Device"]</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedDevice?.Name</td>
+                            <th style="background-color: #0c6527; color: white; padding: 12px; text-align: left;">@localizer["Device"]</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px; text-align: left;">@selectedDevice?.Name</td>
                         </tr>
                         <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">@localizer["Product"]</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedProduct?.Name</td>
+                            <th style="background-color: #0c6527; color: white; padding: 12px; text-align: left;">@localizer["Product"]</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px; text-align: left;">@selectedProduct?.Name</td>
                         </tr>
                         <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Stack</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedStack?.Name</td>
+                            <th style="background-color: #0c6527; color: white; padding: 12px; text-align: left;">Stack</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px; text-align: left;">@selectedStack?.Name</td>
                         </tr>
                         <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">Software</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedPackage?.Name @selectedPackage?.Version</td>
+                            <th style="background-color: #0c6527; color: white; padding: 12px; text-align: left;">Software</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px; text-align: left;">@selectedPackage?.Name @selectedPackage?.Version</td>
                         </tr>
                         <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">@localizer["Fleet"]</th>
-                            <td style="border-bottom: 1px solid #ccc; padding: 12px;">@selectedFleet?.Name</td>
+                            <th style="background-color: #0c6527; color: white; padding: 12px; text-align: left;">@localizer["Fleet"]</th>
+                            <td style="border-bottom: 1px solid #ccc; padding: 12px; text-align: left;">@selectedFleet?.Name</td>
                         </tr>
                         <tr>
-                            <th style="background-color: #0c6527; color: white; padding: 12px;">@localizer["Board"]</th>
-                            <td style="padding: 12px;">@selectedBoard?.DeviceName</td>
+                            <th style="background-color: #0c6527; color: white; padding: 12px; text-align: left;">@localizer["Board"]</th>
+                            <td style="padding: 12px; text-align: left;">@selectedBoard?.DeviceName</td>
                         </tr>
                     </table>
                 </div>
             </div>
 
-            <div class="center-customization" style="min-height: 30vh;">
-                <h4 class="custom-label text-center px-5">
-                    @finalBoard
+            @if(!isEditing)
+            {
+                <div class="center-customization" style="min-height: 30vh;">
+                    <h4 class="custom-label text-center px-5">
+                        @finalBoard
                     <span class="bi bi-pencil-square px-5" aria-hidden="true" style="cursor:pointer" @onclick="ChangeName"></span>
-                </h4>
-            </div>
+                    </h4>
+                </div>
 
-            <div class="sticky-footer-center">
-                <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
-            </div>
-        }
-        else
-        {
-            <div class="center-customization">
-                <div class="edit-form">
-                    <label for="text" class="pb-4" style="font-size: 1.5rem;">Alterar tag</label>
-                    <input type="text" @bind="editableTag" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" />
-                    <div>
+                <div class="sticky-footer-center-buttons">
+                    <button type="submit" class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick=ConfirmAndSubmit>OK</button>
+                </div>
+            }
+            else
+            {
+                <div class="center-customization" style="min-height: 30vh;">
+                    <h4 class="custom-label text-center px-5" style="white-space: nowrap;">
+                        @finalBoard ( <input type="text" @bind="editableTag" class="form-control w-100 mx-auto" style="font-size: 1.2rem; text-align: center;" /> )
+                    </h4>
+                    <div class="sticky-footer-center-buttons">
                         <button class="btn btn-color mt-5 btn-lg btn-edit-custom" @onclick="SaveName">@localizer["Save"]</button>
                         <button class="btn btn-danger mt-5 ms-5 btn-lg btn-edit-custom" @onclick="CancelEdit">@localizer["Cancel"]</button>
                     </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int deviceId { get; set; }
 
@@ -111,26 +113,26 @@ else
     [Parameter]
     public string boardUuid { get; set; } = string.Empty;
 
-    // Object Variables
-    private Device? selectedDevice = new Device();
-    private Product? selectedProduct = new Product();
-    private Stack? selectedStack = new Stack();
-    private Package? selectedPackage = new Package();
-    private Fleet? selectedFleet = new Fleet();
-    private DetailedDevice? selectedBoard = new DetailedDevice();
-    private Package? packageUri = new Package();
-    private static readonly ILog log = LogManager.GetLogger(typeof(CustomizationBoard));
+    // Variáveis: Object
+    Device? selectedDevice = new();
+    Product? selectedProduct = new();
+    Stack? selectedStack = new ();
+    Package? selectedPackage = new();
+    Fleet? selectedFleet = new();
+    DetailedDevice? selectedBoard = new();
+    Package? packageUri = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(CustomizationBoard));
 
-    // String Variables
-    private string originalFinalBoard = string.Empty;
-    private string finalBoard = string.Empty;
-    private string editableTag = string.Empty;
-    private string notEditable = string.Empty;
-    private string serialNumber = string.Empty;
+    // Variáveis: String
+    string originalFinalBoard = string.Empty;
+    string finalBoard = string.Empty;
+    string editableTag = string.Empty;
+    string notEditable = string.Empty;
+    string serialNumber = string.Empty;
 
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool isEditing = false;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool isEditing = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,14 +154,14 @@ else
                 isLoading = false;
             }
 
-            string[] parts = selectedBoard.DeviceId.Split('-');
+            string[] parts = selectedBoard!.DeviceId.Split('-');
             serialNumber = parts[2];
 
-            log.Info("Customization page loaded successfully.");
+            _log.Info("Customization page loaded successfully.");
         }
         catch (Exception ex)
         {
-            log.Error("Error loading Customization page.", ex);
+            _log.Error("Error loading Customization page.", ex);
         }
     }
 
@@ -167,12 +169,12 @@ else
     {
         if (string.IsNullOrEmpty(finalBoard) && selectedDevice != null && selectedPackage != null && selectedFleet != null && selectedProduct != null)
         {
-            notEditable = $"{selectedProduct.Name} _{serialNumber}";
+            notEditable = $"{selectedProduct.Name}_{serialNumber}";
             finalBoard = notEditable;
         }
     }
 
-    private void ChangeName()
+    void ChangeName()
     {
         try
         {
@@ -196,37 +198,39 @@ else
                 editableTag = string.Empty;
             }
 
-            log.Info("Name change successfully");
+            _log.Info("Name change successfully");
         }
         catch (Exception ex)
         {
-            log.Error("Failed to change name", ex);
+            _log.Error("Failed to change name", ex);
         }
     }
 
-    private void SaveName()
+    void SaveName()
     {
         isEditing = false;
-        finalBoard = $"{notEditable} ({editableTag})".Trim();
+        if(String.IsNullOrEmpty(editableTag))
+        {
+            finalBoard = $"{notEditable}".Trim();   
+        } 
+        else
+        {
+            finalBoard = $"{notEditable} ({editableTag})".Trim();
+        }
     }
 
-    private void CancelEdit()
+    void CancelEdit()
     {
         isEditing = false;
     }
 
-    private async Task ConfirmAndSubmit()
+    async Task ConfirmAndSubmit()
     {
         try
         {
             if (!string.IsNullOrEmpty(finalBoard) && finalBoard.Length > 100)
             {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["LongName"],
-                    Icon = SweetAlertIcon.Error,
-                    ConfirmButtonColor = "#d33"
-                });
+                ToastService.ShowWarning(@localizer["LongName"]);
                 return;
             }
 
@@ -237,7 +241,8 @@ else
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
@@ -253,7 +258,7 @@ else
 
                 var finalProduct = new FinalProduct
                 {
-                    DeviceUuid = selectedBoard.DeviceUuid,
+                    DeviceUuid = selectedBoard!.DeviceUuid,
                     Name = finalBoard,
                     Status = selectedBoard.DeviceStatus,
                     CreatedAt = DateTime.Now,
@@ -283,38 +288,25 @@ else
                     context.FinalProducts.Add(finalProduct);
                     await context.SaveChangesAsync();
 
-                    log.Info($"Board '{selectedBoard?.DeviceName}' installed with software successfully.");
+                    _log.Info($"Board '{selectedBoard?.DeviceName}' installed with software successfully.");
 
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = @localizer["SuccessfulRequest"],
-                        Icon = SweetAlertIcon.Success,
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                    ToastService.ShowSuccess(@localizer["SuccessfulRequest"]);
 
                     UriHelper.NavigateTo("/home");
                 }
                 else
                 {
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = @localizer["RequestError"],
-                        Icon = SweetAlertIcon.Warning,
-                        Text = $"{response.StatusCode}",
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                    ToastService.ShowWarning(@localizer["RequestError"]);
 
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
-                    Console.WriteLine($"Conteúdo do erro: {errorContent}");
 
-                    log.Error($"Failed to update board '{selectedBoard?.DeviceName}'. StatusCode: {response.StatusCode}, Error: {errorContent}");
+                    _log.Error($"Failed to update board '{selectedBoard?.DeviceName}'. StatusCode: {response.StatusCode}, Error: {errorContent}");
                 }
             }
         }
         catch (Exception ex)
         {
-            log.Error("Error occurred while installing board software.", ex);
+            _log.Error("Error occurred while installing board software.", ex);
         }
     }
 

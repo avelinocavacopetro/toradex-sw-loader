@@ -1,10 +1,10 @@
 ﻿@page "/managePackages"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle>@localizer["ManagePackages"]</PageTitle>
 
@@ -34,92 +34,116 @@
         </div>
     </div>
 
-    <div class="pb-5">
-        <table class="table mt-3 w-100" style="table-layout: fixed;">
-            <thead style="background-color: #0c6527; color: white;">
-                <tr>
-                    <th onclick="@(() => SortByColumn("Name"))"
-                        style="width: 25%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                   border-right: 1px solid white; cursor: pointer;">
-                        Stack
-                        <span style="font-size: 0.9rem; margin-left: 5px;
+    <div class="card-body pb-2 px-0 mb-0 mt-3">
+        <div class="table-responsive border rounded-2">
+            <QuickGrid Class="table table-striped m-0"
+                       Items=@FilteredPackages.AsQueryable()
+                       ItemKey="@(pp => pp.Stack?.Id + pp.Package?.Id)">
+
+                <!--- Coluna das opções --->
+                <TemplateColumn>
+                    <HeaderTemplate>
+                        <div class="options-buttons-header">
+                            @localizer["Options"]
+                        </div>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <div class="options-buttons">
+                            <div>
+                                <button class="btn btn-outline-success btn-sm py-1 px-2"
+                                        title="Editar"
+                                        @onclick="() => NavigateToEdit(context.StackId, context.PackageId)">
+                                    <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
+                                </button>
+                            </div>
+                            <div>
+                                <button class="btn btn-outline-danger btn-sm py-1 px-2"
+                                        title="Remover"
+                                        @onclick="() => RemoveStack(context.StackId, context.PackageId)">
+                                    <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </ChildContent>
+                </TemplateColumn>
+
+                <!--- Coluna do nome das stacks --->
+                <TemplateColumn>
+                    <HeaderTemplate>
+                        <div class="header-table-left" style="cursor: pointer;" onclick="@(() => SortByColumn("Name"))">
+                            Stack
+                            <span style="font-size: 1rem; margin-left: 5px;
                                                          color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
-                            @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
-                        </span>
-                    </th>
-                    <th style="width: 30%; text-align: center; border-right: 1px solid white;">@localizer["Package"]</th>
-                    <th style="width: 15%; text-align: center; border-right: 1px solid white;">@localizer["Version"]</th>
-                    <th style="width: 15%;"></th>
-                    <th style="width: 15%;"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (PaginatedPackages is null || !PaginatedPackages.Any())
-                {
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                            @localizer["NoData"]
-                        </td>
-                    </tr>
-                }
-                else
-                {
-                    @foreach (var stackPackage in PaginatedPackages)
-                    {
-                        @if (stackPackage?.Stack != null && stackPackage?.Package != null)
-                        {
-                            <tr class="table-light" style="height: 60px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">@stackPackage.Stack.Name</td>
-                                <td class="text-center truncate-text" style="vertical-align: middle;">@stackPackage.Package.Name</td>
-                                <td class="text-center" style="vertical-align: middle;">@stackPackage.Package.Version</td>
-                                <td class="text-center align-middle">
-                                    <button class="btn btn-outline-success btn-sm py-1 px-2"
-                                            title="Editar"
-                                            @onclick="() => NavigateToEdit(stackPackage.StackId, stackPackage.PackageId)">
-                                        <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
-                                    </button>
-                                </td>
-                                <td class="text-center align-middle">
-                                    <button class="btn btn-outline-danger btn-sm py-1 px-2"
-                                            title="Remover"
-                                            @onclick="() => RemoveStack(stackPackage.StackId, stackPackage.PackageId)">
-                                        <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    }
-                }
-            </tbody>
-        </table>
+                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                            </span>
+                        </div>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <div class="body-table-left">
+                            @context.Stack?.Name
+                        </div>
+                    </ChildContent>
+                </TemplateColumn>
 
-    </div>
+                <!--- Coluna do nome do pacote --->
+                <TemplateColumn>
+                    <HeaderTemplate>
+                        <div class="header-table-left">
+                            @localizer["Package"]
+                        </div>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <div class="body-table-left">
+                            <span style="font-size: 1rem;">
+                                @context.Package?.Name
+                            </span>
+                        </div>
+                    </ChildContent>
+                </TemplateColumn>
 
-    <div class="sticky-footer-right">
-        <div class="d-flex justify-content-end align-items-center gap-3">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
+                <!--- Coluna da versão do pacote --->
+                <TemplateColumn>
+                    <HeaderTemplate>
+                        <div class="header-table-left">
+                            @localizer["Version"]
+                        </div>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <div class="body-table-left">
+                            <span style="font-size: 1rem;">
+                                @context.Package?.Version
+                            </span>
+                        </div>
+                    </ChildContent>
+                </TemplateColumn>
+            </QuickGrid>
 
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
-            </div>
+            @if (!FilteredPackages.Any())
+            {
+                <table class="table table-striped m-0">
+                    <tbody>
+                        <tr>
+                            <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                @localizer["NoData"]
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="d-flex justify-content-end mt-3 px-3">
+            <p>@FilteredPackages.Count() @localizer["Package"]&#40s&#41</p>
         </div>
     </div>
 </div>
 
 @code {
-    // Object Variables
-    private List<StackPackage> stacksPackages = new();
-    private List<StackPackage> paginatedPackages = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(ManagePackages));
+    // Variáveis: Object
+    List<StackPackage> stacksPackages = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(ManagePackages));
 
-    private IEnumerable<StackPackage> FilteredPackages
+    IEnumerable<StackPackage> FilteredPackages
     {
         get
         {
@@ -138,22 +162,11 @@
         }
     }
 
-    private IEnumerable<StackPackage> PaginatedPackages =>
-        FilteredPackages
-        .Skip((actualPage - 1) * packagesPerPage)
-        .Take(packagesPerPage);
+    // Variáveis: String
+    string currentSortColumn = "Name";
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int packagesPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)(string.IsNullOrWhiteSpace(searchTerm) ? 
-    stacksPackages.Count : FilteredPackages.Count()) / packagesPerPage);
-
-    // String Variables
-    private string currentSortColumn = "Name";
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -161,15 +174,12 @@
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                actualPage = 1;
             }
         }
     }
 
-    // Boolean Variables
-    private bool isNameAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isNameAscending = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,22 +187,16 @@
         {
             await LoadData();
 
-            log.Info("Packages loaded successfully.");
+            _log.Info("Packages loaded successfully.");
         } 
         catch (Exception ex)
         {
-            log.Error("Error loading packages. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonText = "OK"
-            });
+            _log.Error("Error loading packages. ", ex);
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
         }   
     }
 
-    private async Task LoadData()
+    async Task LoadData()
     {
         using var context = DbContextFactory.CreateDbContext();
         stacksPackages = await context.StackPackages
@@ -203,17 +207,17 @@
         UpdatePage();
     }
 
-    private void NavigateToAdd()
+    void NavigateToAdd()
     {
         NavigationManager.NavigateTo("/managePackages/add");
     }
 
-    private void NavigateToEdit(int stackId, string packageId)
+    void NavigateToEdit(int stackId, string packageId)
     {
         NavigationManager.NavigateTo($"/managePackages/edit/{stackId}/{packageId}");
     }
 
-    private void SortByColumn(string columnName)
+    void SortByColumn(string columnName)
     {
         if (currentSortColumn == columnName)
         {
@@ -224,11 +228,9 @@
             currentSortColumn = columnName;
             isNameAscending = true;
         }
-
-        actualPage = 1;
     }
 
-    private async Task RemoveStack(int stackId, string packageId)
+    async Task RemoveStack(int stackId, string packageId)
     {
         try
         {
@@ -239,7 +241,8 @@
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
@@ -254,40 +257,21 @@
                     await context.SaveChangesAsync();
                     await LoadData();
                 }
+
+                ToastService.ShowSuccess(@localizer["PackageRemoveSuccess"]);
             }
         } 
         catch (Exception ex)
         {
-            log.Error("Error removing package. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonText = "OK"
-            });
+            _log.Error("Error removing package. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
         InvokeAsync(StateHasChanged);
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-            actualPage++;
-
-        UpdatePage();
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-            actualPage--;
-
-        UpdatePage();
     }
 }

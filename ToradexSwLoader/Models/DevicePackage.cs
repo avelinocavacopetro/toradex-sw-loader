@@ -1,16 +1,15 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace ToradexSwLoader.Models
 {
     public class DevicePackage
     {
-        [JsonPropertyName("id")]
-        public string Id { get; set; } = null!;
+        [JsonPropertyName("component")]
+        public string Component { get; set; } = null!;
 
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = null!;
-
-        [JsonPropertyName("version")]
-        public string Version { get; set; } = null!;
+        [JsonPropertyName("installed")]
+        [NotMapped]
+        public InstalledPackage Installed { get; set; } = null!;
     }
 }

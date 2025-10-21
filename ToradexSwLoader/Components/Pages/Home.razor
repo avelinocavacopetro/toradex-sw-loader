@@ -1,13 +1,14 @@
 ﻿@page "/home"
-@using log4net
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject FinalProductStateService ProductState
 @inject SweetAlertService Swal
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject NavigationManager Navigation
-@inject IStringLocalizer<Resource> localizer
+@inject FilterService FilterService
 
 <PageTitle>@L("HomePage")</PageTitle>
 
@@ -30,69 +31,118 @@ else
             <h3 class="pt-2">@L("LastUpdates")</h3>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-custom mt-3" style="min-width: 1300px; max-height: 600px;">
-                <thead>
-                    <tr>
-                        <th style="width: 350px; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                               border-right: 1px solid white;">@L("Board")</th>
-                        <th style="width: 180px; text-align: center; border-right: 1px solid white;">@L("Time")</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">@L("State")</th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">@L("StateUpdate")</th>
-                        <th style="width: 180px; text-align: center; border-top-right-radius: 5px;"></th>
-                    </tr>
-                </thead>
-                <tbody style="max-height: 400px;">
-                    @if (finalProducts is null || !finalProducts.Any())
+        <div class="card-body pb-2 px-0 mb-0 mt-3">
+            <div class="table-responsive border rounded-3">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@finalProducts.AsQueryable()"
+                           ItemKey="@(fp => $"{fp.DeviceUuid}-{fp.CreatedAt:yyyyMMddHHmmssfff}")">
+
+                    <!--- Coluna dos nomes das placas --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @L("Board")
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @context.Name
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da data de criação --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @L("Time")
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @context.CreatedAt
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado (Online ou Offline) --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @L("State")
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="state-overlay">
+                                @CheckOnlineStatus(context)
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado do dispositivo --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @L("StateUpdate")
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="state-overlay">
+                                @GetStatusIcon(context.Status!)
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do botão para abortar --->
+                    @if (finalProducts.Any(b => b.Status?.Equals("Outdated", StringComparison.OrdinalIgnoreCase) == true))
                     {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                @L("NoData")
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var finalProduct in finalProducts)
-                        {
-                            <tr style="height: 60px;">
-                                <td style="width: 350px; text-align: left; vertical-align: middle; padding-left: 20px;">@finalProduct.Name</td>
-                                <td style="width: 180px; text-align: center; vertical-align: middle;">@finalProduct.CreatedAt</td>
-                                <td style="width: 150px; text-align: center; vertical-align: middle;">
-                                    @CheckOnlineStatus(finalProduct)
-                                </td>
-                                <td style="width: 150px; text-align: center; vertical-align: middle;">
-                                    @GetStatusIcon(finalProduct.Status!)
-                                </td>
-                                <td style="width: 180px; text-align: center; vertical-align: middle;">
-                                    @if (finalProduct.Status?.Equals("Outdated", StringComparison.OrdinalIgnoreCase) == true)
-                                    {
-                                        <button class="btn btn-danger btn-sm" style="width: 75%;"
-                                                @onclick="@(() => AbortOperation(finalProduct))">
+                        <TemplateColumn Title="@L("Actions")">
+                            <HeaderTemplate>
+                                <div class="abort-action"></div>
+                            </HeaderTemplate>
+                            <ChildContent>
+                                @if (isOnline && context.Status.Equals("Outdated", StringComparison.OrdinalIgnoreCase))
+                                   {
+                                    <div class="abort-action">
+                                        <button class="btn btn-danger" style="width: 100%;"
+                                                @onclick="@(() => AbortOperation(context))">
                                             <i class="bi bi-x-circle"></i> @L("Abort")
                                         </button>
-                                    }
+                                    </div>
+                                }
+                            </ChildContent>
+                        </TemplateColumn>
+                    }
+                </QuickGrid>
+
+                @if (!finalProducts.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
                                 </td>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                }
+            </div>
         </div>
 
-        <div class="sticky-footer-center">
+        <div class="sticky-footer-center-update">
             @L("LastUpdate"): @ProductState.LastUpdate.ToString("dd/MM/yyyy HH:mm:ss")
         </div>
     </div>
 }
 
 @code {
-    // Object Variables
-    private List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
-    private IReadOnlyList<FinalProduct> finalProducts = new List<FinalProduct>();
-    private static readonly ILog log = LogManager.GetLogger(typeof(Home));
+    // Variáveis: Object
+    List<FinalProduct> paginatedFinalProducts = new List<FinalProduct>();
+    IReadOnlyList<FinalProduct> finalProducts = new List<FinalProduct>();
+    static readonly ILog _log = LogManager.GetLogger(typeof(Home));
 
-    // String Variables
+    // Variáveis: String
     public const string Updated = "Updated";
     public const string Error = "Error";
     public const string Pending = "Pending";
@@ -100,8 +150,9 @@ else
     public const string Outdated = "Outdated";
     public const string Scheduled = "Scheduled";
 
-    // Boolean Variables
+    // Variáveis: Boolean
     bool isLoading = true;
+    bool isOnline = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,15 +176,15 @@ else
                 });
             };
 
-            log.Info("Home page loaded successfully.");
+            _log.Info("Home page loaded successfully.");
         }
         catch (Exception ex)
         {
-            log.Error("Error loading home page.", ex);
+            _log.Error("Error loading home page.", ex);
         }
     }
 
-    private string L(string key)
+    string L(string key)
     {
         var originalCulture = CultureInfo.CurrentUICulture;
         try
@@ -147,12 +198,12 @@ else
         }
     }
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
         CheckAuthentication();
     }
 
-    private void CheckAuthentication()
+    void CheckAuthentication()
     {
         var currentUri = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
 
@@ -162,7 +213,7 @@ else
         }
     }
 
-    private async Task LoadProductsFromDb()
+    async Task LoadProductsFromDb()
     {
         try
         {
@@ -175,11 +226,11 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error loading products from database.", ex);
+            _log.Error("Error loading products from database.", ex);
         }
     }
 
-    private void OnProductsChanged()
+    void OnProductsChanged()
     {
         InvokeAsync(() =>
         {
@@ -194,9 +245,9 @@ else
         Navigation.LocationChanged -= OnLocationChanged;
     }
 
-    private async Task AbortOperation(FinalProduct productToRemove)
+    async Task AbortOperation(FinalProduct productToRemove)
     {
-        log.Info($"Request to abort product: {productToRemove.Id}");
+        _log.Info($"Request to abort product: {productToRemove.Id}");
 
         var result = await Swal.FireAsync(new SweetAlertOptions
         {
@@ -214,7 +265,7 @@ else
             {
                 if (!await TorizonService.AuthenticateAsync())
                 {
-                    log.Error("Error authenticating to Torizon Service.");
+                    _log.Error("Error authenticating to Torizon Service.");
                     return;
                 }
 
@@ -226,14 +277,9 @@ else
 
                 if (response.IsSuccessStatusCode)
                 {
-                    log.Info($"Product {productToRemove.Id} aborted successfully.");
+                    _log.Info($"Product {productToRemove.Id} aborted successfully.");
 
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = L("ProductAborted"),
-                        Icon = SweetAlertIcon.Success,
-                        ConfirmButtonColor = "#0B5120",
-                    });
+                    ToastService.ShowSuccess(L("ProductAborted"));
 
                     var productDb = await context.FinalProducts.FirstOrDefaultAsync(p => p.Id == productToRemove.Id);
                     if (productDb != null)
@@ -248,18 +294,17 @@ else
                 }
                 else
                 {
-                    log.Error($"Failed to abort product {productToRemove.Id}. Response: {content}");
+                    _log.Error($"Failed to abort product {productToRemove.Id}. Response: {content}");
                 }
-
             }
             catch (Exception ex)
             {
-                log.Error("Error authenticating to Torizon Service or aborting product.", ex);
+                _log.Error("Error authenticating to Torizon Service or aborting product.", ex);
             }
         }
     }
 
-    private MarkupString GetStatusIcon(string status)
+    MarkupString GetStatusIcon(string status)
     {
         var iconHtml = status.ToLower() switch
         {
@@ -296,12 +341,12 @@ else
         return new MarkupString(iconHtml);
     }
 
-    private MarkupString CheckOnlineStatus(FinalProduct product)
+    MarkupString CheckOnlineStatus(FinalProduct product)
     {
-        bool isOnline = product.LastSeen.HasValue && (DateTime.UtcNow - product.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+        isOnline = product.LastSeen.HasValue && (DateTime.UtcNow - product.LastSeen.Value.ToUniversalTime()).TotalMinutes < FilterService.OnlineTime;
         string iconHtml = isOnline
-            ? @"<div class='state'><i class='bi bi-circle-fill text-success fs-4'></i><span>Online</span></div>"
-            : @"<div class='state'><i class='bi bi-x-circle text-danger fs-4'></i><span>Offline</span></div>";
+            ? @"<div class='state' style='padding-right: 0.5rem;'><i class='bi bi-circle-fill text-success fs-4'></i><span>Online</span></div>"
+            : @"<div class='state' style='padding-right: 0.5rem;'><i class='bi bi-x-circle text-danger fs-4'></i><span>Offline</span></div>";
 
         return new MarkupString(iconHtml);
     }
