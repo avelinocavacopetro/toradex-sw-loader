@@ -1,11 +1,11 @@
-﻿@using log4net
-@inject IDbContextFactory<AppDbContext> DbContextFactory
+﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
 @inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -24,44 +24,54 @@
 }
 else
 {
-    <table class="table mt-3 w-100">
-        <thead style="background-color: #0c6527; color: white;">
-            <tr>
-                <th style="width: 60%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">@localizer["Name"]</th>
-                <th style="width: 40%; border-top-right-radius: 5px; text-align: center;">@localizer["Version"]</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var package in paginatedPackages)
-            {
-                if (package?.Package != null)
-                {
-                    <tr @onclick="() => SelectRow(package.Package)">
-                        <td title="@package.Package.Name" style="width: 60%; padding-left: 20px;">
-                            @package.Package.Name
-                        </td>
-                        <td style="width: 40%; text-align: center;">@package.Package.Version</td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
+    <div class="card-body pb-2 px-0 mt-2">
+        <div class="table-responsive border rounded-2">
+            <QuickGrid Class="table table-striped m-0"
+                       Items="@stacksPackages.AsQueryable()"
+                       ItemKey="@(pp => pp.PackageId + pp.StackId)">
 
-    <div class="d-flex justify-content-end pe-lg-0">
-        <div class="d-flex justify-content-between align-items-center gap-3 ms-auto">
-            <span>@actualPage - @TotalPages de @TotalPages</span>
-            <div class="d-flex gap-2">
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                    &lt;
-                </button>
+                <!--- Coluna dos nomes dos pacotes --->
+                <TemplateColumn>
+                    <HeaderTemplate>
+                        <div class="header-table-left">
+                            @localizer["Name"]
+                        </div>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <div class="body-table-left" style="cursor: pointer;" @onclick="() => SelectRow(context.Package!)">
+                            @context.Package?.Name
+                        </div>
+                    </ChildContent>
+                </TemplateColumn>
 
-                <button class="btn custom-outline-button btn-lg"
-                        @onclick="NextPage" disabled="@(!CanGoNext)">
-                    &gt;
-                </button>
-            </div>
+                <!--- Coluna das versões dos pacotes --->
+                <TemplateColumn>
+                    <HeaderTemplate>
+                        <div class="header-table-left">
+                            @localizer["Version"]
+                        </div>
+                    </HeaderTemplate>
+                    <ChildContent>
+                        <div class="body-table-left" style="cursor: pointer;" @onclick="() => SelectRow(context.Package!)">
+                            @context.Package?.Version
+                        </div>
+                    </ChildContent>
+                </TemplateColumn>
+            </QuickGrid>
         </div>
+
+        @if (!stacksPackages.Any())
+        {
+            <table class="table table-striped m-0">
+                <tbody>
+                    <tr>
+                        <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                            @localizer["NoData"]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        }
     </div>
 }
 
@@ -74,21 +84,13 @@ else
     public EventCallback OnCloseModal { get; set; }
 
     // Object Variables
-    private DetailedDevice? selectedDevice = new();
-    private Package? selectedPackage;
-    private List<StackPackage> paginatedPackages = new();
-    private List<StackPackage> stacksPackages = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(UpdateImageModal));
-
-    // Integer Variables
-    private int actualPage = 1;
-    private int packagesPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)stacksPackages.Count / packagesPerPage);
+    DetailedDevice? selectedDevice = new();
+    Package? selectedPackage = new();
+    List<StackPackage> stacksPackages = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(UpdateImageModal));
 
     // Boolean Variables
     private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,7 +100,7 @@ else
 
             if (!await TorizonService.AuthenticateAsync())
             {
-                log.Error("Error authenticating to Torizon Service.");
+                _log.Error("Error authenticating to Torizon Service.");
                 return;
             }
 
@@ -118,11 +120,11 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error authenticating to Torizon Service or loading packages.", ex);
+            _log.Error("Error authenticating to Torizon Service or loading packages.", ex);
         }
     }
 
-    private async Task SelectRow(Package package)
+    async Task SelectRow(Package package)
     {
         using var context = DbContextFactory.CreateDbContext();
 
@@ -137,7 +139,8 @@ else
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
@@ -153,7 +156,7 @@ else
                 var deviceDto = new DeviceDTO
                 {
                     PackageIds = new List<string> { selectedPackage.Id.ToString() },
-                    Devices = new List<string> { DeviceUuid.ToString() },
+                    Devices = new List<string> { DeviceUuid!.ToString() },
                 };
 
                 var response = await TorizonService.SendUpdateAsync(deviceDto);
@@ -163,64 +166,26 @@ else
                     context.UserActivities.Add(userAct);
                     await context.SaveChangesAsync();
 
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = @localizer["SuccessfulRequest"],
-                        Icon = SweetAlertIcon.Success,
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                    ToastService.ShowSuccess(@localizer["SuccessfulRequest"]);
 
                     if (OnCloseModal.HasDelegate)
                         await OnCloseModal.InvokeAsync();
                 }
                 else
                 {
-                    await Swal.FireAsync(new SweetAlertOptions
-                    {
-                        Title = @localizer["RequestError"],
-                        Icon = SweetAlertIcon.Warning,
-                        Text = $"{response.StatusCode}",
-                        ConfirmButtonColor = "#0B5120"
-                    });
-
+                    ToastService.ShowError(@localizer["RequestError"]);
                     var errorContent = await response.Content.ReadAsStringAsync();
                 }
             }
         }
         else
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "Selecione um software!",
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120",
-            });
+            ToastService.ShowWarning(@localizer["NoPackageSelected"]);
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedPackages = stacksPackages
-                                 .Skip((actualPage - 1) * packagesPerPage)
-                                 .Take(packagesPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);
     }
 }

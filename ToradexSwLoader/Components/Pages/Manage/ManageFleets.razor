@@ -1,12 +1,11 @@
 ﻿@page "/manageFleets"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject TorizonService TorizonService
 @inject FleetService FleetService
 @inject FilterService FilterService
-@inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle>@localizer["ManageFleets"]</PageTitle>
 
@@ -49,80 +48,78 @@ else
             </div>
         </div>
 
-        <div class="pb-5">
-            <table class="table mt-3 w-100" style="table-layout: fixed;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th onclick="@(() => SortByColumn("Name"))"
-                            style="width: 70%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                           border-right: 1px solid white; cursor: pointer;">
-                            @localizer["Fleet"]
-                            <span style="font-size: 0.9rem; margin-left: 5px;
-                                                                 color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th style="width: 30%; text-align: center; border-top-right-radius: 5px">@localizer["State"]</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (PaginatedFleets is null || !PaginatedFleets.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                @localizer["NoData"]
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var fleet in PaginatedFleets)
-                        {
-                            <tr class="table-light" style="height: 50px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                    @fleet.Name
-                                </td>
-                                <td class="text-center align-middle p-0">
-                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                           id="toggle-@fleet.Id"
-                                           @onchange="(e => ToggleFleet(e, fleet))"
-                                           checked="@selectedFleets.Any(f => f.Id == fleet.Id)" />
+        <div class="card-body pb-2 px-0 mb-0 mt-3">
+            <div class="table-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@FilteredFleets.AsQueryable()"
+                           ItemKey="@(pf => pf.Id)">
+
+                    <!--- Coluna do nome das frotas --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left" style="cursor: pointer;" onclick="@(() => SortByColumn("Name"))">
+                                @localizer["Fleet"]
+                                <span style="font-size: 1rem; margin-left: 5px;
+                                                                     color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                <span style="font-size: 1rem;">
+                                    @context.Name
+                                </span>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado (Ativo ou não) --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["Active"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@context.Id"
+                                       @onchange="(e => ToggleFleet(e, context))"
+                                       checked="@selectedFleets.Any(f => f.Id == context.Id)" />
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                @if (!FilteredFleets.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
                                 </td>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                }
+            </div>
 
-        </div>
-
-        <div class="sticky-footer-right">
-            <div class="d-flex justify-content-end align-items-center gap-3">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                        &lt;
-                    </button>
-
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextPage" disabled="@(!CanGoNext)">
-                        &gt;
-                    </button>
-                </div>
+            <div class="d-flex justify-content-end mt-3 px-3">
+                <p>@FilteredFleets.Count() @localizer["Fleet"]&#40s&#41</p>
             </div>
         </div>
     </div>
 }
 
 @code {
-    // Object Variables
-    private List<Fleet> fleets = new List<Fleet>();
-    private List<Fleet> paginatedFleets = new List<Fleet>();
-    private List<Fleet> selectedFleets = new List<Fleet>();
-    private static readonly ILog log = LogManager.GetLogger(typeof(ManageFleets));
+    // Variáveis: Object
+    List<Fleet> fleets = new();
+    List<Fleet> selectedFleets = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(ManageFleets));
 
-    private IEnumerable<Fleet> FilteredFleets
+    IEnumerable<Fleet> FilteredFleets
     {
         get
         {
@@ -141,21 +138,11 @@ else
         }
     }
 
-    private IEnumerable<Fleet> PaginatedFleets =>
-    FilteredFleets
-        .Skip((actualPage - 1) * fleetsPerPage)
-        .Take(fleetsPerPage);
+    // Variáveis: String
+    string currentSortColumn = "Name";
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int fleetsPerPage = 6;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredFleets.Count() / fleetsPerPage);
-
-    // String Variables
-    private string currentSortColumn = "Name";
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -163,62 +150,46 @@ else
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                actualPage = 1;
             }
         }
     }
 
-    // Boolean Variables
-    private bool isNameAscending = true;
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isNameAscending = true;
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        // await FilterService.LoadFilterAsync();
-
-        // var fleetsUrl = "https://app.torizon.io/api/v2beta/fleets";
-
-        // bool authOk = await TorizonService.AuthenticateAsync();
-        // if (authOk)
-        // {
-        //     fleets = await TorizonService.GetItemsAsync<Fleet>(fleetsUrl) ?? new List<Fleet>();
-        // }
-
-        // selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
-
-        // isLoading = false;
-
-        // UpdatePage();
-
         try
         {
             await FilterService.LoadFilterAsync();
 
-            using var context = DbContextFactory.CreateDbContext();
-            fleets = await context.Fleets.ToListAsync();
+            var fleetsUrl = "https://app.torizon.io/api/v2beta/fleets";
+
+            bool authOk = await TorizonService.AuthenticateAsync();
+            if (authOk)
+            {
+                fleets = await TorizonService.GetItemsAsync<Fleet>(fleetsUrl) ?? new List<Fleet>();
+
+                await FleetService.ImportFleetsFromApiAsync("https://app.torizon.io/api/v2beta/fleets");
+            }
 
             selectedFleets = new List<Fleet>(FilterService.SelectedFleets);
 
             isLoading = false;
-            log.Info("Fleets loaded successfully.");
+
+            UpdatePage();
+            _log.Info("Fleets loaded successfully.");
         }
         catch (Exception ex)
         {
-            log.Error("Error loading fleets. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading fleets. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
         }
-
     }
 
-    private void ToggleFleet(ChangeEventArgs e, Fleet fleet)
+    void ToggleFleet(ChangeEventArgs e, Fleet fleet)
     {
         var isChecked = e.Value is bool b && b;
 
@@ -233,47 +204,32 @@ else
         }
     }
 
-    private async Task SaveFleetFilter()
+    async Task SaveFleetFilter()
     {
         try
         {
             if (selectedFleets.Count == 0)
             {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["PleaseSelectFleet"],
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowWarning(@localizer["PleaseSelectFleet"]);
                 return;
             }
             else
             {
                 await FilterService.ApplyFleetFilter(new List<Fleet>(selectedFleets));
 
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["FiltersApplied"],
-                    Icon = SweetAlertIcon.Success,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowSuccess(@localizer["FiltersApplied"]);
             }
         }
         catch (Exception ex)
         {
-            log.Error("Error saving fleet filter. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving fleet filter. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private void SortByColumn(string columnName)
+    void SortByColumn(string columnName)
     {
         if (currentSortColumn == columnName)
         {
@@ -284,33 +240,10 @@ else
             currentSortColumn = columnName;
             isNameAscending = true;
         }
-
-        actualPage = 1;
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedFleets = fleets
-                                 .Skip((actualPage - 1) * fleetsPerPage)
-                                 .Take(fleetsPerPage)
-                                 .ToList();
-    }   
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);
     }
 }

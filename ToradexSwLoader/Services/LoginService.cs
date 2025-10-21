@@ -1,14 +1,11 @@
-﻿using Microsoft.AspNetCore.Localization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.JSInterop;
-using System.Text;
+﻿using Microsoft.EntityFrameworkCore;
 using ToradexSwLoader.Data;
 
 namespace ToradexSwLoader.Services
 {
     public class LoginService
     {
-        private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+        readonly IDbContextFactory<AppDbContext> _dbContextFactory;
 
         public int UserId { get; private set; }
         public string Username { get; private set; } = string.Empty;

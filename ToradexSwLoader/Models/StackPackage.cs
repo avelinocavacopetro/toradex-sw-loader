@@ -10,7 +10,7 @@ namespace ToradexSwLoader.Models
         public Stack? Stack { get; set; }
 
         [ForeignKey("Package")]
-        public string PackageId { get; set; }
+        public string PackageId { get; set; } = string.Empty;
         public Package? Package { get; set; }
     }
 }

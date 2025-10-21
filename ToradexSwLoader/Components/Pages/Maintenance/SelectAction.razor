@@ -1,12 +1,11 @@
 ﻿@page "/selectAction/{deviceUuid}"
 
-@inject NavigationManager UriHelper
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject NavigationManager UriHelper
 @inject TorizonService TorizonService
 @inject FilterService FilterService
-@inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
-
 
 <PageTitle>@localizer["SelectAction"]</PageTitle>
 
@@ -27,14 +26,14 @@ else
         <a href="#"
            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
            class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
+           style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
         <h3 class="text-center pb-5">@localizer["SelectAction"]</h3>
 
         <div class="grid-container-action d-flex justify-content-center">
-            <div class="grid-item-action" @onclick="UpdateImage">
+            <div class="grid-item-action" style="cursor: pointer;" @onclick="UpdateImage">
                 @localizer["UpdatePackage"]
             </div>
             <div class="grid-item-action @(hasVersion ? "" : "disabled")"
@@ -47,18 +46,18 @@ else
 }
 
 @code {
-    // Object Variables
-    private DetailedDevice? selectedDevice = new();
-    private List<StackPackage> stacksPackages = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(SelectAction));
+    // Variáveis: Object
+    DetailedDevice? selectedDevice = new();
+    List<StackPackage> stacksPackages = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(SelectAction));
 
-    // String Variables
+    // Variáveis: String
     [Parameter]
     public string? deviceUuid { get; set; }
 
-    // Boolean Variables
-    private bool isLoading = false;
-    private bool hasVersion = true;
+    // Variáveis: Boolean
+    bool isLoading = false;
+    bool hasVersion = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -76,15 +75,15 @@ else
                 isLoading = false;
             }
 
-            log.Info("Select action page loaded successfully.");
+            _log.Info("Select action page loaded successfully.");
         }
         catch (Exception ex)
         {
-            log.Error("Error loading select action page.", ex);
+            _log.Error("Error loading select action page.", ex);
         }
     }
 
-    private async Task LoadSelectedDeviceAsync()
+    async Task LoadSelectedDeviceAsync()
     {
         try
         {
@@ -93,11 +92,11 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error loading devices from database", ex);
+            _log.Error("Error loading devices from database", ex);
         }
     }
 
-    private async Task LoadStackPackagesAsync(AppDbContext context)
+    async Task LoadStackPackagesAsync(AppDbContext context)
     {
         try
         {
@@ -107,60 +106,58 @@ else
         }
         catch (Exception ex)
         {
-            log.Error("Error loading stack packages from database", ex);
+            _log.Error("Error loading stack packages from database", ex);
         }
     }
 
-    private void CheckIfDeviceHasPackage()
+    void CheckIfDeviceHasPackage()
     {
         try
         {
-            if (selectedDevice?.Packages == null || selectedDevice.Packages.Count < 2)
+            if (selectedDevice?.Packages == null || selectedDevice.Packages.Count == 0)
             {
                 hasVersion = false;
                 return;
             }
 
-            var devicePackage = selectedDevice.Packages[1].Name;
+            var devicePackage = selectedDevice.Packages?
+                                    .FirstOrDefault(p => p.Component == "docker-compose")?
+                                    .Installed.PackageId;
+
             hasVersion = stacksPackages.Any(sp => sp.PackageId == devicePackage);
 
-            log.Info($"Checked device package '{devicePackage}'. Has version: {hasVersion}");
+            _log.Info($"Checked device package '{devicePackage}'. Has version: {hasVersion}");
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            log.Error("Error while checking if device has package.", ex);
+            _log.Error("Error while checking if device has package.", ex);
         }
-
     }
 
-    private void UpdateImage()
+    void UpdateImage()
     {
         UriHelper.NavigateTo($"/updateImage/{deviceUuid}");
     }
 
-    private async Task UpdateVersion()
+    void UpdateVersion()
     {
         try
         {
             if (hasVersion)
             {
-                log.Info($"Initiating version update for device '{deviceUuid}'.");
+                _log.Info($"Initiating version update for device '{deviceUuid}'.");
                 UriHelper.NavigateTo($"/updateVersion/{deviceUuid}");
             }
             else
             {
-                log.Warn($"Device '{deviceUuid}' does not have version support.");
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = "Sem suporte",
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                _log.Warn($"Device '{deviceUuid}' does not have version support.");
+                
+                ToastService.ShowWarning(@localizer["NoSupport"]);
             }
         }
         catch (Exception ex)
         {
-            log.Error($"Error updating version for device '{deviceUuid}'.", ex);
+            _log.Error($"Error updating version for device '{deviceUuid}'.", ex);
         }
     }
 }

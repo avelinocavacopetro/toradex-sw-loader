@@ -1,10 +1,10 @@
 ﻿@page "/manageUsers"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle>@localizer["ManageUsers"]</PageTitle>
 
@@ -24,7 +24,7 @@ else
     <div class="custom-container">
         <div class="page-title">
             <i class="bi bi-card-list fs-3" style="padding-left: 10px;"></i>
-            <h3 class="pt-2">@localizer["ManageUsers"]s</h3>
+            <h3 class="pt-2">@localizer["ManageUsers"]</h3>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mt-4">
@@ -47,146 +47,167 @@ else
             </div>
         </div>
 
-        <div class="pb-5">
-            <table class="table mt-3 w-100" style="table-layout: fixed;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th style="width: 40%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                           border-right: 1px solid white;">@localizer["Name"]</th>
-                        <th style="width: 40%; text-align: center; border-right: 1px solid white;">User</th>
-                        <th style="width: 25%; text-align: center; border-right: 1px solid white;">@localizer["Language"]</th>
-                        <th style="width: 25%; text-align: center; border-right: 1px solid white;">@localizer["Function"]</th>
-                        <th style="width: 35%;"></th>
-                        <th style="width: 35%; border-top-right-radius: 5px;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (PaginatedUsers is null || !PaginatedUsers.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                @localizer["NoData"]
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var user in PaginatedUsers)
-                        {
-                            <tr class="table-light" style="height: 50px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                    @user.UserName
-                                </td>
-                                <td style="text-align: center; vertical-align: middle;">
-                                    @user.Email
-                                </td>
-                                <td style="text-align: center; vertical-align: middle;">
-                                    @GetCultureName(user.Culture)
-                                </td>
-                                <td class="text-center align-middle">
-                                    @if (editingUserId == user.Id)
-                                    {
-                                        <select class="form-select form-select-sm mx-auto"
-                                                @bind="selectedRoleId"
-                                                style="width: 90%; max-width: 200px; height: 32px;">
-                                            @foreach (var role in roles)
-                                            {
-                                                <option value="@role.Id" selected="@(role.Id == user.UserRole?.Id)">@GetRoleName(role.Name)</option>
-                                            }
-                                        </select>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary py-2 px-3">@GetRoleName(user.UserRole?.Name ?? "")</span>
-                                    }
-                                </td>
-                                <td class="text-center align-middle">
+        <div class="card-body pb-2 px-0 mt-2">
+            <div class="table-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@FilteredUsers.AsQueryable()"
+                           ItemKey="@(pu => pu.Id)">
+
+                    <!--- Coluna das opções --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="options-buttons-header">
+                                @localizer["Options"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="options-buttons">
+                                <div>
                                     <button class="btn btn-outline-success btn-sm py-1 px-2"
                                             title="Editar"
-                                            @onclick="() => NavigateToEditUser(user.Id)"
+                                            @onclick="() => NavigateToEditUser(context.Id)"
                                             style="border-radius: 5px;">
                                         <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                     </button>
-                                </td>
-                                <td class="text-center align-middle">
+                                </div>
+                                <div>
                                     <button class="btn btn-outline-danger btn-sm py-1 px-2"
                                             title="Desativar"
-                                            @onclick="() => DisableUser(user.Id)"
+                                            @onclick="() => DisableUser(context.Id)"
                                             style="border-radius: 5px;">
                                         <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                     </button>
+                                </div>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna dos nomes dos utilizadores --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Name"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                <span style="font-size: 1rem;">
+                                    @context.UserName
+                                </span>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna dos emails dos utilizadores --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                Email
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                <span style="font-size: 1rem;">
+                                    @context.Email
+                                </span>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da função dos utilizadores --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Function"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                <span class="badge bg-secondary py-2 px-3">@GetRoleName(context.UserRole?.Name ?? "")</span>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da entidade associada --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["LinkedEntity"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @if (context.EntityId != null)
+                                {
+                                    <span style="font-size: 1rem;">
+                                        @context.Entity?.Name
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size: 1rem;">@localizer["WithoutEntity"]</span>
+                                }
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da lingua dos utilizadores --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Language"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @GetCultureName(context.Culture)
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                @if (!FilteredUsers.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
                                 </td>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                }
+            </div>
 
-        </div>
-
-        <div class="sticky-footer-right">
-            <div class="d-flex justify-content-end align-items-center gap-3">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                        &lt;
-                    </button>
-
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextPage" disabled="@(!CanGoNext)">
-                        &gt;
-                    </button>
-                </div>
+            <div class="d-flex justify-content-end mt-3 px-3">
+                <p>
+                    @(FilteredUsers.Count())
+                    @(FilteredUsers.Count() > 1
+                                    ? localizer["Users"]
+                                    : localizer["User"])
+                </p>
             </div>
         </div>
     </div>
 }
 
-<style>
-    table {
-        table-layout: fixed;
-    }
-
-    th, td {
-        padding: 12px 15px;
-    }
-
-    .form-select-sm {
-        margin: 0 auto;
-    }
-
-    .table-light td {
-        background-color: #f8f9fa;
-    }
-
-    .table > :not(:first-child) {
-        border-top: none;
-    }
-</style>
-
 @code {
-    // Object Variables
-    private List<UserPetrotec> users = new();
-    private List<UserPetrotec> paginatedUsers = new();
-    private List<UserRole> roles = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(ManageUsers));
+    // Variáveis: Object
+    List<UserPetrotec> users = new();
+    List<UserRole> roles = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(ManageUsers));
 
-    private IEnumerable<UserPetrotec> FilteredUsers =>
-    string.IsNullOrWhiteSpace(searchTerm)
-        ? users
-        : users.Where(u => u.UserName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    IEnumerable<UserPetrotec> FilteredUsers =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? users
+            : users.Where(u => u.UserName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<UserPetrotec> PaginatedUsers =>
-    FilteredUsers
-        .Skip((actualPage - 1) * usersPerPage)
-        .Take(usersPerPage);
+    // Variáveis: String
+    string userName = string.Empty;
 
-    // String Variables
-    private string userName = string.Empty;
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -194,22 +215,16 @@ else
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                actualPage = 1;
             }
         }
     }
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int usersPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredUsers.Count() / usersPerPage);
-    private int? editingUserId = null; 
-    private int? selectedRoleId = null;
+    // Variáveis: Integer
+    int? editingUserId = null; 
+    int? selectedRoleId = null;
 
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variávies: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -227,20 +242,14 @@ else
 
             UpdatePage();
 
-            log.Info("Users loaded successfully.");
+            _log.Info("Users loaded successfully.");
             isLoading = false;
         }
         catch (Exception ex)
         {
-            log.Error("Error loading users. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonText = "OK",
-                ConfirmButtonColor = "#d33"
-            });
+            _log.Error("Error loading users. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
         }
     }
 
@@ -256,22 +265,22 @@ else
         };
     }
 
-    private string GetRoleName(string roleName)
+    string GetRoleName(string roleName)
     {
         return localizer[roleName];
     }
 
-    private void NavigateToAddUser()
+    void NavigateToAddUser()
     {
         NavigationManager.NavigateTo("/manageUsers/add");
     }
 
-    private void NavigateToEditUser(int id)
+    void NavigateToEditUser(int id)
     {
         NavigationManager.NavigateTo($"/manageUsers/edit/{id}");
     }
 
-    private async Task DisableUser(int id)
+    async Task DisableUser(int id)
     {
         try
         {
@@ -282,7 +291,8 @@ else
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
@@ -301,48 +311,23 @@ else
 
                 users.RemoveAll(u => u.Id == id);
 
+                ToastService.ShowSuccess(@localizer["UserDisableSuccess"]);
+
                 isLoading = false;
                 StateHasChanged();
             }
         }
         catch (Exception ex)
         {
-            log.Error($"Error disabling user with ID {id}. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonText = "OK",
-                ConfirmButtonColor = "#d33"
-            });
+            _log.Error($"Error disabling user with ID {id}. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedUsers = FilteredUsers
-                                 .Skip((actualPage - 1) * usersPerPage)
-                                 .Take(usersPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);
     }
 }

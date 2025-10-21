@@ -1,15 +1,16 @@
 ﻿@page "/devices"
-@using log4net
 
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IJSRuntime js
+@inject IStringLocalizer<Resource> localizer
 @inject TorizonService TorizonService
 @inject DeviceService DeviceService
 @inject LoginService LoginService
-@inject IJSRuntime js
-@inject IStringLocalizer<Resource> localizer
+@inject FilterService FilterService
 
 <PageTitle>@localizer["Devices"]</PageTitle>
+
 <HeadContent>
     <script type="text/javascript" src="~/js/site.js"></script>
 </HeadContent>
@@ -33,7 +34,7 @@ else
             <h3 class="pt-2">@localizer["Devices"]</h3>
         </div>
 
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mt-4 gap-4 pb-3">
+        <div class="devices-filters">
             <div class="position-relative" style="width: 40%;">
                 <input type="text"
                        class="form-control py-2 ps-5"
@@ -44,15 +45,15 @@ else
                 <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3"></i>
             </div>
 
-            <div class="d-flex flex-grow-1 gap-3">
+            <div class="device-filters-inputs">
 
-                <div class="d-flex align-items-center" style="width: 30%;">
-                    <label for="fleetSelect" class="fw-bold mb-0" style="min-width: 50px;">@localizer["Fleet"]</label>
-                    <select id="fleetSelect" class="form-select w-100"
+                <div class="d-flex align-items-center" style="width: 100%; gap: 10px;">
+                    <label for="fleetSelect" class="fw-bold mb-0">@localizer["Fleet"]</label>
+                    <select id="fleetSelect" class="form-select w-75"
                             @bind="selectedFleetId"
                             @bind:after="OnFleetChanged"
                             style="border: 1px solid grey;">
-                        <option value="">@localizer["SelectOneFleet"]</option>
+                        <option value="">@localizer["All"]</option>
                         @foreach (var fleet in fleets)
                         {
                             <option value="@fleet.Id">@fleet.Name</option>
@@ -60,9 +61,9 @@ else
                     </select>
                 </div>
 
-                <div class="d-flex align-items-center" style="width: 35%;">
-                    <label for="statusOrder" class="fw-bold mb-0" style="min-width: 175px;">@localizer["StateUpdate"]</label>
-                    <select id="statusOrder" class="form-select w-100"
+                <div class="d-flex align-items-center" style="width: 100%; gap: 10px;">
+                    <label for="statusOrder" class="fw-bold mb-0" style="white-space: nowrap;">@localizer["StateUpdate"]</label>
+                    <select id="statusOrder" class="form-select w-50" style="border: 1px solid grey"
                             @onchange='e => OnOrderChanged(e, "Status")'>
                         <option value="all">@localizer["All"]</option>
                         <option value="uptodate">@localizer["UpToDate"]</option>
@@ -84,174 +85,271 @@ else
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-custom" style="min-width: 2000px;">
-                <thead>
-                    <tr>
-                        <th style="width: 50px; border-top-left-radius: 5px; border-right: 1px solid white;"></th>
-                        <th style="width: 250px; padding-left: 20px; text-align: left; border-right: 1px solid white;">ID</th>
-                        <th @onclick="@(() => SortByColumn("DeviceName"))"
-                            style="width: 250px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            @localizer["Name"]
-                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "DeviceName" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "DeviceName" ? (sortAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th @onclick="@(() => SortByColumn("Hibernated"))"
-                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            @localizer["Hibernation"]
-                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "Hibernated" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "Hibernated" ? (sortAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th @onclick="@(() => SortByColumn("Notes"))"
-                            style="width: 170px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            @localizer["Notes"]
-                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "Notes" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "Notes" ? (sortAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th @onclick="@(() => SortByColumn("CreatedAt"))"
-                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            @localizer["CreatedAt"]
-                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "CreatedAt" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "CreatedAt" ? (sortAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th @onclick="@(() => SortByColumn("ActivatedAt"))"
-                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            @localizer["ActivatedAt"]
-                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "ActivatedAt" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "ActivatedAt" ? (sortAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th @onclick="@(() => SortByColumn("LastSeen"))"
-                            style="width: 150px; text-align: center; border-right: 1px solid white; cursor: pointer;">
-                            @localizer["LastSeen"]
-                            <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "LastSeen" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "LastSeen" ? (sortAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
-                        <th style="width: 150px; text-align: center; border-right: 1px solid white;">@localizer["State"]</th>
-                        <th style="width: 180px; text-align: center; border-top-right-radius: 5px;">@localizer["StateUpdate"]</th>
-                    </tr>
+        <div class="card-body pb-2 px-0 mt-2">
+            <div class="table-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@FilteredDevices.AsQueryable()"
+                           ItemKey="@(d => d.DeviceUuid)">
 
-                </thead>
-                <tbody style="min-height: 100vh;">
-                    @if (FilteredDevices is null || !FilteredDevices.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                @localizer["NoData"]
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        @foreach (var device in FilteredDevices)
-                        {
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div style="width: 50px;"></div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div style="width: 50px; height: 50px; position: relative;">
+                                <i @onclick="() => ToggleMenu(context.DeviceId)" 
+                                    class="bi bi-three-dots-vertical px-3" 
+                                    style="font-size: 1rem; cursor: pointer; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></i>
+                                @if (openMenuDeviceId == context.DeviceId)
+                                {
+                                    <div class="actions-dropdown">
+                                        <button @onclick="UpdateDevice" class="dropdown-item">
+                                            <i class="bi bi-arrow-clockwise"></i> @localizer["Update"]
+                                        </button>
+                                        <button @onclick="RemoteAcess" class="dropdown-item">
+                                            <i class="bi bi-broadcast"></i> @localizer["RemoteAcess"]
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna dos IDs dos dispositivos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                ID
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @context.DeviceId
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna dos nomes dos dispositivos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left" style="cursor: pointer;" @onclick="@(() => SortByColumn("DeviceName"))">
+                                @localizer["Name"]
+                                <span style="font-size: 1rem; margin-left: 5px; color: @(currentSortColumn == "DeviceName" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "DeviceName" ? (sortAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @context.DeviceName
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da hibernação dos dispositivos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center" style="cursor: pointer;" @onclick="@(() => SortByColumn("Hibernated"))">
+                                @localizer["Hibernation"]
+                                <span style="font-size: 1rem; margin-left: 5px; color: @(currentSortColumn == "Hibernated" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "Hibernated" ? (sortAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
+                                @(context.Hibernated ? "Sim" : "Não")
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna das notas dos dispositivos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left" style="cursor: pointer;" @onclick="@(() => SortByColumn("Notes"))">
+                                @localizer["Notes"]
+                                <span style="font-size: 1rem; margin-left: 5px; color: @(currentSortColumn == "Notes" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "Notes" ? (sortAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            @if (string.IsNullOrEmpty(context.Notes))
+                            {
+                                <div class="body-table-center">
+                                    <span style="font-size: 1rem;">
+                                        -
+                                    </span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="body-table-left">
+                                    <span style="font-size: 1rem;">
+                                        @context.Notes
+                                    </span>
+                                </div>
+                            }
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da data de criação dos dispositivos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center" style="cursor: pointer;" @onclick="@(() => SortByColumn("CreatedAt"))">
+                                @localizer["CreatedAt"]
+                                <span style="font-size: 1rem; margin-left: 5px; color: @(currentSortColumn == "CreatedAt" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "CreatedAt" ? (sortAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
+                                @context.CreatedAt
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da data de ativação dos dispositivos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center" style="cursor: pointer;" @onclick="@(() => SortByColumn("ActivatedAt"))">
+                                @localizer["ActivatedAt"]
+                                <span style="font-size: 1rem; margin-left: 5px; color: @(currentSortColumn == "ActivatedAt" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "ActivatedAt" ? (sortAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
+                                @context.ActivatedAt
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna da data que foi visto pela última vez visto --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center" style="cursor: pointer;" @onclick ="@(() => SortByColumn("LastSeen"))">
+                                @localizer["LastSeen"]
+                                <span style="font-size: 0.9rem; margin-left: 5px; color: @(currentSortColumn == "LastSeen" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "LastSeen" ? (sortAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
+                                @context.LastSeen
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado (Online ou Offline) --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["State"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div style="width: 100%; text-align: center; vertical-align: middle; padding-top: 0.5rem;">
+                                @CheckOnlineStatus(context)
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado do dispositivo --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["StateUpdate"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div style="width: 100%; text-align: center; vertical-align: middle; padding-top: 0.5rem;">
+                                @GetStatusIcon(context.DeviceStatus!)
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                @if (!FilteredDevices.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
                             <tr>
-                                <td style="width: 50px; vertical-align: middle;">
-                                    <i @onclick="() => ToggleMenu(device.DeviceId)" class="bi bi-three-dots-vertical px-3" style="font-size: 1.2rem; cursor: pointer;"></i>
-                                    @if (openMenuDeviceId == device.DeviceId)
-                                    {
-                                        <div class="actions-dropdown">
-                                            <button @onclick="UpdateDevice" class="dropdown-item">
-                                                <i class="bi bi-arrow-clockwise"></i> @localizer["Update"]
-                                            </button>
-                                            <button @onclick="RemoteAcess" class="dropdown-item">
-                                                <i class="bi bi-broadcast"></i> @localizer["RemoteAcess"]
-                                            </button>
-                                        </div>
-                                    }
-                                </td>
-                                <td style="width: 250px; padding-left: 20px; word-break: break-word; white-space: normal; vertical-align: middle;">
-                                    @device.DeviceId
-                                </td>
-                                <td title="@device.DeviceName" style="width: 250px; word-break: break-word; white-space: normal; vertical-align: middle;">
-                                    @device.DeviceName
-                                </td>
-                                <td style="width: 150px; text-align: center; vertical-align: middle;">@(device.Hibernated ? "Sim" : "Não")</td>
-                                <td style="width: 170px; text-align: center; word-break: break-word; white-space: normal; vertical-align: middle;">
-                                    @(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)
-                                </td>
-                                <td style="width: 150px; text-align: center; vertical-align: middle;">@device.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td style="width: 150px; text-align: center; vertical-align: middle;">@(device.LastSeen?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
-                                <td style="width: 150px; text-align: center; vertical-align: middle;">
-                                    @(device.LastSeen?.ToString("dd/MM/yyyy HH:mm") ?? "-")
-                                </td>
-                                <td style="width: 150px; text-align: center; vertical-align: middle;">
-                                    @CheckOnlineStatus(device)
-                                </td>
-                                <td style="width: 170px; text-align: center;">
-                                    @GetStatusIcon(device.DeviceStatus!)
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
                                 </td>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                }
 
-            <Modal @ref="modalSelect" Title="@localizer["SelectUser"]" IsVerticallyCentered="true" Size="ModalSize.Large">
-                <BodyTemplate>
-                    <SelectUserModel DeviceUuid="@currentDeviceUuid" OnNextModal="NextModalAccess" />
-                </BodyTemplate>
-            </Modal>
+                <Modal @ref="modalSelect" Title="@localizer["SelectUser"]" IsVerticallyCentered="true" Size="ModalSize.Large">
+                    <BodyTemplate>
+                        <SelectUserModel DeviceUuid="@currentDeviceUuid" OnNextModal="NextModalAccess" />
+                    </BodyTemplate>
+                </Modal>
 
-            <Modal @ref="modalAcess" Title="@localizer["CreateAccess"]" IsVerticallyCentered="true" Size="ModalSize.Large">
-                <BodyTemplate>
-                    <RemoteAcess DeviceUuid="@currentDeviceUuid" SelectedKey="selectedSshKey" OnNextModal="NextModalLink" />
-                </BodyTemplate>
-            </Modal>
+                <Modal @ref="modalAcess" Title="@localizer["CreateAccess"]" IsVerticallyCentered="true" Size="ModalSize.Large">
+                    <BodyTemplate>
+                        <RemoteAcess DeviceUuid="@currentDeviceUuid" SelectedKey="selectedSshKey" OnNextModal="NextModalLink" />
+                    </BodyTemplate>
+                </Modal>
 
-            <Modal @ref="modalSsh" Title="@localizer["VisualizeSSH"]" IsVerticallyCentered="true" Size="ModalSize.Large">
-                <BodyTemplate>
-                    <SshLinkModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal" />
-                </BodyTemplate>
-            </Modal>
+                <Modal @ref="modalSsh" Title="@localizer["VisualizeSSH"]" IsVerticallyCentered="true" Size="ModalSize.Large">
+                    <BodyTemplate>
+                        <SshLinkModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal" />
+                    </BodyTemplate>
+                </Modal>
 
-            <Modal @ref="modalUpdate" Title="@localizer["SelectPackages"]" IsVerticallyCentered="true" Size="ModalSize.Large">
-                <BodyTemplate>
-                    <UpdateImageModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal"/>
-                </BodyTemplate>
-            </Modal>
+                <Modal @ref="modalUpdate" Title="@localizer["SelectPackages"]" IsVerticallyCentered="true" Size="ModalSize.Large">
+                    <BodyTemplate>
+                        <UpdateImageModal DeviceUuid="@currentDeviceUuid" OnCloseModal="CloseModal" />
+                    </BodyTemplate>
+                </Modal>
+            </div>
+
+            <div class="d-flex justify-content-end mt-3 px-3">
+                <p>@FilteredDevices.Count() @localizer["Device"]&#40s&#41</p>
+            </div>
         </div>
-
-        <div class="d-flex justify-content-end mt-3 px-3">
-            <p>@FilteredDevices.Count() @localizer["Devices"]</p>
-        </div>
-
     </div>
 }
 
 @code {
-    // Object Variables
-    private DetailedDevice currentDevice = new();
-    private SshKey selectedSshKey = new();
-    private Modal modalSelect = new();
-    private Modal modalAcess = new();
-    private Modal modalUpdate = new();
-    private Modal modalSsh = new();
-    private List<DetailedDevice> originalDevices = new();
-    private List<DetailedDevice> devices = new();
-    private List<Fleet> fleets = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(Devices));
+    // Variáveis: Object
+    DetailedDevice currentDevice = new();
+    SshKey selectedSshKey = new();
+    Modal modalSelect = new();
+    Modal modalAcess = new();
+    Modal modalUpdate = new();
+    Modal modalSsh = new();
+    List<DetailedDevice> originalDevices = new();
+    List<DetailedDevice> devices = new();
+    List<Fleet> fleets = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(Devices));
 
-    // String Variables
-    private string? openMenuDeviceId = null;
-    private string? currentSortColumn = "DeviceName";
-    private string? currentDeviceUuid;
-    private string selectedFleetId = string.Empty;
-    private int deviceCount;
+    IEnumerable<DetailedDevice> FilteredDevices =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? devices
+            : devices.Where(d => d.DeviceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    // Variáveis: String
     public const string Updated = "Updated";
     public const string Error = "Error";
     public const string Pending = "Pending";
     public const string NotSeen = "NotSeen";
     public const string Outdated = "Outdated";
     public const string Scheduled = "Scheduled";
+    string? openMenuDeviceId = null;
+    string? currentSortColumn = "DeviceName";
+    string? currentDeviceUuid;
+    string selectedFleetId = string.Empty;
 
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -263,14 +361,13 @@ else
         }
     }
 
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool sortAscending = true;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool sortAscending = true;
 
-    private IEnumerable<DetailedDevice> FilteredDevices =>
-    string.IsNullOrWhiteSpace(searchTerm)
-        ? devices
-        : devices.Where(d => d.DeviceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+    // Variáveis: Integer
+    const int AdminRoleId = 1;
+    int deviceCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -278,61 +375,75 @@ else
         {
             if (!await TorizonService.AuthenticateAsync())
             {
-                log.Error("Error authenticating to Torizon Service.");
+                _log.Error("Error authenticating to Torizon Service.");
                 return;
             }
 
             using var context = DbContextFactory.CreateDbContext();
 
-            fleets = await context.Fleets
-                .Join(context.EntityFleets, f => f.Id, ef => ef.FleetId, (f, ef) => new { f, ef })
-                .Join(context.Entities, fe => fe.ef.EntityId, e => e.Id, (fe, e) => new { fe.f, e })
-                .Join(context.Users, fe => fe.e.Id, up => up.EntityId, (fe, up) => new { fe.f, up })
-                .Where(x => x.up.Id == LoginService.UserId)
-                .Select(x => x.f)
-                .ToListAsync();
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == LoginService.UserId);
 
-            if (!fleets.Any())
+            if (user?.UserRoleId != AdminRoleId)
             {
-                devices = new List<DetailedDevice>();
-                originalDevices = new List<DetailedDevice>();
-                isLoading = false;
-                log.Warn($"No fleets found for user {LoginService.UserId}.");
-                return;
+                fleets = await context.Fleets
+                            .Join(context.EntityFleets, f => f.Id, ef => ef.FleetId, (f, ef) => new { f, ef })
+                            .Join(context.Entities, fe => fe.ef.EntityId, e => e.Id, (fe, e) => new { fe.f, e })
+                            .Join(context.Users, fe => fe.e.Id, up => up.EntityId, (fe, up) => new { fe.f, up })
+                            .Where(x => x.up.Id == LoginService.UserId)
+                            .Select(x => x.f)
+                            .ToListAsync();
+
+                if (!fleets.Any())
+                {
+                    devices = new List<DetailedDevice>();
+                    originalDevices = new List<DetailedDevice>();
+                    isLoading = false;
+                    _log.Warn($"No fleets found for user {LoginService.UserId}.");
+                    return;
+                }
+
+                var fleetDeviceTasks = fleets.Select(async fleet =>
+                {
+                    var url = $"https://app.torizon.io/api/v2beta/fleets/{fleet.Id}/devices";
+                    var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+                    return fleetDevices;
+                });
+
+                var fleetDevicesLists = await Task.WhenAll(fleetDeviceTasks);
+
+                var allEntityDevices = fleetDevicesLists
+                    .SelectMany(fd => fd)
+                    .GroupBy(d => d.DeviceUuid)
+                    .Select(g => g.First())
+                    .ToList();
+
+                originalDevices = new List<DetailedDevice>(allEntityDevices);
+                devices = new List<DetailedDevice>(originalDevices);
+            } 
+            else
+            {
+                fleets = await context.Fleets.ToListAsync();
+
+                var url = "https://app.torizon.io/api/v2beta/devices?limit=200";
+
+                originalDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
+                devices = new List<DetailedDevice>(originalDevices);
             }
 
-            var fleetDeviceTasks = fleets.Select(async fleet =>
-            {
-                var url = $"https://app.torizon.io/api/v2beta/fleets/{fleet.Id}/devices";
-                var fleetDevices = await TorizonService.GetItemsAsync<DetailedDevice>(url) ?? new List<DetailedDevice>();
-                return fleetDevices;
-            });
-
-            var fleetDevicesLists = await Task.WhenAll(fleetDeviceTasks);
-
-            var allEntityDevices = fleetDevicesLists
-                .SelectMany(fd => fd)
-                .GroupBy(d => d.DeviceUuid)
-                .Select(g => g.First())
-                .ToList();
-
-            originalDevices = new List<DetailedDevice>(allEntityDevices);
-            devices = new List<DetailedDevice>(originalDevices);
-
             isLoading = false;
-
-            log.Info($"Loaded {devices.Count} devices for user {LoginService.UserId}.");
+            
+            _log.Info($"Loaded {devices.Count} devices for user {LoginService.UserId}.");
             StateHasChanged();
 
             deviceCount = devices.Count();
         }
         catch (Exception ex)
         {
-            log.Error("Error loading devices for user.", ex);
+            _log.Error("Error loading devices for user.", ex);
         }
     }
 
-    private async Task ExportToExcel()
+    async Task ExportToExcel()
     {
         MemoryStream ms = new MemoryStream();
         using (SpreadsheetDocument spreadsheetDocument = SpreadsheetDocument.Create(ms, SpreadsheetDocumentType.Workbook))
@@ -380,7 +491,8 @@ else
 
                 dataCells[6] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.LastSeen?.ToString("dd/MM/yyyy HH:mm") ?? "-") };
 
-                bool isOnline = device.LastSeen.HasValue && (DateTime.UtcNow - device.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+                bool isOnline = device.LastSeen.HasValue && (DateTime.UtcNow - device.LastSeen.Value.ToUniversalTime()).TotalMinutes < FilterService.OnlineTime;
+
                 dataCells[7] = new Cell { DataType = CellValues.String, CellValue = new CellValue(isOnline ? "Online" : "Offline") };
 
                 dataCells[8] = new Cell { DataType = CellValues.String, CellValue = new CellValue(device.DeviceStatus) };
@@ -405,39 +517,39 @@ else
         }
     }
 
-    private async Task NextModalAccess(SshKey key)
+    async Task NextModalAccess(SshKey key)
     {
         selectedSshKey = key;
         await modalSelect.HideAsync();
         await modalAcess.ShowAsync();
     }
 
-    private async Task NextModalLink()
+    async Task NextModalLink()
     {
         await modalAcess.HideAsync();
         await modalSsh.ShowAsync();
     }
 
-    private async Task CloseModal()
+    async Task CloseModal()
     {
         await modalAcess.HideAsync();
         await modalUpdate.HideAsync();
         await modalSsh.HideAsync(); 
     }
 
-    private async Task UpdateDevice()
+    async Task UpdateDevice()
     {
         await modalUpdate.ShowAsync();
         openMenuDeviceId = null;
     }
 
-    private async Task RemoteAcess()
+    async Task RemoteAcess()
     {
         await modalSelect.ShowAsync();
         openMenuDeviceId = null;
     }
 
-    private void ToggleMenu(string deviceId)
+    void ToggleMenu(string deviceId)
     {
         if (openMenuDeviceId == deviceId)
         {
@@ -446,14 +558,14 @@ else
         else
         {
             openMenuDeviceId = deviceId;
-            currentDevice = devices.FirstOrDefault(d => d.DeviceId == deviceId);
+            currentDevice = devices.FirstOrDefault(d => d.DeviceId == deviceId)!;
             currentDeviceUuid = currentDevice?.DeviceUuid;
         }
     }
 
-    private async Task OnFleetChanged()
+    async Task OnFleetChanged()
     {
-        log.Info($"Selected fleet change to: {(string.IsNullOrEmpty(selectedFleetId) ? "all" : selectedFleetId)}");
+        _log.Info($"Selected fleet change to: {(string.IsNullOrEmpty(selectedFleetId) ? "all" : selectedFleetId)}");
 
         try
         {
@@ -468,17 +580,17 @@ else
                 devices = fleetDevices;
             }
 
-            log.Info($"Devices loaded after fleet change: {devices.Count} devices.");
+            _log.Info($"Devices loaded after fleet change: {devices.Count} devices.");
         }
         catch (Exception ex)
         {
-            log.Error("Error loading devices after fleet change.", ex);
+            _log.Error("Error loading devices after fleet change.", ex);
         }
 
         StateHasChanged();
     }
 
-    private void SortByColumn(string columnName)
+    void SortByColumn(string columnName)
     {
         if (currentSortColumn == columnName)
         {
@@ -493,7 +605,7 @@ else
         SortDevices();
     }
 
-    private void SortDevices()
+    void SortDevices()
     {
         devices = currentSortColumn switch
         {
@@ -507,7 +619,7 @@ else
         };
     }
 
-    private MarkupString GetStatusIcon(string status)
+    MarkupString GetStatusIcon(string status)
     {
         var iconHtml = status.ToLower() switch
         {
@@ -544,21 +656,21 @@ else
         return new MarkupString(iconHtml);
     }
 
-    private MarkupString CheckOnlineStatus(DetailedDevice device)
+    MarkupString CheckOnlineStatus(DetailedDevice device)
     {
-        bool isOnline = device.LastSeen.HasValue && (DateTime.UtcNow - device.LastSeen.Value.ToUniversalTime()).TotalMinutes < 5;
+        bool isOnline = device.LastSeen.HasValue && (DateTime.UtcNow - device.LastSeen.Value.ToUniversalTime()).TotalMinutes < FilterService.OnlineTime;
         string iconHtml = string.Empty;
 
         if (isOnline)
         {
-            iconHtml = @"<div class='state'>
+            iconHtml = @"<div class='state' style='padding-right: 0.5rem;'>
                         <i class='bi bi-circle-fill text-success fs-4'></i>
                         <span>Online</span>
                      </div>";
         }
         else
         {
-            iconHtml = @"<div class='state'>
+            iconHtml = @"<div class='state' style='padding-right: 0.5rem;'>
                         <i class='bi bi-x-circle text-danger fs-4'></i>
                         <span>Offline</span>
                      </div>";
@@ -567,7 +679,7 @@ else
         return new MarkupString(iconHtml);
     }
 
-    private void OnOrderChanged(ChangeEventArgs e, string orderByField)
+    void OnOrderChanged(ChangeEventArgs e, string orderByField)
     {
         var selectedStatusOrder = e.Value?.ToString() ?? "uptodate";
 

@@ -6,8 +6,8 @@ namespace ToradexSwLoader.Services
 {
     public class PackageService
     {
-        private readonly IDbContextFactory<AppDbContext> _dbContextFactory;
-        private readonly TorizonService _torizonService;
+        readonly IDbContextFactory<AppDbContext> _dbContextFactory;
+        readonly TorizonService _torizonService;
 
         public PackageService(IDbContextFactory<AppDbContext> dbContextFactory, TorizonService torizonService)
         {

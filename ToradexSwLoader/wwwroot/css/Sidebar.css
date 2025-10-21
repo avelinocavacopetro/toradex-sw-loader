@@ -46,6 +46,11 @@
         display: none;
     }
 
+.align-text {
+    line-height: 1.2;
+    vertical-align: middle;
+}  
+
 @media (max-width: 1024px) {
     .sidebar-container {
         left: 0.5rem;

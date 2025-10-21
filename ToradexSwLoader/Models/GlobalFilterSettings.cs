@@ -24,5 +24,4 @@ namespace ToradexSwLoader.Models
         public string? SelectedEntitiesJson { get; set; }
         public DateTime LastUpdated { get; set; }
     }
-
 }

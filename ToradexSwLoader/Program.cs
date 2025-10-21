@@ -1,3 +1,4 @@
+using Blazored.Toast;
 using CurrieTechnologies.Razor.SweetAlert2;
 using log4net;
 using log4net.Config;
@@ -13,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 var logDirectory = Path.Combine(AppContext.BaseDirectory, "Logs");
 Directory.CreateDirectory(logDirectory);
 
-var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly()!);
 XmlConfigurator.Configure(logRepository, new FileInfo("Log4NetConfig.xml"));
 
 // Add services to the container.
@@ -22,7 +23,7 @@ builder.Services.AddRazorComponents()
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseMySQL(connectionString)
+    options.UseMySQL(connectionString!)
 );
 
 // Configurar serviços a serem utilizados
@@ -38,6 +39,7 @@ builder.Services.AddBlazorBootstrap();
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddLocalization();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddBlazoredToast();
 
 var app = builder.Build();
 

@@ -2,9 +2,9 @@
 
 @using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject SweetAlertService Swal
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
 
 <PageTitle>@localizer["AddDevice"]</PageTitle>
 
@@ -31,11 +31,12 @@
 
     <div class="edit-form mt-4">
         <div class="d-flex align-items-center gap-3">
-            <label for="text" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
+            <label for="Ñame" class="mb-0" style="font-size: 1.5rem; flex-shrink: 0;">
                 @localizer["Name"]
                 <span style="font-size: 15px;"> (@localizer["max"]. 30 @localizer["Characters"])</span> :
             </label>
             <input type="text" @bind="deviceName"
+                   id="Name"
                    class="form-control"
                    style="font-size: 1.2rem; border: 1px solid grey;"
                    maxlength="30"/>
@@ -44,13 +45,16 @@
 </div>
 
 @code {
-    // String Variables
-    private string deviceName = string.Empty;
+    // Variáveis: Integer
+    const int NameLength = 30;
 
-    // Object Variables
-    private static readonly ILog log = LogManager.GetLogger(typeof(AddDevice));
+    // Variáveis: String
+    public string deviceName = string.Empty;
 
-    private async Task SaveDevice()
+    // Variáveis: Object
+    static readonly ILog _log = LogManager.GetLogger(typeof(AddDevice));
+
+    async Task SaveDevice()
     {
         try
         {
@@ -61,73 +65,49 @@
 
             if (await DeviceExistsAsync(context))
             {
-                await ShowDeviceExistsAlert();
+                ToastService.ShowWarning(@localizer["DeviceExists"]);
                 return;
             }
 
             await AddDeviceAsync(context);
-            await ShowSuccessAlert();
+            
+            ToastService.ShowSuccess(@localizer["AddedSuccess"]);
+
             NavigationManager.NavigateTo("/manageDevices");
         }
         catch (Exception ex)
         {
-            log.Error("Error saving device. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ErrorSavingDevice"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving device. ", ex);
+
+            ToastService.ShowError(@localizer["ErrorSavingDevice"]);
             return;
         }
     }
 
-    private bool ValidateDeviceName()
+    public bool ValidateDeviceName()
     {
         if (string.IsNullOrWhiteSpace(deviceName))
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ValidName"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ValidName"]);
             return false;
         }
 
-        if (deviceName.Length > 30)
+        if (deviceName.Length > NameLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongName"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongName"]}. {@localizer["Max30"]}");
             return false;
         }
 
         return true;
     }
 
-    private async Task<bool> DeviceExistsAsync(AppDbContext context)
+    async Task<bool> DeviceExistsAsync(AppDbContext context)
     {
         return await context.Devices
             .AnyAsync(d => d.Name.ToLower() == deviceName.Trim().ToLower());
     }
 
-    private async Task ShowDeviceExistsAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["DeviceExists"],
-            Icon = SweetAlertIcon.Warning,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private async Task AddDeviceAsync(AppDbContext context)
+    async Task AddDeviceAsync(AppDbContext context)
     {
         var newDevice = new Device
         {
@@ -139,17 +119,7 @@
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/manageDevices");
     }

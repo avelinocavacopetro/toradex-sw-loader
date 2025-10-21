@@ -1,10 +1,9 @@
 ﻿@page "/managePatterns/edit/{PatternId:int}"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject SweetAlertService Swal
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
 
 <PageTitle> @localizer["EditPattern"]</PageTitle>
 
@@ -50,7 +49,7 @@ else
                 </label>
                 <input type="text" @bind="patternString"
                        class="form-control"
-                       style="font-size: 1.2rem;" 
+                       style="font-size: 1.2rem; border: 1px solid grey;"
                        maxlength="50"/>
             </div>
         </div>
@@ -58,18 +57,21 @@ else
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int PatternId { get; set; }
 
-    // Object Variables
-    private static readonly ILog log = LogManager.GetLogger(typeof(EditPattern));
+    // Variáveis: Object
+    static readonly ILog _log = LogManager.GetLogger(typeof(EditPattern));
 
-    // String Variables
-    private string patternString = string.Empty;
+    // Variáveis: Integer
+    const int PatternLength = 50;
 
-    // Boolean Variables
-    private bool isLoading = true;
+    // Variáveis: String
+    string patternString = string.Empty;
+
+    // Variáveis: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -83,24 +85,19 @@ else
                 patternString = pattern.NameContains;
             }
 
-            log.Info("Pattern loaded successfully.");
+            _log.Info("Pattern loaded successfully.");
             isLoading = false;
         }
         catch (Exception ex)
         {
-            log.Error("Error loading pattern. ", ex);
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading pattern. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
             NavigationManager.NavigateTo("/managePatterns");
         }   
     }
 
-    private async Task SaveChanges()
+    async Task SaveChanges()
     {
         try
         {
@@ -110,52 +107,38 @@ else
             using var context = DbContextFactory.CreateDbContext();
 
             await ChangePattern(context);
-            await ShowSuccessAlert();
+            
+            ToastService.ShowSuccess(@localizer["EditedSuccess"]);
+
             NavigationManager.NavigateTo("/managePatterns");
         } 
         catch (Exception ex)
         {
-            log.Error("Error saving changes. ", ex);
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving changes. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private bool ValidadePattern()
+    bool ValidadePattern()
     {
         if (string.IsNullOrWhiteSpace(patternString))
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ValidName"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ValidName"]);
             return false;
         }
 
-        if (patternString.Length > 50)
+        if (patternString.Length > PatternLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongName"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongName"]}. {@localizer["Max50"]}");
             return false;
         }
 
         return true;
     }
 
-    private async Task ChangePattern(AppDbContext context)
+    async Task ChangePattern(AppDbContext context)
     {
         var patternDb = await context.Patterns.FirstOrDefaultAsync(p => p.Id == PatternId);
         if (patternDb == null) return;
@@ -165,17 +148,7 @@ else
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/managePatterns");
     }

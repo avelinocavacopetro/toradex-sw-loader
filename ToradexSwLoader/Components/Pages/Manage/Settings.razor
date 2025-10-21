@@ -1,11 +1,10 @@
 ﻿@page "/manageSecret"
 
-@using log4net
 @inject IJSRuntime JS
-@inject TorizonService TorizonService
-@inject SweetAlertService Swal
-@inject FilterService FilterService
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject TorizonService TorizonService
+@inject FilterService FilterService
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -30,7 +29,26 @@
         <div class="d-flex justify-content-end gap-2">
             <button class="btn btn-color btn-lg"
                     style="font-size: 1.25rem;"
-                    @onclick="ConfirmAndSubmit">
+                    @onclick="ConfirmAndSubmitRefreshTime">
+                <i class="bi bi-floppy"></i>  @localizer["Apply"]
+            </button>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="row mb-3">
+            <div class="col-auto">
+                <label for="onlineTime" class="fw-bold fs-5">
+                    @localizer["Max30Minutes"]
+                </label>
+                <input id="onlineTime" @bind="onlineTime" type="number" min="1" max="30" class="form-control mt-2" style="border: 1px solid grey;" />
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button class="btn btn-color btn-lg"
+                    style="font-size: 1.25rem;"
+                    @onclick="ConfirmAndSubmitOnlineTime">
                 <i class="bi bi-floppy"></i>  @localizer["Apply"]
             </button>
         </div>
@@ -38,11 +56,12 @@
 </div>
 
 @code {
-    // Integer Variables
-    private int refreshTime = 10;
+    // Variáveis: Integer
+    int refreshTime = 10;
+    int onlineTime = 5;
 
-    // Object Variables
-    private static readonly ILog log = LogManager.GetLogger(typeof(Settings));
+    // Variáveis: Object
+    static readonly ILog log = LogManager.GetLogger(typeof(Settings));
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,54 +70,58 @@
             await FilterService.LoadFilterAsync();
 
             refreshTime = FilterService.RefreshTime;
+            onlineTime = FilterService.OnlineTime;
         }
         catch (Exception ex)
         {
             log.Error("Error loading settings. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ErrorLoading"],
-                Text = ex.Message,
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            
+            ToastService.ShowError(@localizer["ErrorLoading"]);
         }
     }
 
-    private async Task ConfirmAndSubmit()
+    async Task ConfirmAndSubmitRefreshTime()
     {
         try
         {
             if (refreshTime < 10 || refreshTime > 60)
             {
-                await Swal.FireAsync(new SweetAlertOptions
-                    {
-                    Title = @localizer["PleaseTime"],
-                        Icon = SweetAlertIcon.Warning,
-                        ConfirmButtonColor = "#0B5120"
-                    });
+                ToastService.ShowWarning(@localizer["PleaseRefreshTime"]);
                 return;
             }
 
-            await FilterService.ApplyTimeFilter(refreshTime);
+            await FilterService.ApplyRefreshTimeFilter(refreshTime);
 
-            await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title =  @localizer["FiltersApplied"],
-                    Icon = SweetAlertIcon.Success,
-                    ConfirmButtonColor = "#0B5120"
-                });
+            ToastService.ShowSuccess(@localizer["FiltersApplied"]);
         }
         catch (Exception ex)
         {
             log.Error("Error confirming and submitting settings. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-                {
-                Title = @localizer["Error"],
-                    Text = ex.Message,
-                    Icon = SweetAlertIcon.Error,
-                    ConfirmButtonColor = "#0B5120"
-                });
+            
+            ToastService.ShowError(@localizer["Error"]);
+            return;
+        }
+    }
+
+    async Task ConfirmAndSubmitOnlineTime()
+    {
+        try
+        {
+            if (onlineTime < 1 || onlineTime > 30)
+            {
+                ToastService.ShowWarning(@localizer["PleaseOnlineTime"]);
+                return;
+            }
+
+            await FilterService.ApplyOnlineTimeFilter(onlineTime);
+
+            ToastService.ShowSuccess(@localizer["FiltersApplied"]);
+        }
+        catch (Exception ex)
+        {
+            log.Error("Error confirming and submitting settings. ", ex);
+
+            ToastService.ShowError(@localizer["Error"]);
             return;
         }
     }

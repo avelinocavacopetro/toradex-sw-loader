@@ -1,12 +1,11 @@
 ﻿@page "/selectProduct/{deviceId:int}"
 
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject NavigationManager UriHelper
 @inject LoginService LoginService
 @inject FilterService FilterService
-@inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
-
 
 <PageTitle>@localizer["SelectProduct"]</PageTitle>
 
@@ -27,7 +26,7 @@ else
         <a href="#"
            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
            class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
+           style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
@@ -36,22 +35,23 @@ else
         <div class="grid-container">
             @foreach (var product in paginatedProducts)
             {
-                <div class="grid-item" @onclick="() => SelectProductName(product)">
+                <div class="grid-item" style="cursor: pointer;" @onclick="() => SelectProductName(product)">
                     @product.Name
                 </div>
             }
         </div>
 
         <div class="sticky-footer-right">
-            <div class="d-flex align-items-center gap-3 justify-content-end">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
+            <div class="d-flex justify-content-end">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="custom-outline-button btn-lg"
                             @onclick="PrevPage" disabled="@(!CanGoPrev)">
                         &lt;
                     </button>
 
-                    <button class="btn custom-outline-button btn-lg"
+                    <span>@actualPage - @TotalPages de @TotalPages</span>
+
+                    <button class="custom-outline-button btn-lg"
                             @onclick="NextPage" disabled="@(!CanGoNext)">
                         &gt;
                     </button>
@@ -62,26 +62,26 @@ else
 }
 
 @code {
-    // Parameters
+    // Variáveis: Parameters
     [Parameter]
     public int deviceId { get; set; }
 
-    // Object Varibles
-    private Product? selectedProduct;
-    private Device? selectedDevice;
-    private List<Product> products = new();
-    private List<Product> paginatedProducts = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(SelectProduct));
+    // Variáveis: Object
+    Product? selectedProduct = new();
+    Device? selectedDevice = new();
+    List<Product> products = new();
+    List<Product> paginatedProducts = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(SelectProduct));
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int productsPerPage = 8;
-    private int TotalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
+    // Variáveis: Integer
+    int actualPage = 1;
+    int productsPerPage = 8;
+    int TotalPages => (int)Math.Ceiling((double)products.Count / productsPerPage);
 
-    // Boolean Variables
-    private bool isLoading = false;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = false;
+    bool CanGoNext => actualPage < TotalPages;
+    bool CanGoPrev => actualPage > 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,7 +91,7 @@ else
             selectedDevice = await context.Devices.FirstOrDefaultAsync(d => d.Id == deviceId);
 
             products = await context.DeviceProducts
-                .Where(dp => dp.DeviceId == deviceId && dp.Product.Enabled)
+                .Where(dp => dp.DeviceId == deviceId && dp.Product!.Enabled)
                 .Select(dp => dp.Product!)
                 .Distinct()
                 .ToListAsync();
@@ -99,27 +99,22 @@ else
             UpdatePage();
             isLoading = false;
 
-            log.Info("Select product page loaded successfully.");
+            _log.Info("Select product page loaded successfully.");
         }
         catch(Exception ex)
         {
-            log.Error("Error loading Select product page.", ex);
+            _log.Error("Error loading Select product page.", ex);
         }
     }
 
-    private async Task SelectProductName(Product product)
+    async Task SelectProductName(Product product)
     {
         using var context = DbContextFactory.CreateDbContext();
 
         bool hasStacks = await context.ProductStacks.AnyAsync(ps => ps.ProductId == product.Id);
         if (!hasStacks)
         {
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ProductsStacks"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ProductsStack"]);
             return;
         }
 
@@ -127,7 +122,7 @@ else
         await OnClick();
     }
 
-    private async Task OnClick()
+    async Task OnClick()
     {
         try
         {
@@ -145,18 +140,18 @@ else
                 context.UserActivities.Add(userAct);
                 await context.SaveChangesAsync();
 
-                log.Info($"Product '{selectedProduct.Name}' selected.");
+                _log.Info($"Product '{selectedProduct.Name}' selected.");
 
                 UriHelper.NavigateTo($"/selectStack/{deviceId}/{selectedProduct.Id}");
             }
         }
         catch(Exception ex)
         {
-            log.Error("Error selecting product.", ex);
+            _log.Error("Error selecting product.", ex);
         }
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
         paginatedProducts = products
                               .Skip((actualPage - 1) * productsPerPage)
@@ -164,7 +159,7 @@ else
                               .ToList();
     }
 
-    private void NextPage()
+    void NextPage()
     {
         if (CanGoNext)
         {
@@ -173,7 +168,7 @@ else
         }
     }
 
-    private void PrevPage()
+    void PrevPage()
     {
         if (CanGoPrev)
         {

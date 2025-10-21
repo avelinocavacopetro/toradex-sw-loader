@@ -1,11 +1,10 @@
 ﻿@page "/manageProducts/add"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject FilterService FilterService
-@inject SweetAlertService Swal
-@inject NavigationManager NavigationManager
 @inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
+@inject FilterService FilterService
+@inject NavigationManager NavigationManager
 
 <PageTitle>@localizer["AddProduct"]</PageTitle>
 
@@ -45,92 +44,116 @@
         <br />
         <h4>@localizer["SelectDevices"]</h4>
 
-        <div class="table-wrapper">
-            <table class="table mt-3 w-100" style="table-layout: fixed;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th style="width: 50%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                   border-right: 1px solid white">@localizer["Device"]</th>
-                        <th style="width: 50%; text-align: center; border-top-right-radius: 5px;">@localizer["Active"]</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var device in PaginatedDevices)
-                    {
-                        <tr class="table-light" style="height: 60px;">
-                            <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                @device.Name
-                            </td>
-                            <td class="text-center align-middle p-0">
+        <div class="w-50">
+            <input type="text" class="form-control" style="border: 1px solid grey;"
+                   placeholder="Pesquisar dispositivo pelo nome..."
+                   @bind="searchTerm" @bind:event="oninput" />
+        </div>
+
+        <div class="card-body pb-2 px-0 mb-0 mt-3">
+            <div class="table-add-edit-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@FilteredDevices.AsQueryable()"
+                           ItemKey="@(pd => pd.Id)">
+
+                    <!--- Coluna dos nomes dos dispositivos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Device"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @context.Name
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado (Selecionado ou não) --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["Select"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
                                 <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                       id="toggle-@device.Id"
-                                       @onchange="(e => ToggleDevice(e, device))"
-                                       checked="@selectedDevices.Any(d => d.Id == device.Id)" />
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                                       id="toggle-@context.Id"
+                                       @onchange="(e => ToggleDevice(e, context))"
+                                       checked="@selectedDevices.Any(d => d.Id == context.Id)" />
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
 
-            <div class="sticky-footer-right">
-                <div class="d-flex justify-content-end align-items-center gap-3">
-                    <span>@currentDevicePage - @TotalDevicePages de @TotalDevicePages</span>
-                    <div class="d-flex gap-2">
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="PrevDevicePage" disabled="@(currentDevicePage == 1)">
-                            &lt;
-                        </button>
+                @if (!FilteredDevices.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                }
+            </div>
 
-                        <button class="btn custom-outline-button btn-lg"
-                                @onclick="NextDevicePage" disabled="@(currentDevicePage == TotalDevicePages)">
-                            &gt;
-                        </button>
-                    </div>
-                </div>
+            <div class="d-flex justify-content-end mt-3 px-3">
+                <p>@FilteredDevices.Count() @localizer["Device"]&#40s&#41</p>
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    // Object Variables
-    private List<Device> selectedDevices = new List<Device>();
-    private static readonly ILog log = LogManager.GetLogger(typeof(AddProduct));
+    // Variáveis: Object
+    List<Device> selectedDevices = new();
+    List<Device> devices = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(AddProduct));
 
-    private IEnumerable<Device> PaginatedDevices =>
-        FilterService.SelectedDevices
-            .Skip((currentDevicePage - 1) * devicesPerPage)
-            .Take(devicesPerPage);
+    IEnumerable<Device> FilteredDevices =>
+        string.IsNullOrWhiteSpace(searchTerm)
+            ? devices
+            : devices.Where(f => f.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
 
-    // String Variables
-    private string productName = string.Empty;
+    // Variáveis: Integer
+    const int NameLength = 30;
 
-    // Integer Variables
-    private int currentDevicePage = 1;
-    private int devicesPerPage = 3;
-    private int TotalDevicePages => (int)Math.Ceiling((double)FilterService.SelectedDevices.Count / devicesPerPage);
+    // Variáveis: String
+    string productName = string.Empty;
+    string _searchTerm = string.Empty;
+    string searchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            if (_searchTerm != value)
+            {
+                _searchTerm = value;
+            }
+        }
+    }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         try
         {
-            await FilterService.LoadFilterAsync();
+            devices = FilterService.SelectedDevices;
             selectedDevices = new List<Device>();
         }
         catch (Exception ex)
         {
-            log.Error("Error loading devices.", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorLoading"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading devices.", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorLoading"]}");
         }
     }
 
-    private void ToggleDevice(ChangeEventArgs e, Device device)
+    void ToggleDevice(ChangeEventArgs e, Device device)
     {
         var isChecked = e.Value is bool b && b;
 
@@ -145,7 +168,7 @@
         }
     }
 
-    private async Task SaveProduct()
+    async Task SaveProduct()
     {
         try
         {
@@ -159,88 +182,59 @@
 
             if (await ProductExistsAsync(context))
             {
-                await ShowProductExistsAlert();
+                ToastService.ShowWarning(@localizer["ProductExists"]);
                 return;
             }
 
             await AddProductAsync(context);
-            await ShowSuccessAlert();
+            
+            ToastService.ShowSuccess(@localizer["AddedSuccess"]);
+
             NavigationManager.NavigateTo("/manageProducts");
         }
         catch (Exception ex)
         {
-            log.Error("Error saving product.", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["ErrorSavingProduct"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error saving product.", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["ErrorSavingProduct"]}");
             return;
         }
     }
 
-    private bool ValidateProduct()
+    bool ValidateProduct()
     {
         if (string.IsNullOrWhiteSpace(productName))
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ValidName"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["ValidName"]);
             return false;
         }
 
-        if (productName.Length > 30)
+        if (productName.Length > NameLength)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["LongName"],
-                Text = @localizer["Max30"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning($"{@localizer["LongName"]}. {@localizer["Max30"]}");
             return false;
         }
 
         return true;
     }
 
-    private bool ValidateDeviceCount()
+    bool ValidateDeviceCount()
     {
         if (selectedDevices.Count < 1)
         {
-            _ = Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["PleaseSelectDevice"],
-                Icon = SweetAlertIcon.Warning,
-                ConfirmButtonColor = "#0B5120"
-            });
+            ToastService.ShowWarning(@localizer["PleaseSelectDevice"]);
             return false;
         }
 
         return true;
     }
 
-    private async Task<bool> ProductExistsAsync(AppDbContext context)
+    async Task<bool> ProductExistsAsync(AppDbContext context)
     {
         return await context.Products.AnyAsync(p => p.Name.ToLower() == productName.Trim().ToLower());
     }
 
-    private async Task ShowProductExistsAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["ProductExists"],
-            Icon = SweetAlertIcon.Warning,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private async Task AddProductAsync(AppDbContext context)
+    async Task AddProductAsync(AppDbContext context)
     {
         var newProduct = new Product
         {
@@ -263,30 +257,8 @@
         await context.SaveChangesAsync();
     }
 
-    private async Task ShowSuccessAlert()
-    {
-        await Swal.FireAsync(new SweetAlertOptions
-        {
-            Title = @localizer["AddedSuccess"],
-            Icon = SweetAlertIcon.Success,
-            ConfirmButtonColor = "#0B5120"
-        });
-    }
-
-    private void Cancel()
+    void Cancel()
     {
         NavigationManager.NavigateTo("/manageProducts");
-    }
-
-    private void PrevDevicePage()
-    {
-        if (currentDevicePage > 1)
-            currentDevicePage--;
-    }
-
-    private void NextDevicePage()
-    {
-        if (currentDevicePage < TotalDevicePages)
-            currentDevicePage++;
     }
 }

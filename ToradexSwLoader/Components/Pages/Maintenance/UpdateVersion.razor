@@ -3,12 +3,13 @@
 @rendermode InteractiveServer
 @inject IDbContextFactory<AppDbContext> DbContextFactory
 @inject IJSRuntime JS
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject TorizonService TorizonService
 @inject LoginService LoginService
 @inject FilterService FilterService
 @inject NavigationManager UriHelper
 @inject SweetAlertService Swal
-@inject IStringLocalizer<Resource> localizer
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -31,63 +32,82 @@ else
         <a href="#"
            onclick="if (@(isLoading.ToString().ToLower())) { event.preventDefault(); } else { history.back(); }"
            class="text-black"
-           style="cursor: @(isLoading ? "default" : "pointer");">
+           style="max-width: 5vh; cursor: @(isLoading ? "default" : "pointer");">
             <i class="bi bi-arrow-left fs-1"></i>
         </a>
 
         <h3 class="text-center pb-5">@localizer["UpdateVersion"]</h3>
 
-        @if (selectedDevice?.Packages?.Any() == true)
-        {
-            <table class="table mt-3 w-100">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th style="width: 50%; padding-left: 20px; border-right: 1px solid white; border-top-left-radius: 5px;">@localizer["Name"]</th>
-                        <th style="width: 50%; text-align: center; border-top-right-radius: 5px;">@localizer["Version"]</th>
-                    </tr>
-                </thead>
-                <tbody style="height: 60px;">
-                    <tr>
-                        <td style="width: 50%; padding-left: 20px; vertical-align: middle;">@installedPackageName</td>
-                        <td style="width: 50%; vertical-align: middle; text-align: center;">
-                            <select @bind="selectedVersion">
-                                @foreach (var stack in filteredPackages)
-                                {
-                                    <option value="@stack?.Package?.Version">@stack?.Package?.Version</option>
-                                }
-                            </select>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p class="text-danger text-center">@localizer["NoPackagesFound"]</p>
-        }
+        <div class="card-body pb-2 px-0 mt-2">
+            <div class="border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="filteredPackages.AsQueryable()"
+                           ItemKey="@(fp => fp.StackId + fp.PackageId)">
 
-        <div class="text-center fixed-bottom pb-5">
-            <button class="btn btn-color btn-lg" style="width: 20vw; font-size: 1.5rem;" @onclick="OnClick">@localizer["Update"]</button>
+                    <!--- Coluna dos nomes dos pacotes --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Name"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left" style="cursor: pointer;" @onclick="() => SelectRow(context.Package!)">
+                                @context.Package?.Name
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna das versões --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["Version"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left" style="cursor: pointer;" @onclick ="() => SelectRow(context.Package!)">
+                                @context.Package?.Version
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+                </QuickGrid>
+
+                @if (!filteredPackages.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                }
+            </div>
         </div>
     </div>
 }
 
 @code {
-    // Object Variables
-    private DetailedDevice? selectedDevice = new();
-    private List<StackPackage> filteredPackages = new();
-    private List<StackPackage> stacksPackages = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(UpdateVersion));
-
-    // String Variables
+    // Variáveis: Parameters
     [Parameter]
     public string? deviceUuid { get; set; }
-    private string? devicePackage;
-    private string? selectedVersion;
-    private string? installedPackageName;
 
-    // Boolean Variables
-    private bool isLoading = true;
+    // Variáveis: Object
+    DetailedDevice? selectedDevice = new();
+    List<StackPackage> filteredPackages = new();
+    List<StackPackage> stacksPackages = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(UpdateVersion));
+
+    // Variáveis: String
+    string? devicePackage;
+    string? selectedVersion;
+    string? installedPackageName;
+
+    // Variáveis: Boolean
+    bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,9 +127,11 @@ else
 
                 if (selectedDevice.Packages?.Count > 1)
                 {
-                    var fullName = selectedDevice.Packages[1].Name;
+                    var fullName = selectedDevice.Packages?
+                                    .FirstOrDefault(p => p.Component == "docker-compose")?
+                                    .Installed.PackageId;
 
-                    var lastDashIndex = fullName.LastIndexOf('-');
+                    var lastDashIndex = fullName!.LastIndexOf('-');
                     if (lastDashIndex > 0 && lastDashIndex < fullName.Length - 1)
                     {
                         installedPackageName = fullName.Substring(0, lastDashIndex);
@@ -128,8 +150,11 @@ else
                     .ToListAsync();
 
                 filteredPackages = stacksPackages
-                    .Where(sp => sp?.Package?.Name == installedPackageName)
-                    .OrderByDescending(sp => sp?.Package?.Version)
+                    .Where(sp => sp?.Package?.Name != null &&
+                                 sp.Package.Name.Contains(installedPackageName!, StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(sp => new { sp.Package?.Name, sp.Package?.Version })
+                    .Select(g => g.First())
+                    .OrderByDescending(sp => sp.Package?.Version)
                     .ToList();
 
                 await FilterService.LoadFilterAsync();
@@ -137,20 +162,18 @@ else
                 isLoading = false;
             }
 
-            log.Info("Update Version page loaded successfully.");
+            _log.Info("Update Version page loaded successfully.");
         }
         catch (Exception ex)
         {
-            log.Error("Error loading Update Version page.", ex);
+            _log.Error("Error loading Update Version page.", ex);
         }
     }
 
-    private async Task OnClick()
+    async Task SelectRow(Package package)
     {
         try
         {
-            devicePackage = installedPackageName + "-" + selectedVersion;
-
             using var context = DbContextFactory.CreateDbContext();
 
             if (selectedVersion != null)
@@ -160,9 +183,10 @@ else
                     Title = "Deseja continuar?",
                     Icon = SweetAlertIcon.Warning,
                     ShowCancelButton = true,
-                    ConfirmButtonText = "Continuar",
+                    ConfirmButtonText = @localizer["Continue"],
                     ConfirmButtonColor = "#0B5120",
-                    CancelButtonText = "Cancelar"
+                    CancelButtonText = @localizer["Cancel"],
+                    CancelButtonColor = "#dc3545"
                 });
 
                 if (result.IsConfirmed)
@@ -175,12 +199,12 @@ else
                         ActTimeStamp = DateTime.Now
                     };
 
-                    var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == devicePackage);
+                    var packageUri = await context.Packages.FirstOrDefaultAsync(p => p.Id == package.Id);
 
                     var deviceDto = new DeviceDTO
                     {
-                        PackageIds = new List<string> { devicePackage },
-                        Devices = new List<string> { deviceUuid.ToString() },
+                        PackageIds = new List<string> { package.Id },
+                        Devices = new List<string> { deviceUuid!.ToString() },
                     };
 
                     var response = await TorizonService.SendUpdateAsync(deviceDto);
@@ -190,51 +214,32 @@ else
                         context.UserActivities.Add(userAct);
                         await context.SaveChangesAsync();
 
-                        log.Info($"Device '{selectedDevice?.DeviceName}' updated to version '{selectedVersion}' successfully.");
+                        _log.Info($"Device '{selectedDevice?.DeviceName}' updated to version '{selectedVersion}' successfully.");
 
-                        await Swal.FireAsync(new SweetAlertOptions
-                        {
-                            Title = "Versão atualizada com sucesso!",
-                            Icon = SweetAlertIcon.Success,
-                            ConfirmButtonColor = "#0B5120"
-                        });
+                        ToastService.ShowSuccess(@localizer["VersionSuccess"]);
 
                         UriHelper.NavigateTo("/home");
                     }
                     else
                     {
-                        await Swal.FireAsync(new SweetAlertOptions
-                        {
-                            Title = "Erro ao atualizar versão",
-                            Icon = SweetAlertIcon.Warning,
-                            Text = $"{response.StatusCode}",
-                            ConfirmButtonColor = "#0B5120"
-                        });
+                        ToastService.ShowError(@localizer["VersionError"]);
 
                         var errorContent = await response.Content.ReadAsStringAsync();
 
-                        log.Error($"Failed to update device '{selectedDevice?.DeviceName}'. StatusCode: {response.StatusCode}, Error: {errorContent}");
-
-                        Console.WriteLine($"Erro ao enviar update. Código: {response.StatusCode}");
-                        Console.WriteLine($"Conteúdo do erro: {errorContent}");
+                        _log.Error($"Failed to update device '{selectedDevice?.DeviceName}'. StatusCode: {response.StatusCode}, Error: {errorContent}");
                     }
                 }
             }
             else
             {
-                log.Warn("No software version selected before attempting update.");
+                _log.Warn("No software version selected before attempting update.");
 
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = "Selecione um software!",
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120",
-                });
+                ToastService.ShowWarning(@localizer["NoPackageSelected"]);
             }
         }
         catch(Exception ex)
         {
-            log.Error("Error occurred while updating device version.", ex);
+            _log.Error("Error occurred while updating device version.", ex);
         }
     }
 }

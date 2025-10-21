@@ -5,6 +5,6 @@ namespace ToradexSwLoader.Models
     public class PackageUri
     {
         [JsonPropertyName("uri")]
-        public string Uri { get; set; }
+        public string Uri { get; set; } = string.Empty;
     }
 }

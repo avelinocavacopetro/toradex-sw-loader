@@ -1,11 +1,11 @@
 ﻿@page "/manageProducts"
 
-@using log4net
 @inject IDbContextFactory<AppDbContext> DbContextFactory
+@inject IStringLocalizer<Resource> localizer
+@inject IToastService ToastService
 @inject FilterService FilterService
 @inject SweetAlertService Swal
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<Resource> localizer
 
 <PageTitle>@localizer["ManageProducts"]</PageTitle>
 
@@ -53,116 +53,132 @@ else
             </div>
         </div>
 
-        <div class="pb-5">
-            <table class="table mt-3 w-100" style="table-layout: fixed;">
-                <thead style="background-color: #0c6527; color: white;">
-                    <tr>
-                        <th onclick="@(() => SortByColumn("Name"))"
-                            style="width: 30%; text-align: left; padding-left: 20px; border-top-left-radius: 5px;
-                                                   border-right: 1px solid white; cursor: pointer;">
-                            @localizer["Name"]
-                            <span style="font-size: 0.9rem; margin-left: 5px;
-                                                         color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
-                                @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
-                            </span>
-                        </th>
+        <div class="card-body pb-2 px-0 mb-0 mt-3">
+            <div class="table-responsive border rounded-2">
+                <QuickGrid Class="table table-striped m-0"
+                           Items="@FilteredProducts.AsQueryable()"
+                           ItemKey="@(pp => pp.Id)">
 
-                        <th style="width: 30%; text-align: center; border-right: 1px solid white;">@localizer["LinkedDevices"]</th>
-                        <th style="width: 15%; text-align: center; border-right: 1px solid white;">@localizer["Active"]</th>
-                        <th style="width: 12.5%;"></th>
-                        <th style="width: 12.5%; border-top-right-radius: 5px;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (PaginatedProducts is null || !PaginatedProducts.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4" style="font-size: 1.1rem;">
-                                @localizer["NoData"]
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        foreach (var product in PaginatedProducts)
-                        {
-                            <tr class="table-light" style="height: 60px;">
-                                <td style="text-align: left; vertical-align: middle; padding-left: 20px;">
-                                    @product.Name
-                                </td>
-                                <td style="text-align: center; vertical-align: middle;">
-                                    @if (product.DeviceProducts?.Any() == true)
-                                    {
-                                        <ul class="mb-0 ps-3">
-                                            @foreach (var dp in product.DeviceProducts)
-                                            {
-                                                <li style="list-style-type: none;">@dp.Device?.Name</li>
-                                            }
-                                        </ul>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted" style="font-size:18px;">@localizer["WithoutDevices"]</span>
-                                    }
-                                </td>
-                                <td class="text-center align-middle p-0">
-                                    <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
-                                           id="toggle-@product.Id"
-                                           @onchange="(e => ToggleProduct(e, product))"
-                                           checked="@selectedProducts.Any(p => p.Id == product.Id)"
-                                           style="border-radius: 5px;" />
-                                </td>
-                                <td class="text-center align-middle">
+                    <!--- Coluna das opções --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="options-buttons-header">
+                                @localizer["Options"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="options-buttons">
+                                <div>
                                     <button class="btn btn-outline-success btn-sm py-1 px-2"
                                             title="Editar"
-                                            @onclick="() => NavigateToEditProduct(product.Id)"
+                                            @onclick="() => NavigateToEditProduct(context.Id)"
                                             style="border-radius: 5px;">
                                         <i class="bi bi-pencil-square" style="font-size: 1.1rem;"></i>
                                     </button>
-                                </td>
-                                <td class="text-center align-middle">
+                                </div>
+                                <div>
                                     <button class="btn btn-outline-danger btn-sm py-1 px-2"
                                             title="Desativar"
-                                            @onclick="() => DisableProduct(product.Id)"
+                                            @onclick="() => DisableProduct(context.Id)"
                                             style="border-radius: 5px;">
                                         <i class="bi bi-trash-fill" style="font-size: 1.1rem;"></i>
                                     </button>
+                                </div>
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna dos nomes dos produtos --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left" style="cursor: pointer;" onclick="@(() => SortByColumn("Name"))">
+                                @localizer["Name"]
+                                <span style="font-size: 1rem; margin-left: 5px;
+                                                                 color: @(currentSortColumn == "Name" ? "white" : "rgba(255,255,255,0.5)")">
+                                    @(currentSortColumn == "Name" ? (isNameAscending ? "▲" : "▼") : "▲")
+                                </span>
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @context.Name
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna dos dispositivos associados --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-left">
+                                @localizer["LinkedDevices"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-left">
+                                @if (context.DeviceProducts?.Any() == true)
+                                {
+                                    <span style="font-size: 1rem;">
+                                        @string.Join(", ",
+                                        context.DeviceProducts
+                                        .Where(dp => dp.Device != null)
+                                        .Select(dp => dp.Device!.Name!.Trim()))
+                                    </span>
+                                 }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size: 1rem;">@localizer["WithoutDevices"]</span>
+                                }
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>
+
+                    <!--- Coluna do estado (Ativo ou não) --->
+                    <TemplateColumn>
+                        <HeaderTemplate>
+                            <div class="header-table-center">
+                                @localizer["Active"]
+                            </div>
+                        </HeaderTemplate>
+                        <ChildContent>
+                            <div class="body-table-center">
+                                <input type="checkbox" class="largerCheckbox d-block mx-auto my-auto"
+                                       id="toggle-@context.Id"
+                                       @onchange="(e => ToggleProduct(e, context))"
+                                       checked="@selectedProducts.Any(p => p.Id == context.Id)"
+                                       style="border-radius: 5px;" />
+                            </div>
+                        </ChildContent>
+                    </TemplateColumn>                   
+                </QuickGrid>
+
+                @if (!FilteredProducts.Any())
+                {
+                    <table class="table table-striped m-0">
+                        <tbody>
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 1rem;">
+                                    @localizer["NoData"]
                                 </td>
                             </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                }
+            </div>
 
-        </div>
-
-        <div class="sticky-footer-right">
-            <div class="d-flex justify-content-end align-items-center gap-3">
-                <span>@actualPage - @TotalPages de @TotalPages</span>
-                <div class="d-flex gap-2">
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="PrevPage" disabled="@(!CanGoPrev)">
-                        &lt;
-                    </button>
-
-                    <button class="btn custom-outline-button btn-lg"
-                            @onclick="NextPage" disabled="@(!CanGoNext)">
-                        &gt;
-                    </button>
-                </div>
+            <div class="d-flex justify-content-end mt-3 px-3">
+                <p>@FilteredProducts.Count() @localizer["Product"]&#40s&#41</p>
             </div>
         </div>
     </div>
 }
 
 @code {
-    // Object Variables
-    private List<Product> products = new();
-    private List<Product> selectedProducts = new();
-    private List<Product> paginatedProducts = new();
-    private static readonly ILog log = LogManager.GetLogger(typeof(ManageProducts));
+    // Variáveis: Object
+    List<Product> products = new();
+    List<Product> selectedProducts = new();
+    static readonly ILog _log = LogManager.GetLogger(typeof(ManageProducts));
 
-    private IEnumerable<Product> FilteredProducts
+    IEnumerable<Product> FilteredProducts
     {
         get
         {
@@ -181,16 +197,11 @@ else
         }
     }
 
-    private IEnumerable<Product> PaginatedProducts =>
-        FilteredProducts
-            .Skip((actualPage - 1) * productsPerPage)
-            .Take(productsPerPage);
+    // Variáveis: String
+    string currentSortColumn = "Name";
 
-    // String Variables
-    private string currentSortColumn = "Name";
-
-    private string _searchTerm = string.Empty;
-    private string searchTerm
+    string _searchTerm = string.Empty;
+    string searchTerm
     {
         get => _searchTerm;
         set
@@ -198,21 +209,13 @@ else
             if (_searchTerm != value)
             {
                 _searchTerm = value;
-                actualPage = 1;
             }
         }
     }
 
-    // Integer Variables
-    private int actualPage = 1;
-    private int productsPerPage = 5;
-    private int TotalPages => (int)Math.Ceiling((double)FilteredProducts.Count() / productsPerPage);
-
-    // Boolean Variables
-    private bool isLoading = true;
-    private bool isNameAscending = true;
-    private bool CanGoNext => actualPage < TotalPages;
-    private bool CanGoPrev => actualPage > 1;
+    // Variáveis: Boolean
+    bool isLoading = true;
+    bool isNameAscending = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -242,23 +245,18 @@ else
 
             UpdatePage();
 
-            log.Info("Products loaded successfully");
+            _log.Info("Products loaded successfully");
             isLoading = false;
         } 
         catch (Exception ex)
         {
-            log.Error("Error loading products. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["ErrorLoading"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error loading products. ", ex);
+
+            ToastService.ShowError($"{@localizer["ErrorLoading"]}. {@localizer["TryAgain"]}");
         }
     }
 
-    private void ToggleProduct(ChangeEventArgs e, Product product)
+    void ToggleProduct(ChangeEventArgs e, Product product)
     {
         var isChecked = e.Value is bool b && b;
 
@@ -273,57 +271,42 @@ else
         }
     }
 
-    private void NavigateToAddProduct()
+    void NavigateToAddProduct()
     {
         NavigationManager.NavigateTo("/manageProducts/add");
     }
 
-    private void NavigateToEditProduct(int id)
+    void NavigateToEditProduct(int id)
     {
         NavigationManager.NavigateTo($"/manageProducts/edit/{id}");
     }
 
-    private async Task ApplyFilter()
+    async Task ApplyFilter()
     {
         try
         {
             if (selectedProducts.Count == 0)
             {
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["PleaseSelectProduct"],
-                    Icon = SweetAlertIcon.Warning,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowWarning(@localizer["PleaseSelectProduct"]);
                 return;
             }
             else
             {
                 await FilterService.ApplyProductsFilter(new List<Product>(selectedProducts));
 
-                await Swal.FireAsync(new SweetAlertOptions
-                {
-                    Title = @localizer["FiltersApplied"],
-                    Icon = SweetAlertIcon.Success,
-                    ConfirmButtonColor = "#0B5120"
-                });
+                ToastService.ShowSuccess(@localizer["FiltersApplied"]);
             }
         }
         catch (Exception ex)
         {
-            log.Error("Error applying product filter. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error applying product filter. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private async Task DisableProduct(int id)
+    async Task DisableProduct(int id)
     {
         try
         {
@@ -334,7 +317,8 @@ else
                 ShowCancelButton = true,
                 ConfirmButtonText = @localizer["Continue"],
                 ConfirmButtonColor = "#0B5120",
-                CancelButtonText = @localizer["Cancel"]
+                CancelButtonText = @localizer["Cancel"],
+                CancelButtonColor = "#dc3545"
             });
 
             if (result.IsConfirmed)
@@ -362,25 +346,22 @@ else
                 FilterService.SelectedProducts.RemoveAll(p => p.Id == id);
                 await FilterService.SaveFilterAsync();
 
+                ToastService.ShowSuccess(@localizer["ProductDisableSuccess"]);
+
                 isLoading = false;
                 StateHasChanged();
             }
         } 
         catch (Exception ex)
         {
-            log.Error("Error disabling product. ", ex);
-            await Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = @localizer["Error"],
-                Text = @localizer["TryAgain"],
-                Icon = SweetAlertIcon.Error,
-                ConfirmButtonColor = "#0B5120"
-            });
+            _log.Error("Error disabling product. ", ex);
+            
+            ToastService.ShowError($"{@localizer["Error"]}. {@localizer["TryAgain"]}");
             return;
         }
     }
 
-    private void SortByColumn(string columnName)
+    void SortByColumn(string columnName)
     {
         if (currentSortColumn == columnName)
         {
@@ -391,33 +372,10 @@ else
             currentSortColumn = columnName;
             isNameAscending = true;
         }
-
-        actualPage = 1;
     }
 
-    private void UpdatePage()
+    void UpdatePage()
     {
-        paginatedProducts = FilteredProducts
-                                 .Skip((actualPage - 1) * productsPerPage)
-                                 .Take(productsPerPage)
-                                 .ToList();
-    }
-
-    private void NextPage()
-    {
-        if (CanGoNext)
-        {
-            actualPage++;
-            UpdatePage();
-        }
-    }
-
-    private void PrevPage()
-    {
-        if (CanGoPrev)
-        {
-            actualPage--;
-            UpdatePage();
-        }
+        InvokeAsync(StateHasChanged);
     }
 }

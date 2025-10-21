@@ -1,6 +1,6 @@
 ﻿@inject IDbContextFactory<AppDbContext> DbContextFactory
-@inject LoginService LoginService
 @inject IStringLocalizer<Resource> localizer
+@inject LoginService LoginService
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
@@ -25,7 +25,7 @@
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="maintenance" Match="NavLinkMatch.All">
-                        <span class="bi bi-tools icon-align" aria-hidden="true"></span> @localizer["MenuManut"]
+                        <span class="bi bi-tools icon-align" aria-hidden="true"></span> @localizer["MenuMaintence"]
                     </NavLink>
                 </div>
             }
@@ -78,7 +78,7 @@
                                 <span aria-hidden="true"></span> <i class="bi bi-gear icon-align"></i> @localizer["Settings"]
                             </NavLink>
                             <NavLink class="nav-link pb-1" href="adminHistory">
-                                <span aria-hidden="true"></span> <i class="bi bi-journal-text icon-align"></i> @localizer["Updates"]
+                                <span aria-hidden="true"></span> <i class="bi bi-journal-text icon-align"></i> @localizer["Loads"]
                             </NavLink>
                         </div>
                     }
@@ -88,7 +88,7 @@
     </div>
 
     <footer class="sidebar-footer px-3 py-2">
-        <small class="text-white"><img style="height:4vh;" src="images/linepetroteclogo.png" /> 2.0.0</small>
+        <small class="text-white"><img style="height:4vh;" src="images/linepetroteclogo.png" /> @AppVersion</small>
     </footer>
 </div>
 
@@ -128,11 +128,14 @@
 </style>
 
 @code {
-    // Boolean Variables
-    private bool menuOpen = false;
+    // Variáveis: Boolean
+    bool menuOpen = false;
 
-    // String Variables
-    private string? userRole;
+    // Variáveis: String
+    string? userRole;
+    const string AppVersion = "2.0.2";
+
+    bool HasRole(params string[] roles) => roles.Contains(userRole);
 
     protected override async Task OnInitializedAsync()
     {
@@ -143,8 +146,6 @@
                                       .Select(u => u.UserRole!.Name)
                                       .FirstOrDefaultAsync();
     }
-
-    private bool HasRole(params string[] roles) => roles.Contains(userRole);
 
     void ToggleMenu()
     {
